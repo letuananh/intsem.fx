@@ -1,0 +1,6 @@
+[submodule "pydelphin"]
+	path = pydelphin
+	url = https://github.com/goodmami/pydelphin.git
+[submodule "puchikarui"]
+	path = puchikarui
+	url = https://github.com/letuananh/puchikarui
