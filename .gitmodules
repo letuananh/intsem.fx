@@ -4,3 +4,6 @@
 [submodule "puchikarui"]
 	path = puchikarui
 	url = https://github.com/letuananh/puchikarui
+[submodule "lelesk"]
+	path = lelesk
+	url = https://github.com/letuananh/lelesk.git
