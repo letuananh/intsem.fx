@@ -3,7 +3,7 @@ delphin
 data/
 *.*#
 bs4
-
+nltk
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
