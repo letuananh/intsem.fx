@@ -24,3 +24,4 @@ link_folder ~/workspace/pydelphin/delphin delphin
 link_folder ~/workspace/beautifulsoup/bs4-python3 bs4
 link_folder ~/workspace/nltk/nltk nltk
 link_file ~/workspace/erg/erg.dat data/erg.dat
+git submodule init && git submodule update
