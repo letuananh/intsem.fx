@@ -52,8 +52,8 @@ class DMRS:
             self.mrs_obj = simplemrs.loads_one(self.text)
         return self.mrs_obj
 
-    def dmrs_xml(self):
-        return dmrx.dumps([simplemrs.loads_one(mrs)])
+    def dmrs_xml(self, pretty_print=False):
+        return dmrx.dumps([simplemrs.loads_one(self.text)], pretty_print=pretty_print)
 
     def surface(self, node):
         if not node or not self.sent:

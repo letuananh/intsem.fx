@@ -5,9 +5,9 @@
 ########################################################################
 DATA_DIR=./data
 GRAMFILE=${DATA_DIR}/erg.dat
-INFILE=${DATA_DIR}/semcor.txt
-OUTFILE=${DATA_DIR}/semcor.out
-TOP_K=10
+INFILE=${DATA_DIR}/speckled.txt
+OUTFILE=${DATA_DIR}/speckled.out
+TOP_K=1
 
 if [ $# -eq 2 ]; then
 	INFILE=$1
