@@ -108,6 +108,9 @@ class PredSense():
                     return potential
         return []
 
+    # alias
+    search_pred_string = lambda pred_str,extend_lemma=True: PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma)
+
     @staticmethod
     def search_pred(pred, auto_expand=True):
         if not pred:
@@ -158,7 +161,7 @@ class PredSense():
             elif pred.pos == 'n':
                 ss = PredSense.search_sense([pred.lemma], 'a')
         # Done
-        return ss
+        return sorted(ss, key=lambda x: x.tagcount, reverse=True)
 
     @staticmethod
     def sinfo_str(senseinfo):

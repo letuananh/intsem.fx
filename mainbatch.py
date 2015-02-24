@@ -74,6 +74,11 @@ def main():
                 break
     c.summarise() 
     
+    preds = sentences[0].mrs[0].preds()
+    for pred in preds:
+        print(PredSense.search_pred_string(pred.label, False))
+    exit()
+    
     # Process data
     print("Generating XML data ...")
     doc_node = ET.Element('document')
