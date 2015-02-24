@@ -31,6 +31,7 @@ from util import PredSense
 from chirptext.leutile import Counter
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
+from lelesk import WSDResources
 
 ##########################################
 # CONFIGURATION
@@ -44,7 +45,9 @@ OUTPUT_ISF = 'data/speckled.isf'
 prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
 
 def main():
-    print("Integrated Semantic Framework has been loaded.")
+    print("Loading WordNet ...")
+    WSDResources.singleton(True)
+    print("Reading raw data ...")
     # interactive_shell()
     c = Counter()
     items = []
@@ -74,10 +77,10 @@ def main():
                 break
     c.summarise() 
     
-    preds = sentences[0].mrs[0].preds()
-    for pred in preds:
-        print(PredSense.search_pred_string(pred.label, False))
-    exit()
+    #preds = sentences[0].mrs[0].preds()
+    #for pred in preds:
+    #    print(PredSense.search_pred_string(pred.label, False))
+    #exit()
     
     # Process data
     print("Generating XML data ...")
@@ -93,12 +96,58 @@ def main():
         dmrses = dmrs_xml.findall('dmrs')
         for dmrs in dmrses:
             dmrses_node.append(dmrs)
+        # add senseinfo to every preds
+        si_node = ET.SubElement(sent_node, 'senses')
+        
+        # WSD info
+        best_candidate_map = {}
+        for pred in sent.mrs[0].preds():
+            candidates = PredSense.search_pred_string(pred.label, False)
+            if candidates:
+                best_candidate_map[pred_to_key(pred)] = candidates[0]
+                sense_node = ET.SubElement(si_node, 'pred')
+                #sense_node.set('key', pred_to_key(pred))
+                sense_node.set('cfrom', str(pred.cfrom))
+                sense_node.set('cto', str(pred.cto))
+                sense_node.set('label', str(pred.label))
+                for candidate in candidates:
+                    candidate_node = ET.SubElement(sense_node, 'sense')
+                    candidate_node.set('pos', str(candidate.pos))
+                    candidate_node.set('synsetid', str(candidate.sid))
+                    candidate_node.set('sensekey', str(candidate.sk))
+                    candidate_node.set('lemma', str(candidate.lemma))
+                    candidate_node.set('tagcount', str(candidate.tagcount))
+        #print(best_candidate_map)
+        # Storing best candidates
+        for dmrs in dmrses_node:
+            for node in dmrs.findall('node'):
+                realpred = node.find('realpred')
+                if realpred is not None:
+                    key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
+                    #print('%s is found' % (key,))
+                    if key in best_candidate_map:
+                        # print("injecting")
+                        candidate = best_candidate_map[key]
+                        candidate_node = ET.SubElement(node, 'sense')
+                        candidate_node.set('pos', str(candidate.pos))
+                        candidate_node.set('synsetid', str(candidate.sid))
+                        candidate_node.set('sensekey', str(candidate.sk))
+                        candidate_node.set('lemma', str(candidate.lemma))
+                        candidate_node.set('tagcount', str(candidate.tagcount))
+                #else:
+                    #print('%s is not good' % (realpred,))
+        #exit()
     with open(OUTPUT_ISF, 'w') as output_isf:
         print("Making it beautiful ...")
         xml_string = prettify_xml(ET.tostring(doc_node, encoding='utf-8'))
         print("Saving XML data to file ...")
         output_isf.write(xml_string)
     print("All done!")
+
+def pred_to_key(pred):
+    pred_obj = Pred.grammarpred(pred.label)
+    return '-'.join((str(pred.cfrom), str(pred.cto), str(pred_obj.pos), str(pred_obj.lemma), str(pred_obj.sense)))
+    
 
 if __name__ == "__main__":
     main()
