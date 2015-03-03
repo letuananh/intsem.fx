@@ -32,6 +32,8 @@ from chirptext.leutile import Counter
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
 from lelesk import WSDResources
+from chirptext.texttaglib import writelines
+from collections import defaultdict as dd
 
 ##########################################
 # CONFIGURATION
@@ -40,18 +42,36 @@ GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
 INPUT_TXT = 'data/speckled.txt'
 INPUT_MRS = 'data/speckled.out'
+SKIPPED_SENTENCE = 'data/speckled.skipped'
 OUTPUT_ISF = 'data/speckled.isf'
+PRED_DEBUG_DUMP = 'data/speckled_synset.isf'
+GOLD_PROFILE = 'data/speckled_synset.human'
 
 prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
+
+def read_data(file_path):
+    data = []
+    with open(file_path, 'r') as input_file:
+        for line in input_file:
+            data.append(tuple(line.split()))
+    return data
 
 def main():
     print("Loading WordNet ...")
     WSDResources.singleton(True)
+    
+    print("Reading gold profile")
+    golddata = read_data(GOLD_PROFILE)
+    sid_gold_map = dd(list)
+    for datum in golddata:
+        sid_gold_map[datum[0]].append(datum)
+    print("Gold map: %s" % [len(sid_gold_map)])
     print("Reading raw data ...")
     # interactive_shell()
     c = Counter()
     items = []
     sentences = []
+    skipped = []
     with open(INPUT_MRS, 'r') as input_mrs:
         current_sid = 0
         while True:
@@ -68,6 +88,7 @@ def main():
                 c.count('sent')
                 c.count('total')
             elif line.startswith('SKIP'):
+                skipped.append(line[5:].strip())
                 items.append([line])
                 input_mrs.readline()
                 input_mrs.readline()
@@ -76,6 +97,7 @@ def main():
             else:
                 break
     c.summarise() 
+    writelines(skipped, SKIPPED_SENTENCE)
     
     #preds = sentences[0].mrs[0].preds()
     #for pred in preds:
@@ -86,7 +108,12 @@ def main():
     print("Generating XML data ...")
     doc_node = ET.Element('document')
     doc_node.set('name', 'speckled band')
+    preds_debug = []
+    
+    cgold = Counter()
+    
     for sent in sentences:
+        #print("Processing %s" % (sent.sid + 9999,))
         sent_node = ET.SubElement(doc_node, 'sentence')
         sent_node.set('sid', str(sent.sid))
         text_node = ET.SubElement(sent_node, 'text')
@@ -101,9 +128,15 @@ def main():
         
         # WSD info
         best_candidate_map = {}
+        # Store data for debugging purposes
+        
         for pred in sent.mrs[0].preds():
             candidates = PredSense.search_pred_string(pred.label, False)
             if candidates:
+                #if candidates[0].lemma == 'very':
+                 #   print(candidates)
+                  #  exit()
+                preds_debug.append((sent.sid + 9999, pred.cfrom, pred.cto, str(candidates[0].sid)[1:]+'-'+candidates[0].pos, candidates[0].lemma))
                 best_candidate_map[pred_to_key(pred)] = candidates[0]
                 sense_node = ET.SubElement(si_node, 'pred')
                 #sense_node.set('key', pred_to_key(pred))
@@ -118,11 +151,22 @@ def main():
                     candidate_node.set('lemma', str(candidate.lemma))
                     candidate_node.set('tagcount', str(candidate.tagcount))
         #print(best_candidate_map)
-        # Storing best candidates
+        # Storing best candidates & gold sense
         for dmrs in dmrses_node:
             for node in dmrs.findall('node'):
+                # insert gold sense
+                goldtags = sid_gold_map[str(sent.sid + 9999)]
+                if goldtags:
+                    for tag in goldtags:
+                        # print(' '.join([str(x) in [tag[1], tag[2], node.get('cfrom'), node.get('cto')]]))
+                        if int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
+                            gold_node = ET.SubElement(node, 'sensegold')
+                            gold_node.set('synset', tag[3])
+                            gold_node.set('clemma', tag[4])
+                            cgold.count('inserted')
                 realpred = node.find('realpred')
                 if realpred is not None:
+                    # insert mcs
                     key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
                     #print('%s is found' % (key,))
                     if key in best_candidate_map:
@@ -136,6 +180,10 @@ def main():
                         candidate_node.set('tagcount', str(candidate.tagcount))
                 #else:
                     #print('%s is not good' % (realpred,))
+    
+    cgold.summarise()
+    print("Dumping preds debug")
+    writelines([ '\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
         #exit()
     with open(OUTPUT_ISF, 'w') as output_isf:
         print("Making it beautiful ...")

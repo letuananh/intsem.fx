@@ -3,6 +3,9 @@ delphin
 *.*#
 bs4
 nltk
+data/speckled*
+data/erg*
+data/mwe*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

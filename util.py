@@ -26,7 +26,8 @@ from chirptext.leutile import StringTool
 from lelesk import WSDResources
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
-
+from mwemap import MWE_ERG_WN_MAPPING
+from mwemap import MWE_ERG_PRED_LEMMA
 
 class PredSense():
     @staticmethod
@@ -97,9 +98,13 @@ class PredSense():
         potential.add(WSDResources.singleton(True).wnl.lemmatize(lemma))
         return potential
 
+    singleton_sm = None
+
     @staticmethod
     def search_sense(lemmata, pos):
-        sm = WSDResources.singleton(True).wnsql.all_senses()
+        if PredSense.singleton_sm is None:
+            PredSense.singleton_sm = WSDResources.singleton(True).wnsql.all_senses()
+        sm = PredSense.singleton_sm
 
         for lemma in lemmata:
             if lemma in sm:
@@ -109,13 +114,22 @@ class PredSense():
         return []
 
     # alias
-    search_pred_string = lambda pred_str,extend_lemma=True: PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma)
+    def search_pred_string(pred_str,extend_lemma=True): 
+        if pred_str in MWE_ERG_PRED_LEMMA:
+            pred = Pred.grammarpred(pred_str)
+            ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos)
+            #print("Looking at %s" % (pred_str))
+            #if ss:
+            #    print("MWE detected")
+            return sorted(ss, key=lambda x: x.tagcount, reverse=True)
+        else:
+            return PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma)
 
     @staticmethod
     def search_pred(pred, auto_expand=True):
         if not pred:
             return None
-
+        
         if auto_expand:
             ss = PredSense.search_sense(PredSense.extend_lemma(pred.lemma), pred.pos)
         else:
