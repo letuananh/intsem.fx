@@ -4,9 +4,9 @@
 # CONFIGURATION
 ########################################################################
 DATA_DIR=./data
-GRAMFILE=${DATA_DIR}/erg2.dat
-INFILE=${DATA_DIR}/speckled.txt
-OUTFILE=${DATA_DIR}/speckled.out
+GRAMFILE=${DATA_DIR}/erg.dat
+INFILE=${DATA_DIR}/spec-raw.txt
+OUTFILE=${DATA_DIR}/spec-erg.txt
 TOP_K=1
 
 if [ $# -eq 2 ]; then

@@ -41,9 +41,9 @@ from collections import defaultdict as dd
 GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
 INPUT_TXT = 'data/speckled.txt'
-INPUT_MRS = 'data/speckled.out'
+INPUT_MRS = 'data/spec-erg.txt'
 SKIPPED_SENTENCE = 'data/speckled.skipped'
-OUTPUT_ISF = 'data/speckled.isf'
+OUTPUT_ISF = 'data/spec-isf.xml'
 PRED_DEBUG_DUMP = 'data/speckled_synset.isf'
 GOLD_PROFILE = 'data/speckled_synset.human'
 
