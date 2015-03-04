@@ -106,7 +106,38 @@ def main():
     
     # Process data
     print("Generating XML data ...")
-    doc_node = ET.Element('document')
+    isf_node = ET.Element('rootisf')
+    isf_node.set('version', '0.1')
+    isf_node.set('lang', 'eng')
+    # Add license information
+    header_node = ET.SubElement(isf_node, 'headerisf')
+    filedesc_node = ET.SubElement(header_node, 'description')
+    filedesc_node.set("title", "The Adventure of the Speckled Band")
+    filedesc_node.set("author", "Arthur Conan Doyle")
+    filedesc_node.set("filename", "spec-isf.xml")
+    license_node = ET.SubElement(filedesc_node, "license")
+    license_node.text = """The MIT License (MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE."""
+    
+    # Add document nodes
+    doc_node = ET.SubElement(isf_node, 'document')
     doc_node.set('name', 'speckled band')
     preds_debug = []
     
@@ -187,7 +218,7 @@ def main():
         #exit()
     with open(OUTPUT_ISF, 'w') as output_isf:
         print("Making it beautiful ...")
-        xml_string = prettify_xml(ET.tostring(doc_node, encoding='utf-8'))
+        xml_string = prettify_xml(ET.tostring(isf_node, encoding='utf-8'))
         print("Saving XML data to file ...")
         output_isf.write(xml_string)
     print("All done!")

@@ -91,9 +91,13 @@ def main():
 			mwe_notfound.append('\t'.join(mwe))
 		c.count("Total")
 	c.summarise()
+	mwe_found = [ '# This file contains predicates in ERG which have been mapped to concept in WordNet', '# ' ] + mwe_notfound
 	writelines(mwe_found, MWE_FOUND)
+	mwe_notfound = [ '# This file contains predicates in ERG which cannot be found in WordNet', '# ' ] + mwe_notfound
 	writelines(mwe_notfound, MWE_NOTFOUND)
-	writelines([ ",'%s' : '%s'" % (x[1], x[0]) for x in mwe_list ] , MWE_PRED_LEMMA)
+	pred_lemma =  [ '# This file contains all VV preds in ERG and their lemmas', "# " ]
+	pred_lemma += [ ",'%s' : '%s'" % (x[1], x[0]) for x in mwe_list ] 
+	writelines(pred_lemma, MWE_PRED_LEMMA)
 	print("All done")
 	pass
 
