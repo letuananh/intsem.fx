@@ -5,11 +5,14 @@ Integrated semantic framework
 
 1 - Check out beautifulsoup, pydelphin and nltk to ~/workspace folder 
 
+```
 git clone https://github.com/letuananh/beautifulsoup.git ~/workspace/beautifulsoup 
 git clone https://github.com/nltk/nltk.git ~/workspace/nltk
 git clone https://github.com/goodmami/pydelphin.git ~/workspace/pydelphin
+```
 
 2 - Check out the code of intsem.fx to ~/workspace with:
+
 ```
 git clone --recursive https://github.com/letuananh/intsem.fx.git
 ```
