@@ -127,6 +127,7 @@ class PredSense():
 
     @staticmethod
     def search_pred(pred, auto_expand=True):
+        # if pred in MWE_ERG_WN_MAPPING:
         if not pred:
             return None
         
@@ -188,14 +189,14 @@ class PredSense():
             cfrom = taginfo.cfrom
             cto = taginfo.cto
             label = taginfo.label
-            pred = Pred.grammarpred(label)
-            ss = PredSense.search_pred(pred, True)
+            # pred = Pred.grammarpred(label)
+            # ss = PredSense.search_pred(pred, True)
+            ss = PredSense.search_pred_string(label, True)
             if ss:
                 label += ' | '.join([PredSense.sinfo_str(x) for x in ss])
             preds.append(TagInfo(cfrom, cto, label))
         tagged = TaggedSentence(mrs.sent.text, preds)
         return str(tagged)
-
 
 def main():
     print("You should NOT see this line. This is a library, not an app")
