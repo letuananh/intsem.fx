@@ -21,6 +21,7 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #THE SOFTWARE.
 
+import delphin
 from delphin.codecs import simplemrs
 from delphin.codecs import dmrx
 from delphin.mrs.components import Pred
@@ -67,8 +68,23 @@ class DMRS:
     def tagged(self):
         return TaggedSentence(self.sent.text, self.preds())
 
+    def ep_to_taginfo(self, ep):
+        nodeid = ep[0]
+        pred   = ep[1]
+        label  = ep[2]
+        args   = ep[3]
+        cfrom  = -1
+        cto    = -1
+        if len(ep) > 4:
+            lnk    = ep[4]
+            cfrom  = lnk.data[0]
+            cto    = lnk.data[1]
+        pred_string = delphin.mrs.components.normalize_pred_string(pred.string)
+        return TagInfo(cfrom, cto, pred_string)
+        
+    
     def preds(self):
-        return [TagInfo(x.cfrom, x.cto, Pred.normalize_pred_string(x.pred.string)) for x in self.mrs().nodes]
+        return [self.ep_to_taginfo(x) for x in self.mrs().eps()]
 
 
 def main():
