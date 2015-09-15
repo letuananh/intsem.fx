@@ -6,6 +6,9 @@ nltk
 data/speckled*
 data/erg*
 data/mwe*
+data/semcor*
+data/gold*
+data/spec*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
