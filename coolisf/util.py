@@ -1,35 +1,72 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2014, Le Tuan Anh <tuananh.ke@gmail.com>
+'''
+Utility functions
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+Latest version can be found at https://github.com/letuananh/intsem.fx
 
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
+References:
+	Python documentation:
+		https://docs.python.org/
+	argparse module:
+		https://docs.python.org/3/howto/argparse.html
+	PEP 257 - Python Docstring Conventions:
+		https://www.python.org/dev/peps/pep-0257/
 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+'''
+
+# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in
+#all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#THE SOFTWARE.
+
+__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
+__copyright__ = "Copyright 2015, intsem.fx"
+__credits__ = [ "Le Tuan Anh" ]
+__license__ = "MIT"
+__version__ = "0.1"
+__maintainer__ = "Le Tuan Anh"
+__email__ = "<tuananh.ke@gmail.com>"
+__status__ = "Prototype"
+
+########################################################################
 
 from delphin.mrs.components import Pred
+
 from chirptext.leutile import StringTool
-from lelesk import WSDResources
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
-from mwemap import MWE_ERG_WN_MAPPING
-from mwemap import MWE_ERG_PRED_LEMMA
+from lelesk import LeLeskWSD # WSDResources
+from lelesk.config import LLConfig
+
+from .mwemap import MWE_ERG_WN_MAPPING
+from .mwemap import MWE_ERG_PRED_LEMMA
+
+########################################################################
+
+
 
 class PredSense():
+    
+    lwsd = LeLeskWSD(LLConfig.WORDNET_30_GLOSS_DB_PATH, LLConfig.WORDNET_30_PATH)
+    
     @staticmethod
     def unpack_pred(pred_text):
         parts = pred_text.split('\t')
@@ -95,7 +132,7 @@ class PredSense():
         if lemma.startswith('not+') or lemma.startswith('the+'):
             potential.add(lemma[4:])
         # add WNL
-        potential.add(WSDResources.singleton(True).wnl.lemmatize(lemma))
+        potential.add(PredSense.lwsd.lemmatize(lemma))
         return potential
 
     singleton_sm = None
@@ -103,7 +140,7 @@ class PredSense():
     @staticmethod
     def search_sense(lemmata, pos):
         if PredSense.singleton_sm is None:
-            PredSense.singleton_sm = WSDResources.singleton(True).wnsql.all_senses()
+            PredSense.singleton_sm = PredSense.lwsd.wn.all_senses()
         sm = PredSense.singleton_sm
 
         for lemma in lemmata:

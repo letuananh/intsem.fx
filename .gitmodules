@@ -1,0 +1,6 @@
+[submodule "modules/chirptext"]
+	path = modules/chirptext
+	url = git@github.com:letuananh/chirptext
+[submodule "modules/lelesk"]
+	path = modules/lelesk
+	url = git@github.com:letuananh/lelesk

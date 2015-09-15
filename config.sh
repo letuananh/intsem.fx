@@ -20,8 +20,15 @@ function link_file {
 	fi
 }
 
-link_folder ~/workspace/pydelphin/delphin delphin
-link_folder ~/workspace/beautifulsoup/bs4-python3 bs4
-link_folder ~/workspace/nltk/nltk nltk
+link_folder `readlink -f ../pydelphin/delphin` delphin
+link_folder `readlink -f ../beautifulsoup/bs4-python3` bs4
+link_folder `readlink -f ../nltk/nltk` nltk
+
+link_folder `readlink -f ./modules/chirptext/chirptext` chirptext
+link_folder `readlink -f ./modules/lelesk/lelesk` lelesk
+
+echo "Configuring lelesk"
+./modules/lelesk/config.sh
+
 link_file ~/workspace/erg/erg.dat data/erg.dat
 git submodule init && git submodule update

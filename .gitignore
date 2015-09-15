@@ -1,14 +1,18 @@
 # intsem.fx
-delphin
 *.*#
-bs4
-nltk
 data/speckled*
 data/erg*
 data/mwe*
 data/semcor*
 data/gold*
 data/spec*
+bs4
+
+chirptext
+delphin
+lelesk
+nltk
+puchikarui
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
