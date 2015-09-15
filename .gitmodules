@@ -1,6 +1,0 @@
-[submodule "lelesk"]
-	path = lelesk
-	url = https://github.com/letuananh/lelesk.git
-[submodule "chirptext"]
-	path = chirptext
-	url = https://github.com/letuananh/chirptext.git

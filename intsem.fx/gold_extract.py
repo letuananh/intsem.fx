@@ -35,7 +35,7 @@ class Sentence:
         self.mrs = mrs
 
 def main():
-    print("Loading Gold profile ...")        
+    print("Loading Gold profile ...")
     prof = itsdb.ItsdbProfile(GOLD_PROFILE)
     tbl_item = prof.read_table('item')
     sentences = dict()

@@ -45,7 +45,7 @@ INPUT_MRS = 'data/spec-erg.txt'
 SKIPPED_SENTENCE = 'data/speckled.skipped'
 OUTPUT_ISF = 'data/spec-isf.xml'
 PRED_DEBUG_DUMP = 'data/speckled_synset.isf'
-GOLD_PROFILE = 'data/speckled_synset.human'
+GOLD_TAGS = 'data/speckled_synset.human'
 
 prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
 
@@ -61,7 +61,7 @@ def main():
     WSDResources.singleton(True)
     
     print("Reading gold profile")
-    golddata = read_data(GOLD_PROFILE)
+    golddata = read_data(GOLD_TAGS)
     sid_gold_map = dd(list)
     for datum in golddata:
         sid_gold_map[datum[0]].append(datum)
