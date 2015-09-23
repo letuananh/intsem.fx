@@ -49,7 +49,6 @@ __status__ = "Prototype"
 
 import os
 from collections import namedtuple
-
 from delphin import itsdb
 
 ########################################################################
