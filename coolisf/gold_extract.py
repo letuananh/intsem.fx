@@ -70,7 +70,7 @@ def main():
 
     t.start("Loading raw text from [%s] ..." % (RAW_TEXT,))
     with open(RAW_TEXT, 'r') as rawtext:
-        sentences = rawtext.read_lines()
+        sentences = rawtext.readlines()
     print("Number of sentences: %s" % len(sentences))
     t.end("Raw text has been loaded.")
     
