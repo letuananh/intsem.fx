@@ -49,7 +49,6 @@ __status__ = "Prototype"
 
 import os
 from collections import namedtuple
-
 from delphin import itsdb
 
 from chirptext.leutile import Counter, Timer, FileTool
