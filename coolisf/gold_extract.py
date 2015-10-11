@@ -52,10 +52,13 @@ from collections import namedtuple
 
 from delphin import itsdb
 
+from chirptext.leutile import Counter, Timer, FileTool
+
 ########################################################################
 
-GOLD_PROFILE = os.path.expanduser('data/gold')
-OUTPUT_FILE = os.path.expanduser('data/gold.out.txt')
+GOLD_PROFILE = FileTool.abspath('./data/gold')
+OUTPUT_FILE  = FileTool.abspath('./data/gold.out.txt')
+RAW_TEXT     = FileTool.abspath('./data/spec-raw.txt')
 
 class Sentence:
     def __init__(self, sid, text, mrs=None):
@@ -64,8 +67,18 @@ class Sentence:
         self.mrs = mrs
 
 def main():
-    print("Loading Gold profile ...")
+    t = Timer()
+
+    t.start("Loading raw text from [%s] ..." % (RAW_TEXT,))
+    with open(RAW_TEXT, 'r') as rawtext:
+        sentences = rawtext.read_lines()
+    print("Number of sentences: %s" % len(sentences))
+    t.end("Raw text has been loaded.")
+    
+    t.start("Loading Gold Profile from [%s] ..." % (GOLD_PROFILE,))
     prof = itsdb.ItsdbProfile(GOLD_PROFILE)
+
+    # Read all items
     tbl_item = prof.read_table('item')
     sentences = dict()
     for row in tbl_item:
@@ -73,6 +86,8 @@ def main():
         raw_text = row.get('i-input')
         sentences[iid] = Sentence(iid, raw_text)
         # print('%s: %s ' % (iid, raw_text))
+
+    # Read all parse results
     tbl_result = prof.read_table('result')
     for row in tbl_result:
         pid = row.get('parse-id')
@@ -81,10 +96,25 @@ def main():
             print('pid %s cannot be found' % pid)
         else:
             sentences[pid].mrs = mrs
-#         print('%s: %s ' % (pid, mrs))
+    t.end('Gold profile has been loaded.')
+
+    # Write found sentences and parse results to a text file
+    t.start("Writing found sentences and parse results to [%s] ..." % (OUTPUT_FILE))
     with open(OUTPUT_FILE, 'w') as outfile:
         for sent in sentences.values():
             outfile.write('%s\t%s\t%s\n' % (sent.sid, sent.text, sent.mrs))
+    t.end("Data has been written to file.")
+    
+    # Verification
+    t.start("Verifying file [%s] ..." % (OUTPUT_FILE,))
+    with open(OUTPUT_FILE, 'r') as testfile:
+        for line in testfile:
+            parts = line.split('\t')
+            if len(parts) != 3:
+                print("WARNING: INVALID LINE")
+    t.end("Output file has been verified.")
 
+    print("All done!")
+    
 if __name__ == "__main__":
     main()

@@ -4,3 +4,6 @@
 [submodule "modules/lelesk"]
 	path = modules/lelesk
 	url = git@github.com:letuananh/lelesk
+[submodule "modules/puchikarui"]
+	path = modules/puchikarui
+	url = git@github.com:letuananh/puchikarui
