@@ -26,9 +26,11 @@ link_folder `readlink -f ../nltk/nltk` nltk
 
 link_folder `readlink -f ./modules/chirptext/chirptext` chirptext
 link_folder `readlink -f ./modules/lelesk/lelesk` lelesk
+link_folder `readlink -f ./modules/demophin` demophin
 
 echo "Configuring lelesk"
 ./modules/lelesk/config.sh
 
-link_file ~/workspace/erg/erg.dat data/erg.dat
+link_file `readlink -f ~/workspace/erg/erg.dat` data/erg.dat
+
 git submodule init && git submodule update
