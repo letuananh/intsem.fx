@@ -7,3 +7,6 @@
 [submodule "modules/demophin"]
 	path = modules/demophin
 	url = git@github.com:letuananh/demophin
+[submodule "modules/puchikarui"]
+	path = modules/puchikarui
+	url = git@github.com:letuananh/puchikarui
