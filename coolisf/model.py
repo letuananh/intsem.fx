@@ -63,6 +63,7 @@ class Sentence:
         self.text = StringTool.strip(text)
         self.sid = sid
         self.mrs = list()
+        self.raw_mrs = list()
 
     def add(self, mrs):
         self.mrs.append(DMRS(StringTool.strip(mrs), self))

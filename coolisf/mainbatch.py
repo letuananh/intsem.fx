@@ -59,10 +59,9 @@ from delphin.mrs.components import Pred
 from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.texttaglib import writelines
-from lelesk import WSDResources
 
-from .model import Sentence
-from .util import PredSense
+from coolisf.model import Sentence
+from coolisf.util import PredSense
 
 ##########################################
 # CONFIGURATION
@@ -70,82 +69,12 @@ from .util import PredSense
 GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
 INPUT_TXT = 'data/speckled.txt'
-INPUT_MRS = 'data/spec-erg.txt'
-SKIPPED_SENTENCE = 'data/speckled.skipped'
+INPUT_MRS = 'data/gold.out.txt'
+# SKIPPED_SENTENCE = 'data/speckled.skipped'
 OUTPUT_ISF = 'data/spec-isf.xml'
 PRED_DEBUG_DUMP = 'data/speckled_synset.isf'
-GOLD_TAGS = 'data/speckled_synset.human'
-
-prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
-
-def read_data(file_path):
-    data = []
-    with open(file_path, 'r') as input_file:
-        for line in input_file:
-            data.append(tuple(line.split()))
-    return data
-
-def main():
-    print("Loading WordNet ...")
-    WSDResources.singleton(True)
-    
-    print("Reading gold profile")
-    golddata = read_data(GOLD_TAGS)
-    sid_gold_map = dd(list)
-    for datum in golddata:
-        sid_gold_map[datum[0]].append(datum)
-    print("Gold map: %s" % [len(sid_gold_map)])
-    print("Reading raw data ...")
-    # interactive_shell()
-    c = Counter()
-    items = []
-    sentences = []
-    skipped = []
-    with open(INPUT_MRS, 'r') as input_mrs:
-        current_sid = 0
-        while True:
-            current_sid += 1
-            line = input_mrs.readline()
-            if line.startswith('SENT'):
-                mrs_line = input_mrs.readline()
-                items.append([line, mrs_line])
-                s = Sentence(line[5:], sid=current_sid)
-                s.add(mrs_line)
-                sentences.append(s)
-                input_mrs.readline()
-                input_mrs.readline()
-                c.count('sent')
-                c.count('total')
-            elif line.startswith('SKIP'):
-                skipped.append(line[5:].strip())
-                items.append([line])
-                input_mrs.readline()
-                input_mrs.readline()
-                c.count('skip')
-                c.count('total')
-            else:
-                break
-    c.summarise() 
-    writelines(skipped, SKIPPED_SENTENCE)
-    
-    #preds = sentences[0].mrs[0].preds()
-    #for pred in preds:
-    #    print(PredSense.search_pred_string(pred.label, False))
-    #exit()
-    
-    # Process data
-    print("Generating XML data ...")
-    isf_node = ET.Element('rootisf')
-    isf_node.set('version', '0.1')
-    isf_node.set('lang', 'eng')
-    # Add license information
-    header_node = ET.SubElement(isf_node, 'headerisf')
-    filedesc_node = ET.SubElement(header_node, 'description')
-    filedesc_node.set("title", "The Adventure of the Speckled Band")
-    filedesc_node.set("author", "Arthur Conan Doyle")
-    filedesc_node.set("filename", "spec-isf.xml")
-    license_node = ET.SubElement(filedesc_node, "license")
-    license_node.text = """LICENSE: Attribution 3.0 Unported (CC BY 3.0)
+GOLD_TAGS = 'data/speckled_tags_gold.txt'
+LICENSE_TEXT = """LICENSE: Attribution 3.0 Unported (CC BY 3.0)
 
 You are free to:
 
@@ -180,6 +109,89 @@ material.
 Above is a human-readable summary of (and not a substitute for) 
 the license which is available at:
 http://creativecommons.org/licenses/by/3.0/legalcode"""
+
+prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
+
+def read_data(file_path):
+    data = []
+    with open(file_path, 'r') as input_file:
+        for line in input_file:
+            data.append(tuple(line.split()))
+    return data
+
+def pred_to_key(pred):
+    pred_obj = Pred.grammarpred(pred.label)
+    return '-'.join((str(pred.cfrom), str(pred.cto), str(pred_obj.pos), str(pred_obj.lemma), str(pred_obj.sense)))
+
+def read_ace_output(ace_output_file):
+    print("Reading MRS data ...")
+    c = Counter()
+    items = []
+    sentences = []
+    skipped = []
+    with open(ace_output_file, 'r') as input_mrs:
+        current_sid = 0
+        while True:
+            current_sid += 1
+            line = input_mrs.readline()
+            if line.startswith('SENT'):
+                mrs_line = input_mrs.readline()
+                items.append([line, mrs_line])
+                s = Sentence(line[5:], sid=current_sid)
+                s.add(mrs_line)
+                sentences.append(s)
+                input_mrs.readline()
+                input_mrs.readline()
+                c.count('sent')
+                c.count('total')
+            elif line.startswith('SKIP'):
+                skipped.append(line[5:].strip())
+                items.append([line])
+                input_mrs.readline()
+                input_mrs.readline()
+                c.count('skip')
+                c.count('total')
+            else:
+                break
+    c.summarise() 
+    writelines(skipped, SKIPPED_SENTENCE)
+    return sentences
+
+def main():
+    # Read human annotations from NTU-MC
+    print("Reading gold profile")
+    golddata = read_data(GOLD_TAGS)
+    sid_gold_map = dd(list)
+    for datum in golddata:
+        sid_gold_map[datum[0]].append(datum)
+    print("Gold map: %s" % [len(sid_gold_map)])
+    
+    # read_ace_output()
+    # Read gold profile from ITSDB (ERG-TRUNK)
+    sentences = []
+    with open(INPUT_MRS) as input_mrs:
+        lines = input_mrs.readlines()
+        for line in lines:
+            (ntuid, tsdbid, text, mrs) = line.split('\t')
+            sent = Sentence(text=text, sid=int(ntuid))
+            if mrs and len(mrs.strip()) > 0:
+                sent.add(mrs)
+                sent.raw_mrs.append(mrs)
+            sentences.append(sent)
+        
+    # Process data
+    print("Generating XML data ...")
+    isf_node = ET.Element('rootisf')
+    isf_node.set('version', '0.1')
+    isf_node.set('lang', 'eng')
+    # Add license information
+    header_node = ET.SubElement(isf_node, 'headerisf')
+    filedesc_node = ET.SubElement(header_node, 'description')
+    filedesc_node.set("title", "The Adventure of the Speckled Band")
+    filedesc_node.set("author", "Arthur Conan Doyle")
+    filedesc_node.set("filename", "spec-isf.xml")
+    license_node = ET.SubElement(filedesc_node, "license")
+    license_node.text = LICENSE_TEXT
     
     # Add document nodes
     doc_node = ET.SubElement(isf_node, 'document')
@@ -195,6 +207,8 @@ http://creativecommons.org/licenses/by/3.0/legalcode"""
         text_node = ET.SubElement(sent_node, 'text')
         text_node.text = sent.text
         dmrses_node = ET.SubElement(sent_node, 'dmrses')
+        if len(sent.mrs) == 0:
+            continue
         dmrs_xml = ET.fromstring(sent.mrs[0].dmrs_xml(False))
         dmrses = dmrs_xml.findall('dmrs')
         for dmrs in dmrses:
@@ -267,11 +281,6 @@ http://creativecommons.org/licenses/by/3.0/legalcode"""
         print("Saving XML data to file ...")
         output_isf.write(xml_string)
     print("All done!")
-
-def pred_to_key(pred):
-    pred_obj = Pred.grammarpred(pred.label)
-    return '-'.join((str(pred.cfrom), str(pred.cto), str(pred_obj.pos), str(pred_obj.lemma), str(pred_obj.sense)))
-    
 
 if __name__ == "__main__":
     main()
