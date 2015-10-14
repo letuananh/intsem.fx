@@ -49,6 +49,7 @@ __status__ = "Prototype"
 ########################################################################
 
 import os
+import datetime
 from collections import defaultdict as dd
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
@@ -190,8 +191,51 @@ def main():
     filedesc_node.set("title", "The Adventure of the Speckled Band")
     filedesc_node.set("author", "Arthur Conan Doyle")
     filedesc_node.set("filename", "spec-isf.xml")
+    filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
+    # License text
     license_node = ET.SubElement(filedesc_node, "license")
     license_node.text = LICENSE_TEXT
+    # Processors
+    procs_node = ET.SubElement(header_node, "linguisticProcessors")
+    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node.set("name", "coolisf")
+    proc_node.set("description", "Python implementation of Integrated Semantic Framework")
+    proc_node.set("version", "pre 0.1")
+    proc_node.set("url", "https://github.com/letuananh/intsem.fx")
+    proc_node.set("timestamp", datetime.datetime.now().isoformat())
+    
+    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node.set("name", "ACE")
+    proc_node.set("description", "the Answer Constraint Engine (Delph-in)")
+    proc_node.set("version", "0.9.17")
+    proc_node.set("url", "http://moin.delph-in.net/AceTop")
+    proc_node.set("timestamp", datetime.datetime.now().isoformat())
+    
+    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node.set("name", "NLTK")
+    proc_node.set("description", "Natural Language Toolkit for Python")
+    proc_node.set("version", "3.0.4")
+    proc_node.set("url", "http://www.nltk.org/")
+    proc_node.set("timestamp", datetime.datetime.now().isoformat())
+    
+    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node.set("name", "pyDelphin")
+    proc_node.set("description", "Python libraries for DELPH-IN")
+    proc_node.set("version", "0.3")
+    proc_node.set("url", "https://github.com/delph-in/pydelphin")
+    proc_node.set("timestamp", datetime.datetime.now().isoformat())
+    
+    # Contributors
+    contributors_node = ET.SubElement(header_node, "contributors")
+    contributor_node = ET.SubElement(contributors_node, "contributor")
+    contributor_node.set("name", "Le Tuan Anh")
+    contributor_node.set("email", "tuananh.ke@gmail.com")
+    contributor_node = ET.SubElement(contributors_node, "contributor")
+    contributor_node.set("name", "Francis Bond")
+    contributor_node.set("email", "fcbond@gmail.com")
+    contributor_node = ET.SubElement(contributors_node, "contributor")
+    contributor_node.set("name", "Dan Flickinger")
+    contributor_node.set("email", "danf@stanford.edu")
     
     # Add document nodes
     doc_node = ET.SubElement(isf_node, 'document')
