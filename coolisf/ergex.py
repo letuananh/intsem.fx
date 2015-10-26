@@ -72,7 +72,7 @@ MWE_NOTFOUND = os.path.expanduser('data/mwe_notfound.txt')
 MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
 
-def main():
+def extract_mwe():
     print("Loading WordNet ...")
     all_senses = WSDResources.singleton(True).wnsql.all_senses()
     
@@ -133,5 +133,8 @@ def main():
     print("All done")
     pass
 
+def main():
+    extract_mwe()
+    
 if __name__ == "__main__":
     main()
