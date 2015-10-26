@@ -84,49 +84,17 @@ INPUT_TXT = 'data/speckled.txt'
 INPUT_MRS = 'data/gold.out.txt'
 # SKIPPED_SENTENCE = 'data/speckled.skipped'
 OUTPUT_ISF = 'data/spec-isf.xml'
-PRED_DEBUG_DUMP = 'data/speckled_synset.isf'
+PRED_DEBUG_DUMP = 'data/speckled_synset_debug.txt'
 GOLD_TAGS = 'data/speckled_tags_gold.txt'
-LICENSE_TEXT = """LICENSE: Attribution 3.0 Unported (CC BY 3.0)
-
-You are free to:
-
-+ Share — copy and redistribute the material in any medium or format
-+ Adapt — remix, transform, and build upon the material
-for any purpose, even commercially.
-
-The licensor cannot revoke these freedoms as long as you follow the 
-license terms.
-
-Under the following terms:
-
-+ Attribution — You must give appropriate credit, provide a link to the 
-license, and indicate if changes were made. You may do so in any 
-reasonable manner, but not in any way that suggests the licensor 
-endorses you or your use.
-
-+ No additional restrictions — You may not apply legal terms or 
-technological measures that legally restrict others from doing anything 
-the license permits.
-
-Notices:
-
-+ You do not have to comply with the license for elements of the 
-material in the public domain or where your use is permitted by an 
-applicable exception or limitation.
-+ No warranties are given. The license may not give you all of the 
-permissions necessary for your intended use. For example, other rights 
-such as publicity, privacy, or moral rights may limit how you use the 
-material.
-
-Above is a human-readable summary of (and not a substitute for) 
-the license which is available at:
-http://creativecommons.org/licenses/by/3.0/legalcode"""
+SOURCE_CODE_DIR = os.path.dirname(os.path.realpath(__file__))
+LICENSE_TEMPLATE_LOC = os.path.join(SOURCE_CODE_DIR, 'CCBY30_template.txt')
+LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
 prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
 
 #-----------------------------------------------------------------------
 
-class Sentence:
+class TSDBSentence:
     def __init__(self, sid, text, mrs=''):
         self.sid = sid
         self.ntuid = None
@@ -144,7 +112,7 @@ def extract_tsdb_gold():
         lines = rawtext.readlines()
         for line in lines:
             parts = line.strip().split('\t')
-            raw_sentences.append(Sentence(parts[0], parts[1]))
+            raw_sentences.append(TSDBSentence(parts[0], parts[1]))
     print("Number of raw sentences: %s" % len(raw_sentences))
     t.end("Raw text has been loaded.")
     
@@ -159,7 +127,7 @@ def extract_tsdb_gold():
         for row in tbl_item:
             iid = row.get('i-id')
             raw_text = row.get('i-input').strip()
-            sentences_map[iid] = Sentence(iid, raw_text)
+            sentences_map[iid] = TSDBSentence(iid, raw_text)
             gold_sentences.append(sentences_map[iid])
             gold_raw.write('%s\n' % raw_text)
             # print('%s: %s ' % (iid, raw_text))
@@ -341,9 +309,8 @@ def generate_gold_profile():
     preds_debug = []
     
     cgold = Counter()
-    
     for sent in sentences:
-        #print("Processing %s" % (sent.sid + 9999,))
+        #print("Processing %s" % (sent.sid,))
         sent_node = ET.SubElement(doc_node, 'sentence')
         sent_node.set('sid', str(sent.sid))
         text_node = ET.SubElement(sent_node, 'text')
@@ -368,7 +335,7 @@ def generate_gold_profile():
                 #if candidates[0].lemma == 'very':
                  #   print(candidates)
                   #  exit()
-                preds_debug.append((sent.sid + 9999, pred.cfrom, pred.cto, str(candidates[0].sid)[1:]+'-'+candidates[0].pos, candidates[0].lemma))
+                preds_debug.append((sent.sid, pred.cfrom, pred.cto, str(candidates[0].sid)[1:]+'-'+candidates[0].pos, candidates[0].lemma))
                 best_candidate_map[pred_to_key(pred)] = candidates[0]
                 sense_node = ET.SubElement(si_node, 'pred')
                 #sense_node.set('key', pred_to_key(pred))
@@ -378,20 +345,27 @@ def generate_gold_profile():
                 for candidate in candidates:
                     candidate_node = ET.SubElement(sense_node, 'sense')
                     candidate_node.set('pos', str(candidate.pos))
-                    candidate_node.set('synsetid', str(candidate.sid))
-                    candidate_node.set('sensekey', str(candidate.sk))
+                    candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                    # candidate_node.set('sensekey', str(candidate.sk)) # [2015-10-26] FCB: Remove sensekey
                     candidate_node.set('lemma', str(candidate.lemma))
-                    candidate_node.set('tagcount', str(candidate.tagcount))
+                    candidate_node.set('score', str(candidate.tagcount)) # [2015-10-26] FCB: tagcount should be score
         #print(best_candidate_map)
         # Storing best candidates & gold sense
         for dmrs in dmrses_node:
             for node in dmrs.findall('node'):
                 # insert gold sense
-                goldtags = sid_gold_map[str(sent.sid + 9999)]
-                if goldtags:
+                sid_key = str(sent.sid)
+                goldtags = sid_gold_map[sid_key]
+                if goldtags:                    
+                    # print("There are gold tags")
                     for tag in goldtags:
                         # print(' '.join([str(x) in [tag[1], tag[2], node.get('cfrom'), node.get('cto')]]))
-                        if int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
+                        #print("node.cfrom = %s" % (node.get('cfrom')))
+                        #print("node.cto = %s" % (node.get('cto')))
+                        #print("tag[1] = %s" % (tag[1]))
+                        #print("tag[2] = %s" % (tag[2]))
+                        #print("tag    = %s" % (tag,))
+                        if node.get('cfrom') and node.get('cto') and int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
                             gold_node = ET.SubElement(node, 'sensegold')
                             gold_node.set('synset', tag[3])
                             gold_node.set('clemma', tag[4])
@@ -406,10 +380,10 @@ def generate_gold_profile():
                         candidate = best_candidate_map[key]
                         candidate_node = ET.SubElement(node, 'sense')
                         candidate_node.set('pos', str(candidate.pos))
-                        candidate_node.set('synsetid', str(candidate.sid))
-                        candidate_node.set('sensekey', str(candidate.sk))
+                        candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                        # candidate_node.set('sensekey', str(candidate.sk)) # [2015-10-26] FCB: remove sensekey
                         candidate_node.set('lemma', str(candidate.lemma))
-                        candidate_node.set('tagcount', str(candidate.tagcount))
+                        candidate_node.set('score', str(candidate.tagcount))
                 #else:
                     #print('%s is not good' % (realpred,))
     
