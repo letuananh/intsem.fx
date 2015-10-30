@@ -51,17 +51,23 @@ __status__ = "Prototype"
 import os
 import codecs
 import re
+from collections import namedtuple
+from collections import defaultdict
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
+import csv
 
 from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
 from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
+from chirptext.leutile import FileTool
+from chirptext.leutile import TextReport
 from chirptext.texttaglib import writelines
-from lelesk import WSDResources
-from lelesk import WSDResources
+
+from lelesk import LeLeskWSD # WSDResources
+from lelesk.config import LLConfig
 
 from .model import Sentence
 from .util import PredSense
@@ -71,6 +77,84 @@ from .util import PredSense
 MWE_NOTFOUND = os.path.expanduser('data/mwe_notfound.txt')
 MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
+LEXDB = os.path.expanduser('data/lexdb.rev')
+ERG_PRED_FILE = FileTool.abspath('data/ergpreds.py')
+ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'),'r').read()
+
+ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
+
+class ERGLex:
+    
+    def __init__(self, name, userid, modstamp, dead, lextype, orthography, keyrel, altkey, alt2key, keytag, altkeytag, compkey, ocompkey, pronunciation, complete, semclasses, preferences, 
+                classifier, selectrest, jlink, comments, exemplars, usages, lang, country, dialect, domains, genres, register, confidence, source):
+        # user defined
+        # LexDbFieldMappings >>> HOW TO create initial .fld file (first 4 columns are name, userid, modstamp, dead)
+        self.name          = name
+        self.userid        = userid
+        self.modstamp      = modstamp
+        self.dead          = (False if dead == 'f' else True)
+        # the rest in lexdb.fld
+        self.lextype       = lextype
+        self.orthography   = orthography
+        self.keyrel        = keyrel
+        self.altkey        = altkey
+        self.alt2key       = alt2key
+        self.keytag        = keytag
+        self.altkeytag     = altkeytag
+        self.compkey       = compkey
+        self.ocompkey      = ocompkey
+        self.pronunciation = pronunciation
+        self.complete      = complete
+        self.semclasses    = semclasses
+        self.preferences   = preferences
+        self.classifier    = classifier
+        self.selectrest    = selectrest
+        self.jlink         = jlink
+        self.comments      = comments
+        self.exemplars     = exemplars
+        self.usages        = usages 
+        self.lang          = lang 
+        self.country       = country
+        self.dialect       = dialect
+        self.domains       = domains
+        self.genres        = genres
+        self.register      = register
+        self.confidence    = confidence
+        self.source        = source
+        
+    def __str__(self):
+        return "name = %s | userid = %s | modstamp = %s | dead = %s | lextype = %s | orthography = %s | keyrel = %s | altkey = %s | alt2key = %s | keytag = %s | altkeytag = %s | compkey = %s | ocompkey = %s | pronunciation = %s | complete = %s | semclasses = %s | preferences = %s | classifier = %s | selectrest = %s | jlink = %s | comments = %s | exemplars = %s | usages = %s | lang = %s | country = %s | dialect = %s | domains = %s | genres = %s | register = %s | confidence = %s | source = %s" % (self.name, self.userid, self.modstamp, self.dead, self.lextype, self.orthography, self.keyrel, self.altkey, self.alt2key, self.keytag, self.altkeytag, self.compkey, self.ocompkey, self.pronunciation, self.complete, self.semclasses, self.preferences, self.classifier, self.selectrest, self.jlink, self.comments, self.exemplars, self.usages, self.lang, self.country, self.dialect, self.domains, self.genres, self.register, self.confidence, self.source)
+        
+def to_sense_map(k,v):
+    return '"%s" : [ %s ]' % (k,", ".join([ "SenseInfo('%s-%s', '%s', %s)" % (x.sid, x.pos, x.sk.replace("'", "\\'"), x.tagcount) for x in v ]))
+
+def extract_all_rel():
+    # report header
+    report = TextReport(ERG_PRED_FILE)
+    senses_map = defaultdict(list)
+    c = Counter()
+    with open(LEXDB, 'r') as lexdb:
+        rows = list(csv.reader(lexdb, delimiter='\t'))
+        for row in rows:
+            lex = ERGLex(*row)
+            c.count('Entry')
+            if lex.keyrel != '\\N':
+                if not lex.keyrel.endswith('_rel'):
+                    c.count('WARNING')
+                    print(lex.keyrel)
+                else:
+                    senses = PredSense.search_pred_string(lex.keyrel)
+                    senses_map[lex.keyrel] += senses
+                    # print("%s: %s" % (lex.keyrel, senses))
+
+    report.print(ERG_PRED_FILE_TEMPLATE)
+    report.print("ERG_PRED_MAP = {")
+    senses_list = [ to_sense_map(k,v) for k,v in senses_map.items() ] 
+    report.print(",\n".join(senses_list))
+    report.print("}")
+    c.summarise()
+    report.close()
+    pass
 
 def extract_mwe():
     print("Loading WordNet ...")
@@ -134,7 +218,8 @@ def extract_mwe():
     pass
 
 def main():
-    extract_mwe()
+    extract_all_rel()
+    # extract_mwe()
     
 if __name__ == "__main__":
     main()
