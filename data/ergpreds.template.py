@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Mapping among MWE, lemma form and sense candidates
+ERG pred - WordNet sense mapping
 
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
