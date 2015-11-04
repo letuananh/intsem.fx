@@ -64,6 +64,7 @@ from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.leutile import FileTool
 from chirptext.leutile import TextReport
+from chirptext.leutile import Timer
 from chirptext.texttaglib import writelines
 
 from lelesk import LeLeskWSD # WSDResources
@@ -130,9 +131,12 @@ def to_sense_map(k,v):
 
 def extract_all_rel():
     # report header
+    t = Timer()
     report = TextReport(ERG_PRED_FILE)
     senses_map = defaultdict(list)
     c = Counter()
+
+    t.start("Extracting preds from ERG")
     with open(LEXDB, 'r') as lexdb:
         rows = list(csv.reader(lexdb, delimiter='\t'))
         for row in rows:
@@ -146,7 +150,9 @@ def extract_all_rel():
                     senses = PredSense.search_pred_string(lex.keyrel)
                     senses_map[lex.keyrel] += senses
                     # print("%s: %s" % (lex.keyrel, senses))
+    t.stop()
 
+    t.start("Saving predlinks to file")
     report.print(ERG_PRED_FILE_TEMPLATE)
     report.print("ERG_PRED_MAP = {")
     senses_list = [ to_sense_map(k,v) for k,v in senses_map.items() ] 
@@ -154,6 +160,7 @@ def extract_all_rel():
     report.print("}")
     c.summarise()
     report.close()
+    t.stop()
     pass
 
 def extract_mwe():
