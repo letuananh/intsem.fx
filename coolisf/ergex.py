@@ -139,6 +139,14 @@ def get_erg_lex():
     return [ ERGLex(*row) for row in rows ]
 
 def dev():
+    # TODO: Something is wrong with _pass_v_along ...
+    keyrels = [ "_give_v_off_rel", "give_v_off_rel", "_pass_v_along_rel", "pass_v_along_rel" ]
+    for kr in keyrels:
+        senses = PredSense.search_pred_string(kr)
+        print("%s => %s" % (kr, senses))
+    print("-" * 20)
+    # return
+
     outfiles = FileHub('.txt')
     lexs  = get_erg_lex()
     c = Counter()
@@ -170,8 +178,7 @@ def dev():
             c.count("UNKNOWN")
     outfiles.close()
     c.summarise()
-
-    print("Done!")
+    print("-" * 20)
 
 def extract_all_rel():
     # report header
@@ -194,7 +201,8 @@ def extract_all_rel():
             else:
                 senses = PredSense.search_pred_string(lex.keyrel)
                 senses_map[lex.keyrel] += senses
-                # print("%s: %s" % (lex.keyrel, senses))
+                # if lex.keyrel == '_pass_v_along_rel':
+                #    print("%s => %s" % (lex.keyrel, senses))
     t.end()
 
     t.start("Saving predlinks to file")
@@ -271,7 +279,7 @@ def extract_mwe():
 
 def main():
     dev()
-    # extract_all_rel()
+    extract_all_rel()
     # extract_mwe()
     
 if __name__ == "__main__":
