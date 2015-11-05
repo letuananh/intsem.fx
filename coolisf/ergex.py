@@ -143,9 +143,10 @@ def dev():
     keyrels = [ "_give_v_off_rel", "give_v_off_rel", "_pass_v_along_rel", "pass_v_along_rel" ]
     for kr in keyrels:
         senses = PredSense.search_pred_string(kr)
-        print("%s => %s" % (kr, senses))
+        delphin_pred = Pred.grammarpred(kr)
+        print("%s (delphin=%s) => %s" % (kr, delphin_pred.lemma, senses))
     print("-" * 20)
-    # return
+    return
 
     outfiles = FileHub('.txt')
     lexs  = get_erg_lex()
