@@ -64,6 +64,7 @@ from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.leutile import FileTool
 from chirptext.leutile import TextReport
+from chirptext.leutile import FileHub
 from chirptext.leutile import Timer
 from chirptext.texttaglib import writelines
 
@@ -129,6 +130,49 @@ class ERGLex:
 def to_sense_map(k,v):
     return '"%s" : [ %s ]' % (k,", ".join([ "SenseInfo('%s-%s', '%s', %s)" % (x.sid, x.pos, x.sk.replace("'", "\\'"), x.tagcount) for x in v ]))
 
+def get_erg_lex():
+    senses_map = defaultdict(list)
+    c = Counter()
+
+    with open(LEXDB, 'r') as lexdb:
+        rows = list(csv.reader(lexdb, delimiter='\t'))
+    return [ ERGLex(*row) for row in rows ]
+
+def dev():
+    outfiles = FileHub('.txt')
+    lexs  = get_erg_lex()
+    c = Counter()
+    lpsr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\\/\$]+_[a-zA-Z]+_[0-9]+_rel") # _dog_n_1_rel
+    lpr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_rel") # _dog_n_rel
+    lr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\]+_rel") # person_rel
+    llr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z\-\+\\]+_rel") # comp_not+so_rel
+    lplr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_[a-zA-Z0-9\+\-]+_rel") # _abate_v_cause_rel
+    for lex in lexs:
+        if lex.keyrel == '\\N':
+            c.count("\\N")
+        elif lpsr_pattern.match(lex.keyrel):
+            outfiles.writeline('data/ergpreds_lpsr', lex.keyrel)
+            c.count("_lemma_pos_senseno_rel")
+        elif lpr_pattern.match(lex.keyrel):
+            outfiles.writeline('data/ergpreds_lpr', lex.keyrel)
+            c.count("_lemma_pos_rel")
+        elif lr_pattern.match(lex.keyrel):
+            outfiles.writeline('data/ergpreds_lr', lex.keyrel)
+            c.count("_lemma_rel")
+        elif llr_pattern.match(lex.keyrel):
+            outfiles.writeline('data/ergpreds_llr', lex.keyrel)
+            c.count("_lemma_suplem_rel")
+        elif lplr_pattern.match(lex.keyrel):
+            outfiles.writeline('data/ergpreds_lplr', lex.keyrel)
+            c.count("_lemma_pos_suplem_rel")
+        else:
+            outfiles.writeline('data/ergpreds_unknown', lex.keyrel)
+            c.count("UNKNOWN")
+    outfiles.close()
+    c.summarise()
+
+    print("Done!")
+
 def extract_all_rel():
     # report header
     t = Timer()
@@ -137,20 +181,21 @@ def extract_all_rel():
     c = Counter()
 
     t.start("Extracting preds from ERG")
-    with open(LEXDB, 'r') as lexdb:
-        rows = list(csv.reader(lexdb, delimiter='\t'))
-        for row in rows:
-            lex = ERGLex(*row)
-            c.count('Entry')
-            if lex.keyrel != '\\N':
-                if not lex.keyrel.endswith('_rel'):
-                    c.count('WARNING')
-                    print(lex.keyrel)
-                else:
-                    senses = PredSense.search_pred_string(lex.keyrel)
-                    senses_map[lex.keyrel] += senses
-                    # print("%s: %s" % (lex.keyrel, senses))
-    t.stop()
+    lex_entries = get_erg_lex()
+    t.end()
+
+    t.start("Mapping those to wordnet senses")
+    for lex in lex_entries:
+        c.count('Entry')
+        if lex.keyrel != '\\N':
+            if not lex.keyrel.endswith('_rel'):
+                c.count('WARNING')
+                print(lex.keyrel)
+            else:
+                senses = PredSense.search_pred_string(lex.keyrel)
+                senses_map[lex.keyrel] += senses
+                # print("%s: %s" % (lex.keyrel, senses))
+    t.end()
 
     t.start("Saving predlinks to file")
     report.print(ERG_PRED_FILE_TEMPLATE)
@@ -160,7 +205,7 @@ def extract_all_rel():
     report.print("}")
     c.summarise()
     report.close()
-    t.stop()
+    t.end("Mapping info has been written to %s" % (ERG_PRED_FILE,))
     pass
 
 def extract_mwe():
@@ -225,7 +270,8 @@ def extract_mwe():
     pass
 
 def main():
-    extract_all_rel()
+    dev()
+    # extract_all_rel()
     # extract_mwe()
     
 if __name__ == "__main__":
