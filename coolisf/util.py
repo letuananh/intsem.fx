@@ -57,7 +57,6 @@ from chirptext.texttaglib import TaggedSentence
 from lelesk import LeLeskWSD # WSDResources
 from lelesk.config import LLConfig
 
-from .mwemap import MWE_ERG_WN_MAPPING
 from .mwemap import MWE_ERG_PRED_LEMMA
 
 ########################################################################
@@ -172,7 +171,6 @@ class PredSense():
 
     @staticmethod
     def search_pred(pred, auto_expand=True):
-        # if pred in MWE_ERG_WN_MAPPING:
         if not pred:
             return None
         
