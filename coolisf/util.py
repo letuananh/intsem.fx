@@ -51,6 +51,7 @@ __status__ = "Prototype"
 from delphin.mrs.components import Pred
 
 from chirptext.leutile import StringTool
+from chirptext.leutile import jilog
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
 from lelesk import LeLeskWSD # WSDResources
@@ -139,6 +140,7 @@ class PredSense():
 
     @staticmethod
     def search_sense(lemmata, pos):
+        jilog("Searching for %s (pos=%s)" % (lemmata, pos))
         if PredSense.singleton_sm is None:
             PredSense.singleton_sm = PredSense.lwsd.wn.all_senses()
         sm = PredSense.singleton_sm
@@ -151,7 +153,13 @@ class PredSense():
         return []
 
     # alias
-    def search_pred_string(pred_str,extend_lemma=True): 
+    def search_pred_string(pred_str,extend_lemma=True):
+        if pred_str is None:
+            return []
+        
+        if pred_str.startswith("_"):
+            pred_str = pred_str[1:]
+        
         if pred_str in MWE_ERG_PRED_LEMMA:
             pred = Pred.grammarpred(pred_str)
             ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos)
