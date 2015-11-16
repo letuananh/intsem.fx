@@ -139,7 +139,6 @@ class PredSense():
 
     @staticmethod
     def search_sense(lemmata, pos):
-        jilog("Searching for %s (pos=%s)" % (lemmata, pos))
         if PredSense.singleton_sm is None:
             PredSense.singleton_sm = PredSense.lwsd.wn.all_senses()
         sm = PredSense.singleton_sm

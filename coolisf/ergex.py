@@ -215,6 +215,14 @@ def extract_all_rel():
     c.summarise()
     report.close()
     t.end("Mapping info has been written to %s" % (ERG_PRED_FILE,))
+    
+    # Investigate senses that can't be mapped
+    not_mapped_file = TextReport("data/ergpreds_not_mapped.txt")
+    for k,v in senses_map.items():
+        if not v:
+            not_mapped_file.print(k)
+    not_mapped_file.close()
+            
     pass
 
 def extract_mwe():
