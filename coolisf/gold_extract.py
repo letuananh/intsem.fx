@@ -396,6 +396,7 @@ def generate_gold_profile():
         xml_string = prettify_xml(ET.tostring(isf_node, encoding='utf-8'))
         print("Saving XML data to file ...")
         output_isf.write(xml_string)
+    print("ISF gold profile has been written to %s" % (OUTPUT_ISF,))
     print("All done!")
 
 #-----------------------------------------------------------------------

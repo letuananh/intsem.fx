@@ -66,6 +66,7 @@ from chirptext.leutile import FileTool
 from chirptext.leutile import TextReport
 from chirptext.leutile import FileHub
 from chirptext.leutile import Timer
+from chirptext.leutile import header
 from chirptext.texttaglib import writelines
 
 from lelesk import LeLeskWSD # WSDResources
@@ -81,6 +82,7 @@ MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
 LEXDB = os.path.expanduser('data/lexdb.rev')
 ERG_PRED_FILE = FileTool.abspath('data/ergpreds.py')
+ERG_PRED_NOT_FOUND_FILE = FileTool.abspath("data/ergpreds_not_mapped.txt")
 ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'),'r').read()
 
 ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
@@ -217,11 +219,31 @@ def extract_all_rel():
     t.end("Mapping info has been written to %s" % (ERG_PRED_FILE,))
     
     # Investigate senses that can't be mapped
-    not_mapped_file = TextReport("data/ergpreds_not_mapped.txt")
+    not_mapped_file = TextReport(ERG_PRED_NOT_FOUND_FILE)
+    mc = Counter() # Mapped count
+
+    maxlength = 0
+    for k in senses_map.keys():
+        if len(k) > maxlength:
+            maxlength = len(k) 
+
     for k,v in senses_map.items():
         if not v:
-            not_mapped_file.print(k)
+            tracer = []
+            PredSense.search_pred_string(k, tracer=tracer)
+            not_mapped_file.print("%s [Search info: %s]" % (k.ljust(maxlength + 1), tracer))
+            mc.count("Not Mapped")
+        else:
+            mc.count("Mapped")
+        mc.count("Total")
     not_mapped_file.close()
+
+    header("Mapping Information")
+    mc.summarise()
+
+    print("Mapped     >>> %s" % (ERG_PRED_FILE,))
+    print("Not Mapped >>> %s" % (ERG_PRED_NOT_FOUND_FILE,))
+
             
     pass
 
