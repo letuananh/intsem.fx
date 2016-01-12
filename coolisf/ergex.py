@@ -158,27 +158,40 @@ def dev():
     lr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\]+_rel") # person_rel
     llr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z\-\+\\]+_rel") # comp_not+so_rel
     lplr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_[a-zA-Z0-9\+\-]+_rel") # _abate_v_cause_rel
+    
+    # Create output files
+    outfiles.create('data/ergpreds_lpsr')
+    outfiles.create('data/ergpreds_lpr')
+    outfiles.create('data/ergpreds_lr')
+    outfiles.create('data/ergpreds_llr')
+    outfiles.create('data/ergpreds_lplr')
+    outfiles.create('data/ergpreds_unknown')
+    
+    found_preds = set()
     for lex in lexs:
+        c.count("Total")
         if lex.keyrel == '\\N':
             c.count("\\N")
         elif lpsr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lpsr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lpsr', lex.keyrel)
             c.count("_lemma_pos_senseno_rel")
         elif lpr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lpr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lpr', lex.keyrel)
             c.count("_lemma_pos_rel")
         elif lr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lr', lex.keyrel)
             c.count("_lemma_rel")
         elif llr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_llr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_llr', lex.keyrel)
             c.count("_lemma_suplem_rel")
         elif lplr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lplr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lplr', lex.keyrel)
             c.count("_lemma_pos_suplem_rel")
         else:
-            outfiles.writeline('data/ergpreds_unknown', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_unknown', lex.keyrel)
             c.count("UNKNOWN")
+        found_preds.add(lex.keyrel)
+    print(len(found_preds))
     outfiles.close()
     c.summarise()
     print("-" * 20)
