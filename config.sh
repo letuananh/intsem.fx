@@ -30,6 +30,7 @@ link_folder `readlink -f ${WORKSPACE_FOLDER}/nltk/nltk` nltk
 link_folder `readlink -f ./modules/chirptext/chirptext` chirptext
 link_folder `readlink -f ./modules/lelesk/lelesk` lelesk
 link_folder `readlink -f ./modules/demophin` demophin
+link_folder `readlink -f ./modules/puchikarui/puchikarui` puchikarui
 
 echo "Configuring lelesk"
 ./modules/lelesk/config.sh
