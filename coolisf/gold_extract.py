@@ -330,13 +330,19 @@ def generate_gold_profile():
         output_isf.write(xml_string)
     print("All done!")
 
-def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
-    # WSD info
+def tag_preds(mrs):
+    ''' Get all sense candidates for a particular MRS)
+    '''
     best_candidate_map = {}
     for pred in mrs.preds():
         candidates = PredSense.search_pred_string(pred.label, False)
         if candidates:
             best_candidate_map[pred_to_key(pred)] = candidates[0]
+    return best_candidate_map
+    
+def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
+    # WSD info
+    best_candidate_map = tag_preds(mrs)
     # inject sense tags into nodes
     for node in dmrs_node.findall('node'):
         # insert gold sense
@@ -358,8 +364,13 @@ def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
                 candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
                 candidate_node.set('lemma', str(candidate.lemma))
                 candidate_node.set('score', str(candidate.tagcount))
+    print(best_candidate_map)
 
 def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=None):
+    ''' Convert a coolisf.model.Sentence to an XML node
+        e.g. sent = Grammar().txt2dmrs('The dog barks.')
+             xml_node = sentence_to_xml(sent)
+    '''
     if doc_node is not None:
         sent_node = ET.SubElement(doc_node, 'sentence')
     else:
@@ -379,6 +390,11 @@ def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=
                 tag_dmrs_xml(mrs, dmrs_node, goldtags, cgold=cgold)
                 dmrses_node.append(dmrs_node)
     return sent_node
+
+def sentence_to_xmlstring(sent, doc_node=None, goldtags=None):
+    ''' Convert a coolisf.model.Sentence to an XML utf-8 string
+    '''
+    return ET.tostring(sentence_to_xml(sent, doc_node, goldtags), encoding='utf-8').decode('utf-8')
 
 #-----------------------------------------------------------------------
 

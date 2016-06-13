@@ -59,6 +59,8 @@ import json
 
 from coolisf.gold_extract import read_ace_output
 from coolisf.gold_extract import sentence_to_xml
+from coolisf.gold_extract import sentence_to_xmlstring
+from coolisf.gold_extract import prettify_xml
 from coolisf.util import Grammar
 
 ########################################################################
@@ -93,6 +95,15 @@ class TestPyISF(unittest.TestCase):
             self.assertEqual(len(sentences[2].mrs), 0)
             
             self.assertTrue(sentences[0].mrs[0].dmrs_xml(True))
+
+            print("Test sense tag")
+            xmlstr = sentence_to_xmlstring(sentences[0])
+            with open('data/temp.xml', 'w') as outfile:
+                outfile.write(prettify_xml(xmlstr))
+            tagged = xmlstr.count('<sense')
+            self.assertGreater(tagged, 0)
+
+
 ########################################################################
 
 def main():
