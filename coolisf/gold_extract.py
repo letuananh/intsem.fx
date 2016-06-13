@@ -364,7 +364,6 @@ def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
                 candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
                 candidate_node.set('lemma', str(candidate.lemma))
                 candidate_node.set('score', str(candidate.tagcount))
-    print(best_candidate_map)
 
 def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=None):
     ''' Convert a coolisf.model.Sentence to an XML node
