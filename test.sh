@@ -3,4 +3,4 @@
 echo "Test script"
 # Alternative: test a specific file
 # python -m unittest test.test_demolib
-python -m unittest discover
+python3 -m unittest test.test_pyisf

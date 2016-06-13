@@ -9,12 +9,12 @@ Integrated Semantic Framework (coolisf) interactive shell
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	argparse module:
-		https://docs.python.org/3/howto/argparse.html
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -52,49 +52,18 @@ __status__ = "Prototype"
 
 import os
 
-from delphin.interfaces import ace
-from delphin.mrs.components import Pred
 from chirptext.leutile import StringTool
 
-from .model import Sentence
 from .util import PredSense
+from .util import get_preds
+from .util import Grammar
 
-##########################################
-# CONFIGURATION
-##########################################
-GRAM_FILE = './data/erg.dat'
-ACE_BIN = os.path.expanduser('~/bin/ace')
-SEMCOR_TXT = 'data/semcor.txt'
-TOP_K = 10
+ERG = Grammar()
 
+########################################################################
 
 def read_data():
     return [StringTool.strip(x) for x in open(SEMCOR_TXT).readlines()]
-
-
-def get_preds(dmrs):
-    if dmrs:
-        return [Pred.normalize_pred_string(x.pred.string) for x in dmrs.nodes]
-
-
-def txt2preds(text):
-    dmrses = txt2dmrs(text)
-    if dmrses:
-        return [get_preds(x) for x in dmrses]
-    else:
-        print("Can't parse the sentence [%s]" % (text,))
-
-
-def txt2dmrs(text):
-    s = Sentence(text)
-
-    res = ace.parse(GRAM_FILE, text, executable=ACE_BIN)
-    if res and res['RESULTS']:
-        top_res = res['RESULTS']
-        for mrs in top_res:
-            s.add(mrs['MRS'])
-    return s
-
 
 def enter_sentence():
     return input("Enter a sentence (empty to exit): ")
@@ -119,7 +88,7 @@ def interactive_shell():
 def process_sentence(sent, verbose=True, top_k=10):
     if verbose:
         print("You have entered: %s" % sent)
-    tagged = txt2dmrs(sent)
+    tagged = ERG.txt2dmrs(sent)
     mrs_id = 1
     if tagged and tagged.mrs:
         for mrs in tagged.mrs:

@@ -6,12 +6,12 @@ Extract data from a TSDB profile and write to a text file
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	argparse module:
-		https://docs.python.org/3/howto/argparse.html
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -82,7 +82,6 @@ GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
 INPUT_TXT = 'data/speckled.txt'
 INPUT_MRS = 'data/gold.out.txt'
-# SKIPPED_SENTENCE = 'data/speckled.skipped'
 OUTPUT_ISF = 'data/spec-isf.xml'
 PRED_DEBUG_DUMP = 'data/speckled_synset_debug.txt'
 GOLD_TAGS = 'data/speckled_tags_gold.txt'
@@ -203,11 +202,12 @@ def read_ace_output(ace_output_file):
             line = input_mrs.readline()
             if line.startswith('SENT'):
                 mrs_line = input_mrs.readline()
-                items.append([line, mrs_line])
+                item = [line, mrs_line]
                 s = Sentence(line[5:], sid=current_sid)
-                s.add(mrs_line)
                 sentences.append(s)
-                input_mrs.readline()
+                while mrs_line.strip():
+                    s.add(mrs_line)
+                    mrs_line = input_mrs.readline()
                 input_mrs.readline()
                 c.count('sent')
                 c.count('total')
@@ -221,33 +221,10 @@ def read_ace_output(ace_output_file):
             else:
                 break
     c.summarise() 
-    writelines(skipped, SKIPPED_SENTENCE)
+    writelines(skipped, ace_output_file + '.skipped.txt')
     return sentences
 
-def generate_gold_profile():
-    # Read human annotations from NTU-MC
-    print("Reading gold annotations from NTU-MC")
-    golddata = read_data(GOLD_TAGS)
-    sid_gold_map = dd(list)
-    for datum in golddata:
-        sid_gold_map[datum[0]].append(datum)
-    print("Gold map: %s" % [len(sid_gold_map)])
-    
-    # read_ace_output()
-    # Read gold profile from ITSDB (ERG-TRUNK)
-    sentences = []
-    with open(INPUT_MRS) as input_mrs:
-        lines = input_mrs.readlines()
-        for line in lines:
-            (ntuid, tsdbid, text, mrs) = line.split('\t')
-            sent = Sentence(text=text, sid=int(ntuid))
-            if mrs and len(mrs.strip()) > 0:
-                sent.add(mrs)
-                sent.raw_mrs.append(mrs)
-            sentences.append(sent)
-        
-    # Process data
-    print("Creating XML file ...")
+def build_root_node():
     isf_node = ET.Element('rootisf')
     isf_node.set('version', '0.1')
     isf_node.set('lang', 'eng')
@@ -303,6 +280,34 @@ def generate_gold_profile():
     contributor_node.set("name", "Dan Flickinger")
     contributor_node.set("email", "danf@stanford.edu")
     
+    return isf_node
+
+def generate_gold_profile():
+    # Read human annotations from NTU-MC
+    print("Reading gold annotations from NTU-MC")
+    golddata = read_data(GOLD_TAGS)
+    sid_gold_map = dd(list)
+    for datum in golddata:
+        sid_gold_map[datum[0]].append(datum)
+    print("Gold map: %s" % [len(sid_gold_map)])
+    
+    # read_ace_output()
+    # Read gold profile from ITSDB (ERG-TRUNK)
+    sentences = []
+    with open(INPUT_MRS) as input_mrs:
+        lines = input_mrs.readlines()
+        for line in lines:
+            (ntuid, tsdbid, text, mrs) = line.split('\t')
+            sent = Sentence(text=text, sid=int(ntuid))
+            if mrs and len(mrs.strip()) > 0:
+                sent.add(mrs)
+                sent.raw_mrs.append(mrs)
+            sentences.append(sent)
+        
+    # Process data
+    print("Creating XML file ...")
+    # build root XML node for data file
+    isf_node = build_root_node()
     # Add document nodes
     doc_node = ET.SubElement(isf_node, 'document')
     doc_node.set('name', 'speckled band')
@@ -310,83 +315,10 @@ def generate_gold_profile():
     
     cgold = Counter()
     for sent in sentences:
-        #print("Processing %s" % (sent.sid,))
-        sent_node = ET.SubElement(doc_node, 'sentence')
-        sent_node.set('sid', str(sent.sid))
-        text_node = ET.SubElement(sent_node, 'text')
-        text_node.text = sent.text
-        dmrses_node = ET.SubElement(sent_node, 'dmrses')
-        if len(sent.mrs) == 0:
-            continue
-        dmrs_xml = ET.fromstring(sent.mrs[0].dmrs_xml(False))
-        dmrses = dmrs_xml.findall('dmrs')
-        for dmrs in dmrses:
-            dmrses_node.append(dmrs)
-        # add senseinfo to every preds
-        si_node = ET.SubElement(sent_node, 'senses')
-        
-        # WSD info
-        best_candidate_map = {}
-        # Store data for debugging purposes
-        
-        for pred in sent.mrs[0].preds():
-            candidates = PredSense.search_pred_string(pred.label, False)
-            if candidates:
-                #if candidates[0].lemma == 'very':
-                 #   print(candidates)
-                  #  exit()
-                preds_debug.append((sent.sid, pred.cfrom, pred.cto, str(candidates[0].sid)[1:]+'-'+candidates[0].pos, candidates[0].lemma))
-                best_candidate_map[pred_to_key(pred)] = candidates[0]
-                sense_node = ET.SubElement(si_node, 'pred')
-                #sense_node.set('key', pred_to_key(pred))
-                sense_node.set('cfrom', str(pred.cfrom))
-                sense_node.set('cto', str(pred.cto))
-                sense_node.set('label', str(pred.label))
-                for candidate in candidates:
-                    candidate_node = ET.SubElement(sense_node, 'sense')
-                    candidate_node.set('pos', str(candidate.pos))
-                    candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
-                    # candidate_node.set('sensekey', str(candidate.sk)) # [2015-10-26] FCB: Remove sensekey
-                    candidate_node.set('lemma', str(candidate.lemma))
-                    candidate_node.set('score', str(candidate.tagcount)) # [2015-10-26] FCB: tagcount should be score
-        #print(best_candidate_map)
-        # Storing best candidates & gold sense
-        for dmrs in dmrses_node:
-            for node in dmrs.findall('node'):
-                # insert gold sense
-                sid_key = str(sent.sid)
-                goldtags = sid_gold_map[sid_key]
-                if goldtags:                    
-                    # print("There are gold tags")
-                    for tag in goldtags:
-                        # print(' '.join([str(x) in [tag[1], tag[2], node.get('cfrom'), node.get('cto')]]))
-                        #print("node.cfrom = %s" % (node.get('cfrom')))
-                        #print("node.cto = %s" % (node.get('cto')))
-                        #print("tag[1] = %s" % (tag[1]))
-                        #print("tag[2] = %s" % (tag[2]))
-                        #print("tag    = %s" % (tag,))
-                        if node.get('cfrom') and node.get('cto') and int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
-                            gold_node = ET.SubElement(node, 'sensegold')
-                            gold_node.set('synset', tag[3])
-                            gold_node.set('clemma', tag[4])
-                            cgold.count('inserted')
-                realpred = node.find('realpred')
-                if realpred is not None:
-                    # insert mcs
-                    key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
-                    #print('%s is found' % (key,))
-                    if key in best_candidate_map:
-                        # print("injecting")
-                        candidate = best_candidate_map[key]
-                        candidate_node = ET.SubElement(node, 'sense')
-                        candidate_node.set('pos', str(candidate.pos))
-                        candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
-                        # candidate_node.set('sensekey', str(candidate.sk)) # [2015-10-26] FCB: remove sensekey
-                        candidate_node.set('lemma', str(candidate.lemma))
-                        candidate_node.set('score', str(candidate.tagcount))
-                #else:
-                    #print('%s is not good' % (realpred,))
-    
+        sid_key = str(sent.sid)
+        goldtags = sid_gold_map[sid_key]
+        sentence_to_xml(sent, doc_node, goldtags, preds_debug=preds_debug, cgold=cgold)
+    print("Gold senses inserted")
     cgold.summarise()
     print("Dumping preds debug")
     writelines([ '\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
@@ -397,6 +329,56 @@ def generate_gold_profile():
         print("Saving XML data to file ...")
         output_isf.write(xml_string)
     print("All done!")
+
+def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
+    # WSD info
+    best_candidate_map = {}
+    for pred in mrs.preds():
+        candidates = PredSense.search_pred_string(pred.label, False)
+        if candidates:
+            best_candidate_map[pred_to_key(pred)] = candidates[0]
+    # inject sense tags into nodes
+    for node in dmrs_node.findall('node'):
+        # insert gold sense
+        if goldtags:                    
+            for tag in goldtags:
+                if node.get('cfrom') and node.get('cto') and int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
+                    gold_node = ET.SubElement(node, 'sensegold')
+                    gold_node.set('synset', tag[3])
+                    gold_node.set('clemma', tag[4])
+                    if cgold: cgold.count('inserted')
+        realpred = node.find('realpred')
+        if realpred is not None:
+            # insert mcs
+            key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
+            if key in best_candidate_map:
+                candidate = best_candidate_map[key]
+                candidate_node = ET.SubElement(node, 'sense')
+                candidate_node.set('pos', str(candidate.pos))
+                candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                candidate_node.set('lemma', str(candidate.lemma))
+                candidate_node.set('score', str(candidate.tagcount))
+
+def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=None):
+    if doc_node is not None:
+        sent_node = ET.SubElement(doc_node, 'sentence')
+    else:
+        sent_node = ET.Element('sentence')
+    sent_node.set('sid', str(sent.sid))
+    text_node = ET.SubElement(sent_node, 'text')
+    text_node.text = sent.text
+    dmrses_node = ET.SubElement(sent_node, 'dmrses')
+    if len(sent.mrs) == 0:
+        return sent_node
+    else:
+        for mrs in sent.mrs:
+            xml_string = mrs.dmrs_xml(False)
+            dmrs_xml = ET.fromstring(xml_string)
+            dmrses = dmrs_xml.findall('dmrs')
+            for dmrs_node in dmrses:
+                tag_dmrs_xml(mrs, dmrs_node, goldtags, cgold=cgold)
+                dmrses_node.append(dmrs_node)
+    return sent_node
 
 #-----------------------------------------------------------------------
 
