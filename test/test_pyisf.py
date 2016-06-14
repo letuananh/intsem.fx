@@ -6,15 +6,15 @@ Script for testing pyisf library
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	Python unittest
-		https://docs.python.org/3/library/unittest.html
-	--
-	argparse module:
-		https://docs.python.org/3/howto/argparse.html
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    Python unittest
+        https://docs.python.org/3/library/unittest.html
+    --
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -59,16 +59,14 @@ import unittest
 
 class TestPyISF(unittest.TestCase):
 
-	def test_null_args(self):
-		print("Dummy test")
-		self.assertTrue(True)
-
-	
+    def test_null_args(self):
+    print("Dummy test")
+    self.assertTrue(True)
 
 ########################################################################
 
 def main():
-	unittest.main()
+    unittest.main()
 
 if __name__ == "__main__":
-	main()
+    main()
