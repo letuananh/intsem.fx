@@ -54,12 +54,12 @@ from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
 from chirptext.leutile import StringTool
+from chirptext.leutile import jilog
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
 from lelesk import LeLeskWSD # WSDResources
 from lelesk.config import LLConfig
 
-from .mwemap import MWE_ERG_WN_MAPPING
 from .mwemap import MWE_ERG_PRED_LEMMA
 
 from .model import Sentence
@@ -175,7 +175,7 @@ class PredSense():
             potential.add(lemma[4:])
         # add WNL
         potential.add(PredSense.lwsd.lemmatize(lemma))
-        return potential
+        return tuple(potential)
 
     singleton_sm = None
 
@@ -187,73 +187,93 @@ class PredSense():
 
         for lemma in lemmata:
             if lemma in sm:
-                potential = [x for x in sm[lemma] if x.pos == pos]
+                potential = [x for x in sm[lemma] if x.pos == pos or pos in ('x', 'p')]
                 if potential:
                     return potential
         return []
 
     # alias
-    def search_pred_string(pred_str,extend_lemma=True): 
+    def search_pred_string(pred_str,extend_lemma=True, tracer=None):
+        if pred_str is None:
+            return []
+        
+        if pred_str.startswith("_"):
+            pred_str = pred_str[1:]
+        
         if pred_str in MWE_ERG_PRED_LEMMA:
             pred = Pred.grammarpred(pred_str)
+            if isinstance(tracer,list):
+                tracer.append(([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos, 'MWE', 'See also?: ' + Pred.grammarpred(pred_str).lemma))
             ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos)
             #print("Looking at %s" % (pred_str))
             #if ss:
             #    print("MWE detected")
             return sorted(ss, key=lambda x: x.tagcount, reverse=True)
         else:
-            return PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma)
+            return PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma, tracer)
+
+    AUTO_EXTEND = {
+        ('st','n'): (('saint',), 'n'),
+        ('children',): ('child',),
+        ('childrens',): ('child',),
+        ('trapdoor',): ('trap door',),
+        ('declining',): ('decline',),
+        ('allright',): ('alright',),
+        ('a+couple',): ('a couple of',),
+        ('diagnostic',): ('diagnostics',),
+        ('had+better',): ('better',),
+        ('suburbian',): ('suburban',),
+        ('little-few',): ('few',),
+        ('much-many',): ('many',),
+        ('or+not',): ('not',),
+        ('undoubted',): ('undoubtedly',),
+        ('used+to','v'): (('used to',),'a'),
+        }
+
+    # [TODO]: 
+    # significantly: x vs r
+    # _along_p_rel
+    # if pos ==  x or p => ignore POS
+    # 
+    # slurp        : n vs v (in WN)
+    # _add_v_up-to_rel >>> add up
+    # _make_v_up-for_rel
+    # _come_v_up_rel
+    # _duck_v_out_rel
+    # _crumble_n_1_rel >>> checked a but v in WN
+
 
     @staticmethod
-    def search_pred(pred, auto_expand=True):
-        # if pred in MWE_ERG_WN_MAPPING:
+    def search_pred(pred, auto_expand=True, tracer=None):
         if not pred:
             return None
         
-        if auto_expand:
-            ss = PredSense.search_sense(PredSense.extend_lemma(pred.lemma), pred.pos)
-        else:
-            ss = PredSense.search_sense([pred.lemma], pred.pos)
+        lemmata = (pred.lemma,) if not auto_expand else PredSense.extend_lemma(pred.lemma)
+        pos     = pred.pos
+
+        if (lemmata, pos) in PredSense.AUTO_EXTEND:
+            lemmata, pos = PredSense.AUTO_EXTEND[(lemmata, pos)]
+        elif (lemmata,) in PredSense.AUTO_EXTEND:
+            lemmata = PredSense.AUTO_EXTEND[(lemmata,)]
+
+        if isinstance(tracer,list):
+            tracer.append((lemmata, pos))
+        ss = PredSense.search_sense(lemmata, pos)
 
         # hardcode: try to match noun & adj/v
         if not ss and auto_expand:
             # hard code modal
             if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v':
-                ss = PredSense.search_sense(('modal',), 'a')
-            elif pred.lemma == 'st' and pred.pos == 'n':
-                ss = PredSense.search_sense(('saint',), 'n')
-            elif pred.lemma == 'children':
-                ss = PredSense.search_sense(('child',), pred.pos)
-            elif pred.lemma == 'trapdoor':
-                ss = PredSense.search_sense(('trap door',), pred.pos)
-            elif pred.lemma == 'declining':
-                ss = PredSense.search_sense(('decline',), pred.pos)
-            elif pred.lemma == 'allright':
-                ss = PredSense.search_sense(('alright',), pred.pos)
-            elif pred.lemma == 'a+couple':
-                ss = PredSense.search_sense(('a couple of',), pred.pos)
-            elif pred.lemma == 'diagnostic':
-                ss = PredSense.search_sense(('diagnostics',), pred.pos)
-            elif pred.lemma == 'suburbian':
-                ss = PredSense.search_sense(('suburban',), pred.pos)
-            elif pred.lemma == 'or+not':
-                ss = PredSense.search_sense(('not',), pred.pos)
-            elif pred.lemma == 'undoubted':
-                ss = PredSense.search_sense(('undoubtedly',), pred.pos)
-            elif pred.lemma == 'used+to' and pred.pos == 'v':
-                ss = PredSense.search_sense(('used to',), 'a')
-            elif pred.lemma == 'had+better':
-                ss = PredSense.search_sense(('better',), pred.pos)
-            elif pred.lemma == 'little-few':
-                ss = PredSense.search_sense(('few',), pred.pos)
-            elif pred.lemma == 'much-many':  # should we check the surface form and then match it? REF: little-few
-                ss = PredSense.search_sense(('many',), pred.pos)
-            #            elif pred.lemma == 'the+same':
-            #               ss=PredSense.search_sense(('same',), pred.pos)
+                lemmata,pos = (('modal',), 'a')
             elif pred.pos == 'a':
-                ss = PredSense.search_sense([pred.lemma], 'n')
+                lemmata,pos = ([pred.lemma], 'n')
             elif pred.pos == 'n':
-                ss = PredSense.search_sense([pred.lemma], 'a')
+                lemmata,pos = ([pred.lemma], 'a')
+            #-----------
+            if isinstance(tracer,list):
+                tracer.append((lemmata, pos))
+            ss = PredSense.search_sense(lemmata, pos)
+
         # Done
         return sorted(ss, key=lambda x: x.tagcount, reverse=True)
 

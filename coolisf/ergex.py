@@ -64,6 +64,9 @@ from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.leutile import FileTool
 from chirptext.leutile import TextReport
+from chirptext.leutile import FileHub
+from chirptext.leutile import Timer
+from chirptext.leutile import header
 from chirptext.texttaglib import writelines
 
 from lelesk import LeLeskWSD # WSDResources
@@ -79,6 +82,7 @@ MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
 LEXDB = os.path.expanduser('data/lexdb.rev')
 ERG_PRED_FILE = FileTool.abspath('data/ergpreds.py')
+ERG_PRED_NOT_FOUND_FILE = FileTool.abspath("data/ergpreds_not_mapped.txt")
 ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'),'r').read()
 
 ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
@@ -128,25 +132,96 @@ class ERGLex:
 def to_sense_map(k,v):
     return '"%s" : [ %s ]' % (k,", ".join([ "SenseInfo('%s-%s', '%s', %s)" % (x.sid, x.pos, x.sk.replace("'", "\\'"), x.tagcount) for x in v ]))
 
+def get_erg_lex():
+    senses_map = defaultdict(list)
+    c = Counter()
+
+    with open(LEXDB, 'r') as lexdb:
+        rows = list(csv.reader(lexdb, delimiter='\t'))
+    return [ ERGLex(*row) for row in rows ]
+
+def dev():
+    # TODO: Something is wrong with _pass_v_along ...
+    #keyrels = [ "_give_v_off_rel", "give_v_off_rel", "_pass_v_along_rel", "pass_v_along_rel" ]
+    #for kr in keyrels:
+    #    senses = PredSense.search_pred_string(kr)
+    #    delphin_pred = Pred.grammarpred(kr)
+    #    print("%s (delphin=%s) => %s" % (kr, delphin_pred.lemma, senses))
+    #print("-" * 20)
+    #return
+
+    outfiles = FileHub('.txt')
+    lexs  = get_erg_lex()
+    c = Counter()
+    lpsr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\\/\$]+_[a-zA-Z]+_[0-9]+_rel") # _dog_n_1_rel
+    lpr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_rel") # _dog_n_rel
+    lr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\]+_rel") # person_rel
+    llr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z\-\+\\]+_rel") # comp_not+so_rel
+    lplr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_[a-zA-Z0-9\+\-]+_rel") # _abate_v_cause_rel
+    
+    # Create output files
+    outfiles.create('data/ergpreds_lpsr')
+    outfiles.create('data/ergpreds_lpr')
+    outfiles.create('data/ergpreds_lr')
+    outfiles.create('data/ergpreds_llr')
+    outfiles.create('data/ergpreds_lplr')
+    outfiles.create('data/ergpreds_unknown')
+    
+    found_preds = set()
+    for lex in lexs:
+        c.count("Total")
+        if lex.keyrel == '\\N':
+            c.count("\\N")
+        elif lpsr_pattern.match(lex.keyrel):
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lpsr', lex.keyrel)
+            c.count("_lemma_pos_senseno_rel")
+        elif lpr_pattern.match(lex.keyrel):
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lpr', lex.keyrel)
+            c.count("_lemma_pos_rel")
+        elif lr_pattern.match(lex.keyrel):
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lr', lex.keyrel)
+            c.count("_lemma_rel")
+        elif llr_pattern.match(lex.keyrel):
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_llr', lex.keyrel)
+            c.count("_lemma_suplem_rel")
+        elif lplr_pattern.match(lex.keyrel):
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lplr', lex.keyrel)
+            c.count("_lemma_pos_suplem_rel")
+        else:
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_unknown', lex.keyrel)
+            c.count("UNKNOWN")
+        found_preds.add(lex.keyrel)
+    print(len(found_preds))
+    outfiles.close()
+    c.summarise()
+    print("-" * 20)
+
 def extract_all_rel():
     # report header
+    t = Timer()
     report = TextReport(ERG_PRED_FILE)
     senses_map = defaultdict(list)
     c = Counter()
-    with open(LEXDB, 'r') as lexdb:
-        rows = list(csv.reader(lexdb, delimiter='\t'))
-        for row in rows:
-            lex = ERGLex(*row)
-            c.count('Entry')
-            if lex.keyrel != '\\N':
-                if not lex.keyrel.endswith('_rel'):
-                    c.count('WARNING')
-                    print(lex.keyrel)
-                else:
-                    senses = PredSense.search_pred_string(lex.keyrel)
-                    senses_map[lex.keyrel] += senses
-                    # print("%s: %s" % (lex.keyrel, senses))
 
+    t.start("Extracting preds from ERG")
+    lex_entries = get_erg_lex()
+    t.end()
+
+    t.start("Mapping those to wordnet senses")
+    for lex in lex_entries:
+        c.count('Entry')
+        if lex.keyrel != '\\N':
+            if not lex.keyrel.endswith('_rel'):
+                c.count('WARNING')
+                print(lex.keyrel)
+            else:
+                senses = PredSense.search_pred_string(lex.keyrel)
+                senses_map[lex.keyrel] += senses
+                # if lex.keyrel == '_pass_v_along_rel':
+                #    print("%s => %s" % (lex.keyrel, senses))
+    t.end()
+
+    t.start("Saving predlinks to file")
     report.print(ERG_PRED_FILE_TEMPLATE)
     report.print("ERG_PRED_MAP = {")
     senses_list = [ to_sense_map(k,v) for k,v in senses_map.items() ] 
@@ -154,6 +229,35 @@ def extract_all_rel():
     report.print("}")
     c.summarise()
     report.close()
+    t.end("Mapping info has been written to %s" % (ERG_PRED_FILE,))
+    
+    # Investigate senses that can't be mapped
+    not_mapped_file = TextReport(ERG_PRED_NOT_FOUND_FILE)
+    mc = Counter() # Mapped count
+
+    maxlength = 0
+    for k in senses_map.keys():
+        if len(k) > maxlength:
+            maxlength = len(k) 
+
+    for k,v in senses_map.items():
+        if not v:
+            tracer = []
+            PredSense.search_pred_string(k, tracer=tracer)
+            not_mapped_file.print("%s [Search info: %s]" % (k.ljust(maxlength + 1), tracer))
+            mc.count("Not Mapped")
+        else:
+            mc.count("Mapped")
+        mc.count("Total")
+    not_mapped_file.close()
+
+    header("Mapping Information")
+    mc.summarise()
+
+    print("Mapped     >>> %s" % (ERG_PRED_FILE,))
+    print("Not Mapped >>> %s" % (ERG_PRED_NOT_FOUND_FILE,))
+
+            
     pass
 
 def extract_mwe():
@@ -218,6 +322,7 @@ def extract_mwe():
     pass
 
 def main():
+    dev()
     extract_all_rel()
     # extract_mwe()
     
