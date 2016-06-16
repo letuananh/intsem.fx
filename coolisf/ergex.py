@@ -66,6 +66,7 @@ from chirptext.leutile import FileTool
 from chirptext.leutile import TextReport
 from chirptext.leutile import FileHub
 from chirptext.leutile import Timer
+from chirptext.leutile import header
 from chirptext.texttaglib import writelines
 
 from lelesk import LeLeskWSD # WSDResources
@@ -81,6 +82,7 @@ MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
 LEXDB = os.path.expanduser('data/lexdb.rev')
 ERG_PRED_FILE = FileTool.abspath('data/ergpreds.py')
+ERG_PRED_NOT_FOUND_FILE = FileTool.abspath("data/ergpreds_not_mapped.txt")
 ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'),'r').read()
 
 ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
@@ -156,27 +158,40 @@ def dev():
     lr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\]+_rel") # person_rel
     llr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z\-\+\\]+_rel") # comp_not+so_rel
     lplr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_[a-zA-Z0-9\+\-]+_rel") # _abate_v_cause_rel
+    
+    # Create output files
+    outfiles.create('data/ergpreds_lpsr')
+    outfiles.create('data/ergpreds_lpr')
+    outfiles.create('data/ergpreds_lr')
+    outfiles.create('data/ergpreds_llr')
+    outfiles.create('data/ergpreds_lplr')
+    outfiles.create('data/ergpreds_unknown')
+    
+    found_preds = set()
     for lex in lexs:
+        c.count("Total")
         if lex.keyrel == '\\N':
             c.count("\\N")
         elif lpsr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lpsr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lpsr', lex.keyrel)
             c.count("_lemma_pos_senseno_rel")
         elif lpr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lpr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lpr', lex.keyrel)
             c.count("_lemma_pos_rel")
         elif lr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lr', lex.keyrel)
             c.count("_lemma_rel")
         elif llr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_llr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_llr', lex.keyrel)
             c.count("_lemma_suplem_rel")
         elif lplr_pattern.match(lex.keyrel):
-            outfiles.writeline('data/ergpreds_lplr', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_lplr', lex.keyrel)
             c.count("_lemma_pos_suplem_rel")
         else:
-            outfiles.writeline('data/ergpreds_unknown', lex.keyrel)
+            if lex.keyrel not in found_preds: outfiles.writeline('data/ergpreds_unknown', lex.keyrel)
             c.count("UNKNOWN")
+        found_preds.add(lex.keyrel)
+    print(len(found_preds))
     outfiles.close()
     c.summarise()
     print("-" * 20)
@@ -217,11 +232,31 @@ def extract_all_rel():
     t.end("Mapping info has been written to %s" % (ERG_PRED_FILE,))
     
     # Investigate senses that can't be mapped
-    not_mapped_file = TextReport("data/ergpreds_not_mapped.txt")
+    not_mapped_file = TextReport(ERG_PRED_NOT_FOUND_FILE)
+    mc = Counter() # Mapped count
+
+    maxlength = 0
+    for k in senses_map.keys():
+        if len(k) > maxlength:
+            maxlength = len(k) 
+
     for k,v in senses_map.items():
         if not v:
-            not_mapped_file.print(k)
+            tracer = []
+            PredSense.search_pred_string(k, tracer=tracer)
+            not_mapped_file.print("%s [Search info: %s]" % (k.ljust(maxlength + 1), tracer))
+            mc.count("Not Mapped")
+        else:
+            mc.count("Mapped")
+        mc.count("Total")
     not_mapped_file.close()
+
+    header("Mapping Information")
+    mc.summarise()
+
+    print("Mapped     >>> %s" % (ERG_PRED_FILE,))
+    print("Not Mapped >>> %s" % (ERG_PRED_NOT_FOUND_FILE,))
+
             
     pass
 

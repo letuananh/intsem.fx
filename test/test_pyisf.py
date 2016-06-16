@@ -103,7 +103,6 @@ class TestPyISF(unittest.TestCase):
             tagged = xmlstr.count('<sense')
             self.assertGreater(tagged, 0)
 
-
 ########################################################################
 
 def main():
