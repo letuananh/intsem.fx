@@ -6,15 +6,15 @@ Script for testing pyisf library
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	Python unittest
-		https://docs.python.org/3/library/unittest.html
-	--
-	argparse module:
-		https://docs.python.org/3/howto/argparse.html
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    Python unittest
+        https://docs.python.org/3/library/unittest.html
+    --
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -55,20 +55,59 @@ import os
 import argparse
 import unittest
 
+import json
+
+from coolisf.gold_extract import read_ace_output
+from coolisf.gold_extract import sentence_to_xml
+from coolisf.gold_extract import sentence_to_xmlstring
+from coolisf.gold_extract import prettify_xml
+from coolisf.util import Grammar
+
 ########################################################################
+
+TEST_SENTENCES  = 'data/bib.txt'
+ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 
 class TestPyISF(unittest.TestCase):
 
-	def test_null_args(self):
-		print("Dummy test")
-		self.assertTrue(True)
+    def test_ace_output_to_xml(self):
+        sentences = read_ace_output(ACE_OUTPUT_FILE)
+        self.assertTrue(sentences)
 
-	
+        sent = sentences[0]
+        self.assertEqual(len(sent.mrs), 3)
+        
+        # sentence to XML
+        xml = sentence_to_xml(sent)
+        self.assertTrue(xml)
+        # ensure DMRS nodes count
+        dmrs_nodes = xml.findall('./dmrses/dmrs')
+        self.assertEqual(len(dmrs_nodes), 3)
+
+    def test_txt_to_dmrs(self):
+        print("Test parsing raw text sentences")
+        ERG = Grammar()
+        with open(TEST_SENTENCES) as test_file:
+            raw_sentences = test_file.readlines()
+            sentences = [ ERG.txt2dmrs(x) for x in raw_sentences ]
+            self.assertEqual(len(sentences[0].mrs), 5)
+            self.assertEqual(len(sentences[1].mrs), 5)
+            self.assertEqual(len(sentences[2].mrs), 0)
+            
+            self.assertTrue(sentences[0].mrs[0].dmrs_xml(True))
+
+            print("Test sense tag")
+            xmlstr = sentence_to_xmlstring(sentences[0])
+            with open('data/temp.xml', 'w') as outfile:
+                outfile.write(prettify_xml(xmlstr))
+            tagged = xmlstr.count('<sense')
+            self.assertGreater(tagged, 0)
+
 
 ########################################################################
 
 def main():
-	unittest.main()
+    unittest.main()
 
 if __name__ == "__main__":
-	main()
+    main()

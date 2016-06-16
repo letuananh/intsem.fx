@@ -7,12 +7,12 @@ Utility functions
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	argparse module:
-		https://docs.python.org/3/howto/argparse.html
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -48,6 +48,9 @@ __status__ = "Prototype"
 
 ########################################################################
 
+import os
+
+from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
 from chirptext.leutile import StringTool
@@ -59,8 +62,47 @@ from lelesk.config import LLConfig
 
 from .mwemap import MWE_ERG_PRED_LEMMA
 
+from .model import Sentence
+
+##########################################
+# CONFIGURATION
+##########################################
+ERG_GRAM_FILE = './data/erg.dat'
+ACE_BIN = os.path.expanduser('~/bin/ace')
+ACE_ARGS = [ '-n', '5' ]
+SEMCOR_TXT = 'data/semcor.txt'
+TOP_K = 10
+
 ########################################################################
 
+def get_preds(dmrs):
+    if dmrs:
+        return [Pred.normalize_pred_string(x.pred.string) for x in dmrs.nodes]
+
+
+class Grammar:
+    def __init__(self, gram_file=ERG_GRAM_FILE, cmdargs=ACE_ARGS, ace_bin=ACE_BIN):
+        self.gram_file = gram_file
+        self.cmdargs = cmdargs
+        self.ace_bin = ace_bin
+
+    def txt2preds(self, text):
+        dmrses = self.txt2dmrs(text)
+        if dmrses:
+            return [get_preds(x) for x in dmrses]
+        else:
+            print("Can't parse the sentence [%s]" % (text,))
+
+    def txt2dmrs(self, text):
+        s = Sentence(text)
+
+        with ace.AceParser(self.gram_file, executable=self.ace_bin, cmdargs=self.cmdargs) as parser:
+            result = parser.interact(text)
+            if result and result['RESULTS']:
+                top_res = result['RESULTS']
+                for mrs in top_res:
+                    s.add(mrs['MRS'])
+        return s
 
 
 class PredSense():
@@ -89,32 +131,32 @@ class PredSense():
         , [' ', '-']
         , [' ', '']
     ]
-    #	cut off is adj in wn but n in ERG???
-    #	no dole as a verb in Wordnet
-    #	direct should not be a noun
-    #	,['church-goer','churchgoer']
-    #		#,['line+up','lineup']
-    #		#,['the+same','same']
-    #	downstairs_n not in WN
-    #	# droppings vs dropping?
-    #	# east+west => direction?
-    #	# intermediary (n in WN) but a???
-    #	# no solar_n in WN but there are a lot of [solar x]
-    #	# trapdoor => trap door (WN)
-    #	#thanks a ? (is n in WN)
-    #	# Not in WN:
-    #		# attracted_a_to_rel	attracted	a	to	1
-    #		# childrens_a_1_rel	childrens	a	1	1
-    #		# caribbean (a)
-    #	# all modals
-    #	# other_n
-    #		#re-_a_again_rel	re-	a	again	124
-    #		#un-_a_rvrs_rel	un-	a	rvrs	104
-    #		#
-    #	# else_a_1_rel
-    #	# oh_a_1_rel
-    #	# colon_v_id_rel
-    #	# own_n_1_rel
+    #   cut off is adj in wn but n in ERG???
+    #   no dole as a verb in Wordnet
+    #   direct should not be a noun
+    #   ,['church-goer','churchgoer']
+    #       #,['line+up','lineup']
+    #       #,['the+same','same']
+    #   downstairs_n not in WN
+    #   # droppings vs dropping?
+    #   # east+west => direction?
+    #   # intermediary (n in WN) but a???
+    #   # no solar_n in WN but there are a lot of [solar x]
+    #   # trapdoor => trap door (WN)
+    #   #thanks a ? (is n in WN)
+    #   # Not in WN:
+    #       # attracted_a_to_rel    attracted   a   to  1
+    #       # childrens_a_1_rel childrens   a   1   1
+    #       # caribbean (a)
+    #   # all modals
+    #   # other_n
+    #       #re-_a_again_rel    re- a   again   124
+    #       #un-_a_rvrs_rel un- a   rvrs    104
+    #       #
+    #   # else_a_1_rel
+    #   # oh_a_1_rel
+    #   # colon_v_id_rel
+    #   # own_n_1_rel
 
     @staticmethod
     def extend_lemma(lemma):
@@ -212,7 +254,7 @@ class PredSense():
             elif pred.lemma == 'much-many':  # should we check the surface form and then match it? REF: little-few
                 ss = PredSense.search_sense(('many',), pred.pos)
             #            elif pred.lemma == 'the+same':
-            #            	ss=PredSense.search_sense(('same',), pred.pos)
+            #               ss=PredSense.search_sense(('same',), pred.pos)
             elif pred.pos == 'a':
                 ss = PredSense.search_sense([pred.lemma], 'n')
             elif pred.pos == 'n':
