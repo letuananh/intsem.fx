@@ -49,8 +49,8 @@ __status__ = "Prototype"
 ########################################################################
 
 import delphin
-from delphin.codecs import simplemrs
-from delphin.codecs import dmrx
+from delphin.mrs import simplemrs
+from delphin.mrs import dmrx
 from delphin.mrs.components import Pred
 from chirptext.leutile import StringTool
 from chirptext.texttaglib import TagInfo

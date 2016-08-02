@@ -51,11 +51,13 @@ import os
 import datetime
 from collections import namedtuple
 from collections import defaultdict as dd
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
+from lxml.etree import CDATA
 import xml.dom.minidom
 
 from delphin import itsdb
 from delphin.interfaces import ace
+from delphin.mrs import simplemrs
 from delphin.mrs.components import Pred
 
 from fuzzywuzzy import fuzz
@@ -282,16 +284,19 @@ def build_root_node():
     
     return isf_node
 
-def generate_gold_profile():
-    # Read human annotations from NTU-MC
+
+def read_gold_tags():
+    # Read sense annotations from NTU-MC
     print("Reading gold annotations from NTU-MC")
     golddata = read_data(GOLD_TAGS)
     sid_gold_map = dd(list)
     for datum in golddata:
         sid_gold_map[datum[0]].append(datum)
     print("Gold map: %s" % [len(sid_gold_map)])
-    
-    # read_ace_output()
+    return sid_gold_map
+
+
+def read_gold_mrs():
     # Read gold profile from ITSDB (ERG-TRUNK)
     sentences = []
     with open(INPUT_MRS) as input_mrs:
@@ -303,7 +308,12 @@ def generate_gold_profile():
                 sent.add(mrs)
                 sent.raw_mrs.append(mrs)
             sentences.append(sent)
-        
+    return sentences
+
+
+def generate_gold_profile():
+    sid_gold_map = read_gold_tags()
+    sentences = read_gold_mrs()
     # Process data
     print("Creating XML file ...")
     # build root XML node for data file
@@ -322,7 +332,7 @@ def generate_gold_profile():
     cgold.summarise()
     print("Dumping preds debug")
     writelines([ '\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
-        #exit()
+
     with open(OUTPUT_ISF, 'w') as output_isf:
         print("Making it beautiful ...")
         xml_string = prettify_xml(ET.tostring(isf_node, encoding='utf-8'))
@@ -387,6 +397,12 @@ def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=
             dmrs_xml = ET.fromstring(xml_string)
             dmrses = dmrs_xml.findall('dmrs')
             for dmrs_node in dmrses:
+                # insert raw MRS
+                raw_node = ET.Element('raw')
+                nice_raw = simplemrs.dumps_one(simplemrs.loads_one(mrs.text), pretty_print=True)
+                raw_node.text = CDATA(nice_raw)
+                dmrs_node.insert(0, raw_node)
+                # sense tagging
                 tag_dmrs_xml(mrs, dmrs_node, goldtags, cgold=cgold)
                 dmrses_node.append(dmrs_node)
     return sent_node
