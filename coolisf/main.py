@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Integrated Semantic Framework (coolisf) interactive shell
+Integrated Semantic Framework (coolisf) main application
 
 `coolisf` is read `kul-eye-es-ef` officially (sometimes kul-is-f)
 
@@ -51,12 +51,18 @@ __status__ = "Prototype"
 ########################################################################
 
 import os
+import sys
+import argparse
 
 from chirptext.leutile import StringTool
 
 from .util import PredSense
 from .util import get_preds
 from .util import Grammar
+
+from .gold_extract import generate_gold_profile
+from .gold_extract import read_ace_output
+from .gold_extract import export_to_visko
 
 ERG = Grammar()
 
@@ -67,12 +73,6 @@ def read_data():
 
 def enter_sentence():
     return input("Enter a sentence (empty to exit): ")
-
-
-def main():
-    print("Integrated Semantic Framework has been loaded.")
-    process_sentence("Hello! I am an integrated semantic framework.", verbose=False, top_k=1)
-    interactive_shell()
 
 
 def interactive_shell():
@@ -100,6 +100,37 @@ def process_sentence(sent, verbose=True, top_k=10):
             if top_k < mrs_id:
                 break
             # endif
+
+
+def main_shell():
+    print("Integrated Semantic Framework has been loaded.")
+    process_sentence("Hello! I am an integrated semantic framework.", verbose=False, top_k=1)
+    interactive_shell()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="CoolISF Main Application")
+
+    parser.add_argument('-s', '--shell', help='Enter interactive shell', action='store_true')
+    parser.add_argument('-g', '--gold', help='Extract gold profile', action='store_true')
+    parser.add_argument('--visko', help='Export to VISKO', action='store_true')
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+    else:
+        # Parse input arguments
+        args = parser.parse_args()
+        if args.visko:
+            sents = read_ace_output('data/wndefs.nokey.mrs.txt')
+            export_to_visko(sents[:200], os.path.expanduser('~/wk/vk/data/biblioteche/test/wn/wndef/'))
+        elif args.gold:
+            # print("Step 2: Generating gold profile as XML")
+            generate_gold_profile()
+        elif args.shell:
+            main_shell()
+        else:
+            parser.print_help()
+    pass
 
 
 if __name__ == "__main__":

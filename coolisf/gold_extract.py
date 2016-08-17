@@ -51,6 +51,7 @@ import os
 import datetime
 from collections import namedtuple
 from collections import defaultdict as dd
+import gzip
 from lxml import etree as ET
 from lxml.etree import CDATA
 import xml.dom.minidom
@@ -412,14 +413,63 @@ def sentence_to_xmlstring(sent, doc_node=None, goldtags=None):
     '''
     return ET.tostring(sentence_to_xml(sent, doc_node, goldtags), encoding='utf-8').decode('utf-8')
 
+
+def sent_to_visko_xml(sent):
+    sent_node = ET.Element('sentence')
+    sent_node.set('id', str(sent.sid))
+    sent_node.set('version', '0.1')
+    sent_node.set('lang', 'eng')
+    # Add license information
+    text_node = ET.SubElement(sent_node, 'text')
+    text_node.text = sent.text
+    for id, mrs in enumerate(sent.mrs):
+        intp_node = ET.SubElement(sent_node, 'interpretation')
+        intp_node.set('id', str(id))
+        intp_node.set('mode', 'active' if id == 0 else 'inactive')
+
+        mrs_node = ET.SubElement(intp_node, 'mrs')
+        mrs_node.text = mrs.text
+
+        dmrs_node = ET.fromstring(mrs.dmrs_xml(False)).findall('dmrs')[0]
+        intp_node.append(dmrs_node)
+    return sent_node
+    # filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
+
+
+def export_to_visko(sents, doc_path):
+    if not os.path.exists(doc_path):
+        os.makedirs(doc_path)
+    print("Importing %s sentences" % (len(sents),))
+    for sent in sents:
+        sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
+        with gzip.open(sentpath, 'w') as f:
+            f.write(ET.tostring(sent_to_visko_xml(sent), encoding='utf-8'))
+
+
 #-----------------------------------------------------------------------
 
 def main():
-    print("Step 1: Extracting gold parse trees from Itsdb")
-    extract_tsdb_gold()
+    parser = argparse.ArgumentParser(description="ISF Gold Extractor")
+
+    parser.add_argument('-g', '--gold', help='Extract gold profile', action='store_true')
+    parser.add_argument('--visko', help='Export to VISKO', action='store_true')
     
-    print("Step 2: Generating gold profile as XML")
-    generate_gold_profile()
+    if len(sys.argv) == 1:
+        # User didn't pass any value in, show help
+        parser.print_help()
+    else:
+        # Parse input arguments
+        args = parser.parse_args()
+        if args.visko:
+            sents = read_ace_output('data/wndefs.nokey.mrs.txt')
+            export_to_visko(sents[:200], os.path.expanduser('~/wk/vk/data/biblioteche/test/wn/wndef/'))
+        elif args.gold:
+            # print("Step 2: Generating gold profile as XML")
+            generate_gold_profile()
+        else:
+            parser.print_help()
+    pass
+
 
 if __name__ == "__main__":
     main()
