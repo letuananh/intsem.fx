@@ -7,12 +7,12 @@ Basic data models
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	argparse module:
-		https://docs.python.org/3/howto/argparse.html
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -48,28 +48,33 @@ __status__ = "Prototype"
 
 ########################################################################
 
+import json
 import delphin
 from delphin.mrs import simplemrs
+from delphin.mrs import simpledmrs
 from delphin.mrs import dmrx
+from delphin.mrs import Mrs
+from delphin.mrs import Dmrs
 from delphin.mrs.components import Pred
 from chirptext.leutile import StringTool
 from chirptext.texttaglib import TagInfo
-# from model import Sentence, DMRS
+from chirptext.texttaglib import TaggedSentence
+
 
 ########################################################################
 
 class Sentence:
+
     def __init__(self, text='', sid=-1):
         self.text = StringTool.strip(text)
         self.sid = sid
-        self.mrs = list()
-        self.raw_mrs = list()
+        self.mrses = list()
 
     def add(self, mrs):
-        self.mrs.append(DMRS(StringTool.strip(mrs), self))
+        self.mrses.append(DMRS(StringTool.strip(mrs), self))
 
     def __str__(self):
-        return "%s (%s mrs)" % (self.text, len(self.mrs))
+        return "%s (%s mrs(es))" % (self.text, len(self.mrses))
 
 
 class DMRS:
@@ -86,6 +91,28 @@ class DMRS:
     def dmrs_xml(self, pretty_print=False):
         return dmrx.dumps([simplemrs.loads_one(self.text)], pretty_print=pretty_print)
 
+    def mrs_json(self):
+        '''MRS data in JSON format'''
+        return json.dumps(Mrs.to_dict(self.mrs(), properties=True))
+
+    def mrs_str(self):
+        '''prettified MRS string'''
+        return simplemrs.dumps_one(self.mrs(), pretty_print=True)
+
+    def dmrs_json(self):
+        '''DMRS data in JSON format'''
+        return json.dumps(Dmrs.to_dict(self.mrs(), properties=True))
+
+    def dmrs_str(self):
+        '''prettified DMRS string'''
+        return simpledmrs.dumps_one(self.mrs(), pretty_print=True)
+
+    def __repr__(self):
+        return self.text
+
+    def __str__(self):
+        return self.mrs_str()
+
     def surface(self, node):
         if not node or not self.sent:
             return None
@@ -99,22 +126,21 @@ class DMRS:
         return TaggedSentence(self.sent.text, self.preds())
 
     def ep_to_taginfo(self, ep):
-        nodeid = ep[0]
-        pred   = ep[1]
-        label  = ep[2]
-        args   = ep[3]
-        cfrom  = -1
-        cto    = -1
+        # nodeid = ep[0]
+        pred = ep[1]
+        # label = ep[2]
+        # args = ep[3]
+        cfrom = -1
+        cto = -1
         if len(ep) > 4:
-            lnk    = ep[4]
-            cfrom  = lnk.data[0]
-            cto    = lnk.data[1]
+            lnk = ep[4]
+            cfrom = lnk.data[0]
+            cto = lnk.data[1]
         pred_string = delphin.mrs.components.normalize_pred_string(pred.string)
         return TagInfo(cfrom, cto, pred_string)
-        
-    
+
     def preds(self):
-        return [ self.ep_to_taginfo(x) for x in self.mrs().eps() ]
+        return [self.ep_to_taginfo(x) for x in self.mrs().eps()]
 
 
 def main():

@@ -69,9 +69,10 @@ from .model import Sentence
 ##########################################
 ERG_GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
-ACE_ARGS = [ '-n', '5' ]
+ACE_ARGS = ['-n', '5']
 SEMCOR_TXT = 'data/semcor.txt'
 TOP_K = 10
+
 
 ########################################################################
 
@@ -106,9 +107,9 @@ class Grammar:
 
 
 class PredSense():
-    
+
     lwsd = LeLeskWSD(LLConfig.WORDNET_30_GLOSS_DB_PATH, LLConfig.WORDNET_30_PATH)
-    
+
     @staticmethod
     def unpack_pred(pred_text):
         parts = pred_text.split('\t')

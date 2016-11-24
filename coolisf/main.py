@@ -68,8 +68,10 @@ ERG = Grammar()
 
 ########################################################################
 
-def read_data():
-    return [StringTool.strip(x) for x in open(SEMCOR_TXT).readlines()]
+
+# def read_data():
+#     return [StringTool.strip(x) for x in open(SEMCOR_TXT).readlines()]
+
 
 def enter_sentence():
     return input("Enter a sentence (empty to exit): ")
@@ -90,8 +92,8 @@ def process_sentence(sent, verbose=True, top_k=10):
         print("You have entered: %s" % sent)
     tagged = ERG.txt2dmrs(sent)
     mrs_id = 1
-    if tagged and tagged.mrs:
-        for mrs in tagged.mrs:
+    if tagged and tagged.mrses:
+        for mrs in tagged.mrses:
             print('-' * 80)
             print("MRS #%s\n" % mrs_id)
             print(PredSense.tag_sentence(mrs))
@@ -100,6 +102,15 @@ def process_sentence(sent, verbose=True, top_k=10):
             if top_k < mrs_id:
                 break
             # endif
+
+
+def to_visko(args):
+    sents = read_ace_output(args.file)  # e.g. data/wndefs.nokey.mrs.txt
+    visko_data_dir = os.path.expanduser('~/wk/vk/data/biblioteche')
+    export_path = os.path.join(visko_data_dir, args.biblioteca, args.corpus, args.doc)
+    if args.topk:
+        sents = sents[:int(args.topk)]
+    export_to_visko(sents, export_path)
 
 
 def main_shell():
@@ -111,25 +122,28 @@ def main_shell():
 def main():
     parser = argparse.ArgumentParser(description="CoolISF Main Application")
 
-    parser.add_argument('-s', '--shell', help='Enter interactive shell', action='store_true')
-    parser.add_argument('-g', '--gold', help='Extract gold profile', action='store_true')
-    parser.add_argument('--visko', help='Export to VISKO', action='store_true')
+    tasks = parser.add_subparsers(help='Task to be done')
+
+    shell_task = tasks.add_parser('shell', help='Interactive shell')
+    shell_task.set_defaults(func=lambda args: main_shell())
+
+    gold_task = tasks.add_parser('gold', help='Extract gold profile')
+    gold_task.set_defaults(func=lambda arsg: generate_gold_profile())
+
+    export_task = tasks.add_parser('export', help='Export MRS to VISKO')
+    export_task.add_argument('file', help='MRS file')
+    export_task.add_argument('biblioteca')
+    export_task.add_argument('corpus')
+    export_task.add_argument('doc')
+    export_task.add_argument('-k', '--topk', help='Only extract top K sentences')
+    export_task.set_defaults(func=to_visko)
 
     if len(sys.argv) == 1:
         parser.print_help()
     else:
         # Parse input arguments
         args = parser.parse_args()
-        if args.visko:
-            sents = read_ace_output('data/wndefs.nokey.mrs.txt')
-            export_to_visko(sents[:200], os.path.expanduser('~/wk/vk/data/biblioteche/test/wn/wndef/'))
-        elif args.gold:
-            # print("Step 2: Generating gold profile as XML")
-            generate_gold_profile()
-        elif args.shell:
-            main_shell()
-        else:
-            parser.print_help()
+        args.func(args)
     pass
 
 

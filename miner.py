@@ -54,9 +54,11 @@ import argparse
 import collections
 import string
 
-from coolisf.gold_extract import *
-
 from chirptext.leutile import TextReport
+
+from coolisf.gold_extract import *
+from coolisf.model import Sentence
+from coolisf.util import Grammar
 
 ########################################################################
 
@@ -95,7 +97,7 @@ def mine_compoundnoun(text, mrs):
                 compounds.append((ep, surface_str))                
     return compounds
 
-def mine_preds():
+def mine_preds(args):
     r = TextReport('data/mining.txt')
     r.header('Pred mining')
     sid_gold_map = read_gold_tags()
@@ -160,16 +162,55 @@ def mine_preds():
     # print(sentset)
     # print(len(sentset))
 
+
+def dev_mode(args):
+    print("Quick dev mode")
+    # parse a sentence using ERG
+    s = Grammar().txt2dmrs('Dogs are funnier than Asian tiger mosquitoes.')
+    # print MRS in different formats
+    print("var text = '%s';" % (s.text))
+    print("// RAW MRS: %s" % (s.mrs[0].text))
+    print("var mrs_json = '%s';" % s.mrs[0].mrs_json())
+    print("var dmrs_json = '%s';" % s.mrs[0].dmrs_json())
+    print(s.mrs[0].dmrs_str())
+    print("Done")
+
+
+def find_compound(args):
+    raw_file = args.filepath + '.txt'
+    mrs_file = args.filepath + '.mrs.txt'
+    print("Looking for compounds from %s" % raw_file)
+    from coolisf.gold_extract import read_ace_output
+    sentences = read_ace_output(mrs_file)
+    # look for compounds
+    with open(args.filepath + '.mrs.compound_only.txt', 'w') as cpfile:
+        for s in sentences:
+            for mrs in s.mrs:
+                if('compound' in mrs):
+                    print("{}\t{}\t{}".format(s.sid, s.text, mrs))
+                    cpfile.write('SENT: {}\n{}\n\n\n'.format(s.text, mrs))
+    print("Done")
+
 ########################################################################
 
 def main():
-    ''' ISF Gold Miner
+    ''' ISF Miner
     '''
 
-    parser = argparse.ArgumentParser(description="ISF Gold Profile Miner.")
-    
+    parser = argparse.ArgumentParser(description="ISF Miner")
+
     # Positional argument(s)
-    parser.add_argument('task', help='Task to be done')
+    task_parsers = parser.add_subparsers(help='Task to be done')
+
+    mine_preds_task = task_parsers.add_parser('mine')
+    mine_preds_task.set_defaults(func=mine_preds)
+
+    dev_task = task_parsers.add_parser('dev')
+    dev_task.set_defaults(func=dev_mode)
+
+    find_compound_task = task_parsers.add_parser('fcomp')
+    find_compound_task.add_argument('filepath')
+    find_compound_task.set_defaults(func=find_compound)
 
     # Optional argument(s)
     group = parser.add_mutually_exclusive_group()
@@ -179,15 +220,12 @@ def main():
     # Main script
     if len(sys.argv) == 1:
         # User didn't pass any value in, show help
-        mine_preds()
-        # parser.print_help()
+        # mine_preds()
+        parser.print_help()
     else:
         # Parse input arguments
         args = parser.parse_args()
-        # Now do something ...
-        if args.task == 'mine':
-            mine_preds()
-    pass
+        args.func(args)
 
 if __name__ == "__main__":
     main()

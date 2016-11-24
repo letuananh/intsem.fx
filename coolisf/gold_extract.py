@@ -48,13 +48,16 @@ __status__ = "Prototype"
 ########################################################################
 
 import os
+import sys
 import datetime
+import argparse
 from collections import namedtuple
 from collections import defaultdict as dd
 import gzip
 from lxml import etree as ET
 from lxml.etree import CDATA
-import xml.dom.minidom
+import xml
+import xml.dom.minidom as minidom
 
 from delphin import itsdb
 from delphin.interfaces import ace
@@ -117,7 +120,7 @@ def extract_tsdb_gold():
             raw_sentences.append(TSDBSentence(parts[0], parts[1]))
     print("Number of raw sentences: %s" % len(raw_sentences))
     t.end("Raw text has been loaded.")
-    
+
     t.start("Loading gold profile from: [%s] ..." % (GOLD_PROFILE,))
     prof = itsdb.ItsdbProfile(GOLD_PROFILE)
 
@@ -223,9 +226,10 @@ def read_ace_output(ace_output_file):
                 c.count('total')
             else:
                 break
-    c.summarise() 
+    c.summarise()
     writelines(skipped, ace_output_file + '.skipped.txt')
     return sentences
+
 
 def build_root_node():
     isf_node = ET.Element('rootisf')
@@ -241,7 +245,7 @@ def build_root_node():
     # License text
     license_node = ET.SubElement(filedesc_node, "license")
     license_node.text = LICENSE_TEXT
-    # Processors
+    # CoolISF
     procs_node = ET.SubElement(header_node, "linguisticProcessors")
     proc_node = ET.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "coolisf")
@@ -249,28 +253,27 @@ def build_root_node():
     proc_node.set("version", "pre 0.1")
     proc_node.set("url", "https://github.com/letuananh/intsem.fx")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
-    
+    # ACE
     proc_node = ET.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "ACE")
     proc_node.set("description", "the Answer Constraint Engine (Delph-in)")
     proc_node.set("version", "0.9.17")
     proc_node.set("url", "http://moin.delph-in.net/AceTop")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
-    
+    # NLTK
     proc_node = ET.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "NLTK")
     proc_node.set("description", "Natural Language Toolkit for Python")
     proc_node.set("version", "3.0.4")
     proc_node.set("url", "http://www.nltk.org/")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
-    
+    # pyDelphin
     proc_node = ET.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "pyDelphin")
     proc_node.set("description", "Python libraries for DELPH-IN")
     proc_node.set("version", "0.3")
     proc_node.set("url", "https://github.com/delph-in/pydelphin")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
-    
     # Contributors
     contributors_node = ET.SubElement(header_node, "contributors")
     contributor_node = ET.SubElement(contributors_node, "contributor")
@@ -282,7 +285,6 @@ def build_root_node():
     contributor_node = ET.SubElement(contributors_node, "contributor")
     contributor_node.set("name", "Dan Flickinger")
     contributor_node.set("email", "danf@stanford.edu")
-    
     return isf_node
 
 
@@ -307,7 +309,6 @@ def read_gold_mrs():
             sent = Sentence(text=text, sid=int(ntuid))
             if mrs and len(mrs.strip()) > 0:
                 sent.add(mrs)
-                sent.raw_mrs.append(mrs)
             sentences.append(sent)
     return sentences
 
@@ -323,7 +324,7 @@ def generate_gold_profile():
     doc_node = ET.SubElement(isf_node, 'document')
     doc_node.set('name', 'speckled band')
     preds_debug = []
-    
+
     cgold = Counter()
     for sent in sentences:
         sid_key = str(sent.sid)
@@ -332,7 +333,7 @@ def generate_gold_profile():
     print("Gold senses inserted")
     cgold.summarise()
     print("Dumping preds debug")
-    writelines([ '\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
+    writelines(['\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
 
     with open(OUTPUT_ISF, 'w') as output_isf:
         print("Making it beautiful ...")
@@ -341,6 +342,7 @@ def generate_gold_profile():
         output_isf.write(xml_string)
     print("ISF gold profile has been written to %s" % (OUTPUT_ISF,))
     print("All done!")
+
 
 def tag_preds(mrs):
     ''' Get all sense candidates for a particular MRS)
@@ -351,7 +353,8 @@ def tag_preds(mrs):
         if candidates:
             best_candidate_map[pred_to_key(pred)] = candidates[0]
     return best_candidate_map
-    
+
+
 def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
     # WSD info
     best_candidate_map = tag_preds(mrs)
@@ -377,6 +380,7 @@ def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
                 candidate_node.set('lemma', str(candidate.lemma))
                 candidate_node.set('score', str(candidate.tagcount))
 
+
 def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=None):
     ''' Convert a coolisf.model.Sentence to an XML node
         e.g. sent = Grammar().txt2dmrs('The dog barks.')
@@ -390,10 +394,10 @@ def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=
     text_node = ET.SubElement(sent_node, 'text')
     text_node.text = sent.text
     dmrses_node = ET.SubElement(sent_node, 'dmrses')
-    if len(sent.mrs) == 0:
+    if len(sent.mrses) == 0:
         return sent_node
     else:
-        for mrs in sent.mrs:
+        for mrs in sent.mrses:
             xml_string = mrs.dmrs_xml(False)
             dmrs_xml = ET.fromstring(xml_string)
             dmrses = dmrs_xml.findall('dmrs')
@@ -407,6 +411,7 @@ def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=
                 tag_dmrs_xml(mrs, dmrs_node, goldtags, cgold=cgold)
                 dmrses_node.append(dmrs_node)
     return sent_node
+
 
 def sentence_to_xmlstring(sent, doc_node=None, goldtags=None):
     ''' Convert a coolisf.model.Sentence to an XML utf-8 string
@@ -422,7 +427,7 @@ def sent_to_visko_xml(sent):
     # Add license information
     text_node = ET.SubElement(sent_node, 'text')
     text_node.text = sent.text
-    for id, mrs in enumerate(sent.mrs):
+    for id, mrs in enumerate(sent.mrses):
         intp_node = ET.SubElement(sent_node, 'interpretation')
         intp_node.set('id', str(id))
         intp_node.set('mode', 'active' if id == 0 else 'inactive')
@@ -446,6 +451,30 @@ def export_to_visko(sents, doc_path):
             f.write(ET.tostring(sent_to_visko_xml(sent), encoding='utf-8'))
 
 
+def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
+    sid_gold_map = read_gold_tags()
+    sentences = read_gold_mrs()
+
+    for sent in sentences:
+        snode = sent_to_visko_xml(sent)
+        interpretations = snode.findall('interpretation')
+        for mrs, i in zip(sent.mrses, interpretations):
+            children = i.findall('dmrs')
+            if children:
+                dmrs = children[0]
+                goldtags = sid_gold_map[str(sent.sid)]
+                tag_dmrs_xml(mrs, dmrs, goldtags)
+        sentpath = os.path.join(os.path.expanduser(doc_path), str(sent.sid) + '.xml.gz')
+        with gzip.open(sentpath, 'w') as f:
+            sstr = ET.tostring(snode, encoding='utf-8', pretty_print=True)
+            f.write(sstr)
+
+
+def dev():
+    print("DEV")
+    gold_to_visko()
+    pass
+
 #-----------------------------------------------------------------------
 
 def main():
@@ -453,6 +482,7 @@ def main():
 
     parser.add_argument('-g', '--gold', help='Extract gold profile', action='store_true')
     parser.add_argument('--visko', help='Export to VISKO', action='store_true')
+    parser.add_argument('-d', '--dev', help='Dev mode', action='store_true')
     
     if len(sys.argv) == 1:
         # User didn't pass any value in, show help
@@ -460,7 +490,9 @@ def main():
     else:
         # Parse input arguments
         args = parser.parse_args()
-        if args.visko:
+        if args.dev:
+            dev()
+        elif args.visko:
             sents = read_ace_output('data/wndefs.nokey.mrs.txt')
             export_to_visko(sents[:200], os.path.expanduser('~/wk/vk/data/biblioteche/test/wn/wndef/'))
         elif args.gold:
