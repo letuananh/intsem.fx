@@ -56,7 +56,7 @@ import argparse
 
 from chirptext.leutile import StringTool
 
-from .util import PredSense
+from .model import PredSense
 from .util import get_preds
 from .util import Grammar
 

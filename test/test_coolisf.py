@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Script for testing pyisf library
+Script for testing coolisf library
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
@@ -41,7 +41,7 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, pyisf"
-__credits__ = [ "Le Tuan Anh" ]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -55,12 +55,12 @@ import os
 import argparse
 import unittest
 
+from lxml import etree
+
 import json
 
-from coolisf.gold_extract import read_ace_output
-from coolisf.gold_extract import sentence_to_xml
-from coolisf.gold_extract import sentence_to_xmlstring
-from coolisf.gold_extract import prettify_xml
+from coolisf.util import read_ace_output
+from coolisf.model import Sentence
 from coolisf.util import Grammar
 
 ########################################################################
@@ -68,41 +68,63 @@ from coolisf.util import Grammar
 TEST_SENTENCES  = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 
-class TestPyISF(unittest.TestCase):
+class TestMain(unittest.TestCase):
+
+    ERG = Grammar()
 
     def test_ace_output_to_xml(self):
         sentences = read_ace_output(ACE_OUTPUT_FILE)
-        self.assertTrue(sentences)
+        self.assertIsNotNone(sentences)
 
         sent = sentences[0]
-        self.assertEqual(len(sent.mrs), 3)
-        
+        self.assertEqual(len(sent.mrses), 3)
         # sentence to XML
-        xml = sentence_to_xml(sent)
-        self.assertTrue(xml)
+        xml = sent.to_xml_node()
+        self.assertIsNotNone(xml)
         # ensure DMRS nodes count
         dmrs_nodes = xml.findall('./dmrses/dmrs')
         self.assertEqual(len(dmrs_nodes), 3)
 
     def test_txt_to_dmrs(self):
         print("Test parsing raw text sentences")
-        ERG = Grammar()
         with open(TEST_SENTENCES) as test_file:
             raw_sentences = test_file.readlines()
-            sentences = [ ERG.txt2dmrs(x) for x in raw_sentences ]
-            self.assertEqual(len(sentences[0].mrs), 5)
-            self.assertEqual(len(sentences[1].mrs), 5)
-            self.assertEqual(len(sentences[2].mrs), 0)
-            
-            self.assertTrue(sentences[0].mrs[0].dmrs_xml(True))
+            sentences = [self.ERG.txt2dmrs(x) for x in raw_sentences]
+            self.assertEqual(len(sentences[0].mrses), 5)
+            self.assertEqual(len(sentences[1].mrses), 5)
+            self.assertEqual(len(sentences[2].mrses), 0)
+            mrs0 = sentences[0].mrses[0]
+            self.assertIsNotNone(mrs0.dmrs_xml(pretty_print=True))
 
             print("Test sense tag")
-            xmlstr = sentence_to_xmlstring(sentences[0])
+            xmlstr = sentences[0].to_xml_str(pretty_print=True)
             with open('data/temp.xml', 'w') as outfile:
-                outfile.write(prettify_xml(xmlstr))
+                outfile.write(xmlstr)
             tagged = xmlstr.count('<sense')
             self.assertGreater(tagged, 0)
 
+    def test_mrs_formats(self):
+        text = "Some dogs barked."
+        a_sent = self.ERG.txt2dmrs(text)
+        a_m = a_sent.mrses[0]
+        # Create sentence object from raw data
+        sent = Sentence(a_sent.text)
+        sent.add(a_m.text)
+        self.assertIsNotNone(sent)
+        m = sent.mrses[0]
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(str(m)[:20], '[ TOP: h0\n  INDEX: e')
+        # now make DMRS XML ...
+        xml_str = etree.tostring(m.sense_tag(with_raw=False)).decode('utf-8')
+        self.assertTrue(xml_str.startswith('<dmrs cfrom="'))
+        # add new DMRS from XML
+        sent.add_from_xml(xml_str)
+        self.assertEqual(len(sent), 2)  # now we should have 2 MRSes
+        m2 = sent.mrses[1]
+        # and they should look exactly the same
+        xml_str2 = etree.tostring(m2.sense_tag(with_raw=False)).decode('utf-8')
+        self.assertEqual(xml_str, xml_str2)
+        pass
 
 ########################################################################
 

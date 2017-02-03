@@ -54,8 +54,7 @@ import argparse
 from collections import namedtuple
 from collections import defaultdict as dd
 import gzip
-from lxml import etree as ET
-from lxml.etree import CDATA
+from lxml import etree
 import xml
 import xml.dom.minidom as minidom
 
@@ -73,7 +72,7 @@ from chirptext.leutile import Counter
 from chirptext.texttaglib import writelines
 
 from coolisf.model import Sentence
-from coolisf.util import PredSense
+from coolisf.util import read_ace_output
 
 ##########################################
 # CONFIGURATION
@@ -99,6 +98,7 @@ prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
 
 #-----------------------------------------------------------------------
 
+
 class TSDBSentence:
     def __init__(self, sid, text, mrs=''):
         self.sid = sid
@@ -107,6 +107,7 @@ class TSDBSentence:
         self.mrs = mrs
 
 #-----------------------------------------------------------------------
+
 
 def extract_tsdb_gold():
     t = Timer()
@@ -184,6 +185,7 @@ def extract_tsdb_gold():
 
     print("All done!")
 
+
 def read_data(file_path):
     data = []
     with open(file_path, 'r') as input_file:
@@ -191,98 +193,59 @@ def read_data(file_path):
             data.append(tuple(line.split()))
     return data
 
-def pred_to_key(pred):
-    pred_obj = Pred.grammarpred(pred.label)
-    return '-'.join((str(pred.cfrom), str(pred.cto), str(pred_obj.pos), str(pred_obj.lemma), str(pred_obj.sense)))
-
-def read_ace_output(ace_output_file):
-    print("Reading parsed MRS from %s..." % (ace_output_file,))
-    c = Counter()
-    items = []
-    sentences = []
-    skipped = []
-    with open(ace_output_file, 'r') as input_mrs:
-        current_sid = 0
-        while True:
-            current_sid += 1
-            line = input_mrs.readline()
-            if line.startswith('SENT'):
-                mrs_line = input_mrs.readline()
-                item = [line, mrs_line]
-                s = Sentence(line[5:], sid=current_sid)
-                sentences.append(s)
-                while mrs_line.strip():
-                    s.add(mrs_line)
-                    mrs_line = input_mrs.readline()
-                input_mrs.readline()
-                c.count('sent')
-                c.count('total')
-            elif line.startswith('SKIP'):
-                skipped.append(line[5:].strip())
-                items.append([line])
-                input_mrs.readline()
-                input_mrs.readline()
-                c.count('skip')
-                c.count('total')
-            else:
-                break
-    c.summarise()
-    writelines(skipped, ace_output_file + '.skipped.txt')
-    return sentences
-
 
 def build_root_node():
-    isf_node = ET.Element('rootisf')
+    isf_node = etree.Element('rootisf')
     isf_node.set('version', '0.1')
     isf_node.set('lang', 'eng')
     # Add license information
-    header_node = ET.SubElement(isf_node, 'headerisf')
-    filedesc_node = ET.SubElement(header_node, 'description')
+    header_node = etree.SubElement(isf_node, 'headerisf')
+    filedesc_node = etree.SubElement(header_node, 'description')
     filedesc_node.set("title", "The Adventure of the Speckled Band")
     filedesc_node.set("author", "Arthur Conan Doyle")
     filedesc_node.set("filename", "spec-isf.xml")
     filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
     # License text
-    license_node = ET.SubElement(filedesc_node, "license")
+    license_node = etree.SubElement(filedesc_node, "license")
     license_node.text = LICENSE_TEXT
     # CoolISF
-    procs_node = ET.SubElement(header_node, "linguisticProcessors")
-    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    procs_node = etree.SubElement(header_node, "linguisticProcessors")
+    proc_node = etree.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "coolisf")
     proc_node.set("description", "Python implementation of Integrated Semantic Framework")
     proc_node.set("version", "pre 0.1")
     proc_node.set("url", "https://github.com/letuananh/intsem.fx")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
     # ACE
-    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node = etree.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "ACE")
     proc_node.set("description", "the Answer Constraint Engine (Delph-in)")
     proc_node.set("version", "0.9.17")
     proc_node.set("url", "http://moin.delph-in.net/AceTop")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
     # NLTK
-    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node = etree.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "NLTK")
     proc_node.set("description", "Natural Language Toolkit for Python")
     proc_node.set("version", "3.0.4")
     proc_node.set("url", "http://www.nltk.org/")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
     # pyDelphin
-    proc_node = ET.SubElement(procs_node, "linguisticProcessor")
+    proc_node = etree.SubElement(procs_node, "linguisticProcessor")
     proc_node.set("name", "pyDelphin")
     proc_node.set("description", "Python libraries for DELPH-IN")
     proc_node.set("version", "0.3")
     proc_node.set("url", "https://github.com/delph-in/pydelphin")
     proc_node.set("timestamp", datetime.datetime.now().isoformat())
     # Contributors
-    contributors_node = ET.SubElement(header_node, "contributors")
-    contributor_node = ET.SubElement(contributors_node, "contributor")
+    contributors_node = etree.SubElement(header_node, "contributors")
+    contributor_node = etree.SubElement(contributors_node, "contributor")
     contributor_node.set("name", "Le Tuan Anh")
     contributor_node.set("email", "tuananh.ke@gmail.com")
-    contributor_node = ET.SubElement(contributors_node, "contributor")
+    contributor_node = etree.SubElement(contributors_node, "contributor")
     contributor_node.set("name", "Francis Bond")
     contributor_node.set("email", "fcbond@gmail.com")
-    contributor_node = ET.SubElement(contributors_node, "contributor")
+    contributor_node = etree.SubElement(contributors_node, "contributor")
     contributor_node.set("name", "Dan Flickinger")
     contributor_node.set("email", "danf@stanford.edu")
     return isf_node
@@ -321,7 +284,7 @@ def generate_gold_profile():
     # build root XML node for data file
     isf_node = build_root_node()
     # Add document nodes
-    doc_node = ET.SubElement(isf_node, 'document')
+    doc_node = etree.SubElement(isf_node, 'document')
     doc_node.set('name', 'speckled band')
     preds_debug = []
 
@@ -329,113 +292,38 @@ def generate_gold_profile():
     for sent in sentences:
         sid_key = str(sent.sid)
         goldtags = sid_gold_map[sid_key]
-        sentence_to_xml(sent, doc_node, goldtags, preds_debug=preds_debug, cgold=cgold)
+        sent.to_xml_node(doc_node, goldtags, cgold)
     print("Gold senses inserted")
     cgold.summarise()
     print("Dumping preds debug")
     writelines(['\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
 
-    with open(OUTPUT_ISF, 'w') as output_isf:
+    with open(OUTPUT_ISF, 'wb') as output_isf:
         print("Making it beautiful ...")
-        xml_string = prettify_xml(ET.tostring(isf_node, encoding='utf-8'))
+        xml_string = etree.tostring(isf_node, encoding='utf-8', pretty_print=True)
         print("Saving XML data to file ...")
         output_isf.write(xml_string)
     print("ISF gold profile has been written to %s" % (OUTPUT_ISF,))
     print("All done!")
 
 
-def tag_preds(mrs):
-    ''' Get all sense candidates for a particular MRS)
-    '''
-    best_candidate_map = {}
-    for pred in mrs.preds():
-        candidates = PredSense.search_pred_string(pred.label, False)
-        if candidates:
-            best_candidate_map[pred_to_key(pred)] = candidates[0]
-    return best_candidate_map
-
-
-def tag_dmrs_xml(mrs, dmrs_node, goldtags=None, sent_node=None, cgold=None):
-    # WSD info
-    best_candidate_map = tag_preds(mrs)
-    # inject sense tags into nodes
-    for node in dmrs_node.findall('node'):
-        # insert gold sense
-        if goldtags:                    
-            for tag in goldtags:
-                if node.get('cfrom') and node.get('cto') and int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
-                    gold_node = ET.SubElement(node, 'sensegold')
-                    gold_node.set('synset', tag[3])
-                    gold_node.set('clemma', tag[4])
-                    if cgold: cgold.count('inserted')
-        realpred = node.find('realpred')
-        if realpred is not None:
-            # insert mcs
-            key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
-            if key in best_candidate_map:
-                candidate = best_candidate_map[key]
-                candidate_node = ET.SubElement(node, 'sense')
-                candidate_node.set('pos', str(candidate.pos))
-                candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
-                candidate_node.set('lemma', str(candidate.lemma))
-                candidate_node.set('score', str(candidate.tagcount))
-
-
-def sentence_to_xml(sent, doc_node=None, goldtags=None, preds_debug=None, cgold=None):
-    ''' Convert a coolisf.model.Sentence to an XML node
-        e.g. sent = Grammar().txt2dmrs('The dog barks.')
-             xml_node = sentence_to_xml(sent)
-    '''
-    if doc_node is not None:
-        sent_node = ET.SubElement(doc_node, 'sentence')
-    else:
-        sent_node = ET.Element('sentence')
-    sent_node.set('sid', str(sent.sid))
-    text_node = ET.SubElement(sent_node, 'text')
-    text_node.text = sent.text
-    dmrses_node = ET.SubElement(sent_node, 'dmrses')
-    if len(sent.mrses) == 0:
-        return sent_node
-    else:
-        for mrs in sent.mrses:
-            xml_string = mrs.dmrs_xml(False)
-            dmrs_xml = ET.fromstring(xml_string)
-            dmrses = dmrs_xml.findall('dmrs')
-            for dmrs_node in dmrses:
-                # insert raw MRS
-                raw_node = ET.Element('raw')
-                nice_raw = simplemrs.dumps_one(simplemrs.loads_one(mrs.text), pretty_print=True)
-                raw_node.text = CDATA(nice_raw)
-                dmrs_node.insert(0, raw_node)
-                # sense tagging
-                tag_dmrs_xml(mrs, dmrs_node, goldtags, cgold=cgold)
-                dmrses_node.append(dmrs_node)
-    return sent_node
-
-
-def sentence_to_xmlstring(sent, doc_node=None, goldtags=None):
-    ''' Convert a coolisf.model.Sentence to an XML utf-8 string
-    '''
-    return ET.tostring(sentence_to_xml(sent, doc_node, goldtags), encoding='utf-8').decode('utf-8')
-
-
 def sent_to_visko_xml(sent):
-    sent_node = ET.Element('sentence')
+    sent_node = etree.Element('sentence')
     sent_node.set('id', str(sent.sid))
     sent_node.set('version', '0.1')
     sent_node.set('lang', 'eng')
     # Add license information
-    text_node = ET.SubElement(sent_node, 'text')
+    text_node = etree.SubElement(sent_node, 'text')
     text_node.text = sent.text
     for id, mrs in enumerate(sent.mrses):
-        intp_node = ET.SubElement(sent_node, 'interpretation')
+        intp_node = etree.SubElement(sent_node, 'interpretation')
         intp_node.set('id', str(id))
         intp_node.set('mode', 'active' if id == 0 else 'inactive')
 
-        mrs_node = ET.SubElement(intp_node, 'mrs')
+        mrs_node = etree.SubElement(intp_node, 'mrs')
         mrs_node.text = mrs.text
 
-        dmrs_node = ET.fromstring(mrs.dmrs_xml(False)).findall('dmrs')[0]
+        dmrs_node = mrs.dmrs_xml(False)
         intp_node.append(dmrs_node)
     return sent_node
     # filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
@@ -448,7 +336,7 @@ def export_to_visko(sents, doc_path):
     for sent in sents:
         sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
         with gzip.open(sentpath, 'w') as f:
-            f.write(ET.tostring(sent_to_visko_xml(sent), encoding='utf-8'))
+            f.write(etree.tostring(sent_to_visko_xml(sent), encoding='utf-8'))
 
 
 def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
@@ -466,7 +354,7 @@ def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
                 tag_dmrs_xml(mrs, dmrs, goldtags)
         sentpath = os.path.join(os.path.expanduser(doc_path), str(sent.sid) + '.xml.gz')
         with gzip.open(sentpath, 'w') as f:
-            sstr = ET.tostring(snode, encoding='utf-8', pretty_print=True)
+            sstr = etree.tostring(snode, encoding='utf-8', pretty_print=True)
             f.write(sstr)
 
 
@@ -483,6 +371,7 @@ def main():
     parser.add_argument('-g', '--gold', help='Extract gold profile', action='store_true')
     parser.add_argument('--visko', help='Export to VISKO', action='store_true')
     parser.add_argument('-d', '--dev', help='Dev mode', action='store_true')
+    parser.add_argument('-x', '--extract', help='Extract TSDB gold', action='store_true')
     
     if len(sys.argv) == 1:
         # User didn't pass any value in, show help
@@ -492,6 +381,8 @@ def main():
         args = parser.parse_args()
         if args.dev:
             dev()
+        elif args.extract:
+            extract_tsdb_gold()
         elif args.visko:
             sents = read_ace_output('data/wndefs.nokey.mrs.txt')
             export_to_visko(sents[:200], os.path.expanduser('~/wk/vk/data/biblioteche/test/wn/wndef/'))
