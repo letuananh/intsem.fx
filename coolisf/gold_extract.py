@@ -72,6 +72,7 @@ from chirptext.leutile import Counter
 from chirptext.texttaglib import writelines
 
 from coolisf.model import Sentence
+from coolisf.model import tag_dmrs_xml
 from coolisf.util import read_ace_output
 
 ##########################################
@@ -342,7 +343,8 @@ def export_to_visko(sents, doc_path):
 def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
     sid_gold_map = read_gold_tags()
     sentences = read_gold_mrs()
-
+    doc_path = os.path.expanduser(doc_path)
+    FileTool.create_dir(doc_path)
     for sent in sentences:
         snode = sent_to_visko_xml(sent)
         interpretations = snode.findall('interpretation')
@@ -352,7 +354,7 @@ def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
                 dmrs = children[0]
                 goldtags = sid_gold_map[str(sent.sid)]
                 tag_dmrs_xml(mrs, dmrs, goldtags)
-        sentpath = os.path.join(os.path.expanduser(doc_path), str(sent.sid) + '.xml.gz')
+        sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
         with gzip.open(sentpath, 'w') as f:
             sstr = etree.tostring(snode, encoding='utf-8', pretty_print=True)
             f.write(sstr)

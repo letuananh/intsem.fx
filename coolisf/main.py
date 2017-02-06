@@ -100,7 +100,7 @@ def process_sentence(sent, verbose=True, top_k=10):
             print('\n\n')
             mrs_id += 1
             if top_k < mrs_id:
-                break
+                break3
             # endif
 
 

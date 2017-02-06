@@ -84,7 +84,7 @@ class Sentence(object):
 
     def __len__(self):
         return len(self.mrses)
-        
+
     def add_from_xml(self, xml):
         self.mrses.append(DMRS(dmrs_xml=xml, sent=self))
 
@@ -194,28 +194,10 @@ class DMRS(object):
         return [self.ep_to_taginfo(x) for x in self.mrs().eps()]
 
     def sense_tag(self, goldtags=None, cgold=None, with_raw=True):
-        best_candidate_map = self.pred_candidates()
-        for node in self.dmrs_xml(with_raw=with_raw).findall('node'):
-            if goldtags:
-                for tag in goldtags:
-                    if node.get('cfrom') and node.get('cto') and int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
-                        gold_node = etree.SubElement(node, 'sensegold')
-                        gold_node.set('synset', tag[3])
-                        gold_node.set('clemma', tag[4])
-                        if cgold:
-                            cgold.count('inserted')
-            realpred = node.find('realpred')
-            if realpred is not None:
-                # insert mcs
-                key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
-                if key in best_candidate_map:
-                    candidate = best_candidate_map[key]
-                    candidate_node = etree.SubElement(node, 'sense')
-                    candidate_node.set('pos', str(candidate.pos))
-                    candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
-                    candidate_node.set('lemma', str(candidate.lemma))
-                    candidate_node.set('score', str(candidate.tagcount))
-        return self.dmrs_node
+        dmrs_node = self.dmrs_xml(with_raw=with_raw)
+        tag_dmrs_xml(self, dmrs_node, goldtags)
+        return dmrs_node
+
 
     def pred_candidates(self):
         ''' Get all sense candidates for a particular MRS)
@@ -227,6 +209,31 @@ class DMRS(object):
                 best_candidate_map[pred_to_key(pred)] = candidates[0]
         return best_candidate_map
 
+
+def tag_dmrs_xml(mrs, dmrs, goldtags=None, cgold=None):
+    best_candidate_map = mrs.pred_candidates()
+    for node in dmrs.findall('node'):
+        if goldtags:
+            for tag in goldtags:
+                if node.get('cfrom') and node.get('cto') and int(tag[1]) == int(node.get('cfrom')) and int(tag[2]) == int(node.get('cto')):
+                    gold_node = etree.SubElement(node, 'sensegold')
+                    gold_node.set('synset', tag[3])
+                    gold_node.set('clemma', tag[4])
+                    if cgold:
+                        cgold.count('inserted')
+        realpred = node.find('realpred')
+        if realpred is not None:
+            # insert mcs
+            key = '-'.join((str(node.get('cfrom')), str(node.get('cto')), str(realpred.get('pos')), str(realpred.get('lemma')), str(realpred.get('sense'))))
+            if key in best_candidate_map:
+                candidate = best_candidate_map[key]
+                candidate_node = etree.SubElement(node, 'sense')
+                candidate_node.set('pos', str(candidate.pos))
+                candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                candidate_node.set('lemma', str(candidate.lemma))
+                candidate_node.set('score', str(candidate.tagcount))
+
+    
 
 def pred_to_key(pred):
     pred_obj = Pred.grammarpred(pred.label)
