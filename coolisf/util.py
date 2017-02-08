@@ -53,12 +53,8 @@ import os
 from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
-from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
-from chirptext.leutile import jilog
-from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import writelines
-from chirptext.texttaglib import TaggedSentence
 
 
 from .model import Sentence

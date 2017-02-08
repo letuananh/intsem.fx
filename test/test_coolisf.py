@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -95,7 +95,6 @@ class TestMain(unittest.TestCase):
             self.assertEqual(len(sentences[2].mrses), 0)
             mrs0 = sentences[0].mrses[0]
             self.assertIsNotNone(mrs0.dmrs_xml(pretty_print=True))
-
             print("Test sense tag")
             xmlstr = sentences[0].to_xml_str(pretty_print=True)
             with open('data/temp.xml', 'w') as outfile:
@@ -103,8 +102,31 @@ class TestMain(unittest.TestCase):
             tagged = xmlstr.count('<sense')
             self.assertGreater(tagged, 0)
 
+    def test_sensetag_in_json(self):
+        text = "Some dogs chases a cat."
+        a_sent = self.ERG.txt2dmrs(text)
+        dmrs = a_sent.mrses[0]
+        # check json
+        self.assertEqual(type(dmrs.dmrs_json()), dict)
+        self.assertEqual(type(dmrs.dmrs_json_str()), str)
+        # check sense tagging
+        tags = dmrs.tag()
+        j = dmrs.sense_tag_json()
+        nodes = j['nodes']
+        self.assertEqual(len(nodes), 8)
+        self.assertEqual(len(tags), 4)
+        self.assertEqual(len(nodes[2]['senses']), 1)
+        self.assertEqual(len(nodes[4]['senses']), 1)
+        self.assertEqual(len(nodes[5]['senses']), 1)
+        self.assertEqual(len(nodes[7]['senses']), 1)
+        self.assertEqual(nodes[0]['type'], 'realpred')
+        self.assertEqual(nodes[1]['type'], 'gpred')
+        self.assertEqual(nodes[0]['pos'], 'q')
+        self.assertEqual(nodes[7]['pos'], 'n')
+        print(dmrs.sense_tag_json_str())
+        
     def test_mrs_formats(self):
-        text = "Some dogs barked."
+        text = "Some dogs chase some cats."
         a_sent = self.ERG.txt2dmrs(text)
         a_m = a_sent.mrses[0]
         # Create sentence object from raw data

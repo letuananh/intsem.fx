@@ -102,7 +102,7 @@ def mine_preds(args):
     r.header('Pred mining')
     sid_gold_map = read_gold_tags()
     sentences = read_gold_mrs()
-    report.print(len(sentences))
+    r.print(len(sentences))
 
     # find all prepositions
     prepset = set()
@@ -170,8 +170,8 @@ def dev_mode(args):
     # print MRS in different formats
     print("var text = '%s';" % (s.text))
     print("// RAW MRS: %s" % (s.mrs[0].text))
-    print("var mrs_json = '%s';" % s.mrs[0].mrs_json())
-    print("var dmrs_json = '%s';" % s.mrs[0].dmrs_json())
+    print("var mrs_json = '%s';" % s.mrs[0].mrs_json_str())
+    print("var dmrs_json = '%s';" % s.mrs[0].dmrs_json_str())
     print(s.mrs[0].dmrs_str())
     print("Done")
 

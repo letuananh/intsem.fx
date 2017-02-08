@@ -31,6 +31,7 @@ link_folder `readlink -f ./modules/chirptext/chirptext` chirptext
 link_folder `readlink -f ./modules/lelesk/lelesk` lelesk
 link_folder `readlink -f ./modules/demophin` demophin
 link_folder `readlink -f ./modules/puchikarui/puchikarui` puchikarui
+link_folder `readlink -f ./modules/yawlib/yawlib` yawlib
 
 link_file `readlink -f ${WORKSPACE_FOLDER}/grammars/erg.dat` data/erg.dat
 echo "Configuring lelesk"

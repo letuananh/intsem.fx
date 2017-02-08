@@ -51,6 +51,7 @@ __status__ = "Prototype"
 
 import io
 import json
+from collections import defaultdict as dd
 
 from lxml import etree
 
@@ -65,6 +66,7 @@ from chirptext.leutile import StringTool
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
 from lelesk.config import LLConfig
+from lelesk.models import SenseInfo
 from lelesk import LeLeskWSD # WSDResources
 from .mwemap import MWE_ERG_PRED_LEMMA
 
@@ -142,16 +144,32 @@ class DMRS(object):
         return self.dmrs_node
 
     def mrs_json(self):
+        return Mrs.to_dict(self.mrs(), properties=True)
+    
+    def mrs_json_str(self):
         '''MRS data in JSON format'''
-        return json.dumps(Mrs.to_dict(self.mrs(), properties=True))
+        return json.dumps(self.mrs_json())
 
     def mrs_str(self, pretty_print=True):
         '''prettified MRS string'''
         return simplemrs.dumps_one(self.mrs(), pretty_print=pretty_print)
 
     def dmrs_json(self):
+        j = Dmrs.to_dict(self.mrs(), properties=True)
+        # Add pred type and pos
+        for node, ep in zip(j['nodes'], self.mrs().eps()):
+            node['type'] = 'gpred' if (ep.pred.type == Pred.GRAMMARPRED) else 'realpred'
+            if ep.pred.pos:
+                node['pos'] = ep.pred.pos
+        # Remove empty rargname
+        for link in j['links']:
+            if link['rargname'] is None:
+                link['rargname'] == ''
+        return j
+
+    def dmrs_json_str(self):
         '''DMRS data in JSON format'''
-        return json.dumps(Dmrs.to_dict(self.mrs(), properties=True))
+        return json.dumps(self.dmrs_json())
 
     def dmrs_str(self):
         '''prettified DMRS string'''
@@ -185,10 +203,10 @@ class DMRS(object):
         cto = -1
         if len(ep) > 4:
             lnk = ep[4]
-            cfrom = lnk.data[0]
-            cto = lnk.data[1]
+            cfrom = int(lnk.data[0])
+            cto = int(lnk.data[1])
         pred_string = delphin.mrs.components.normalize_pred_string(pred.string)
-        return TagInfo(cfrom, cto, pred_string)
+        return TagInfo(cfrom, cto, pred_string, source='ep')
 
     def preds(self):
         return [self.ep_to_taginfo(x) for x in self.mrs().eps()]
@@ -198,6 +216,19 @@ class DMRS(object):
         tag_dmrs_xml(self, dmrs_node, goldtags)
         return dmrs_node
 
+    def sense_tag_json(self, goldtags=None, cgold=None):
+        tags = self.tag()
+        j = self.dmrs_json()
+        for node in j['nodes']:
+            nid = node['nodeid']
+            if nid in tags and len(tags[nid]) > 0:
+                node['senses'] = []
+                for tag, tagtype in tags[nid]:
+                    node['senses'].append({'synsetid': tag.sid, 'lemma': tag.lemma, 'type': tagtype})
+        return j
+
+    def sense_tag_json_str(self, goldtags=None, cgold=None):
+        return json.dumps(self.sense_tag_json(goldtags, cgold))
 
     def pred_candidates(self):
         ''' Get all sense candidates for a particular MRS)
@@ -208,6 +239,28 @@ class DMRS(object):
             if candidates:
                 best_candidate_map[pred_to_key(pred)] = candidates[0]
         return best_candidate_map
+
+    def tag(self, goldtags=None, cgold=None):
+        best_candidate_map = self.pred_candidates()
+        tags = dd(list)
+        for ep in self.mrs().eps():
+            if goldtags:
+                for tag in goldtags:
+                    if int(tag[1]) == ep.cfrom and int(tag[2]) == ep.cto:
+                        # sense gold
+                        # synset | lemma | type
+                        sid = tag[3]
+                        lemma = tag[4]
+                        sense = SenseInfo('', sid, '', lemma=lemma)
+                        tags[ep.nodeid].append((sense, 'gold'))
+                        if cgold:
+                            cgold.count('inserted')
+            if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED):
+                key = '-'.join((str(ep.cfrom), str(ep.cto), str(ep.pred.pos), str(ep.pred.lemma), str(ep.pred.sense)))
+                if key in best_candidate_map:
+                    candidate = best_candidate_map[key]
+                    tags[ep.nodeid].append((candidate, 'isf'))
+        return tags
 
 
 def tag_dmrs_xml(mrs, dmrs, goldtags=None, cgold=None):
@@ -428,7 +481,7 @@ class PredSense(object):
             ss = PredSense.search_pred_string(label, True)
             if ss:
                 label += ' | '.join([PredSense.sinfo_str(x) for x in ss])
-            preds.append(TagInfo(cfrom, cto, label))
+            preds.append(TagInfo(cfrom, cto, label, source=TagInfo.ISF))
         tagged = TaggedSentence(mrs.sent.text, preds)
         return str(tagged)
 
