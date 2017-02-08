@@ -258,6 +258,10 @@ def read_gold_tags():
     golddata = read_data(GOLD_TAGS)
     sid_gold_map = dd(list)
     for datum in golddata:
+        # sid cfrom cto sid lemma pos
+        if datum[3].startswith('='):
+            datum = list(datum)
+            datum[3] = datum[3][1:]
         sid_gold_map[datum[0]].append(datum)
     print("Gold map: %s" % [len(sid_gold_map)])
     return sid_gold_map

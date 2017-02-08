@@ -39,7 +39,7 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = [ "Le Tuan Anh" ]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -65,9 +65,8 @@ from delphin.mrs.components import Pred
 from chirptext.leutile import StringTool
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
-from lelesk.config import LLConfig
-from lelesk.models import SenseInfo
-from lelesk import LeLeskWSD # WSDResources
+from yawlib.models import SenseInfo
+from lelesk import LeLeskWSD  # WSDResources
 from .mwemap import MWE_ERG_PRED_LEMMA
 
 
@@ -211,24 +210,40 @@ class DMRS(object):
     def preds(self):
         return [self.ep_to_taginfo(x) for x in self.mrs().eps()]
 
-    def sense_tag(self, goldtags=None, cgold=None, with_raw=True):
-        dmrs_node = self.dmrs_xml(with_raw=with_raw)
-        tag_dmrs_xml(self, dmrs_node, goldtags)
-        return dmrs_node
+    def sense_tag(self, goldtags=None, cgold=None, with_raw=True, method='mfs'):
+        tags = self.tag(goldtags, cgold, method)
+        dmrs = self.dmrs_xml(with_raw=with_raw)
+        for node in dmrs.findall('node'):
+            if int(node.get('nodeid')) in tags:
+                ntags = tags[int(node.get('nodeid'))]
+                for tag, tagtype in ntags:
+                    if tagtype == TagInfo.GOLD:
+                        gold_node = etree.SubElement(node, 'sensegold')
+                        gold_node.set('synset', str(tag.synsetid))
+                        gold_node.set('clemma', tag.lemma)
+                    else:
+                        realpred = node.find('realpred')
+                        if realpred is not None:
+                            candidate_node = etree.SubElement(node, 'sense')
+                            # candidate_node.set('pos', str(tag.synsetid.pos))
+                            candidate_node.set('synsetid', str(tag.synsetid))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                            candidate_node.set('lemma', str(tag.lemma))
+                            candidate_node.set('score', str(tag.tagcount))
+        return dmrs
 
-    def sense_tag_json(self, goldtags=None, cgold=None):
-        tags = self.tag()
+    def sense_tag_json(self, goldtags=None, cgold=None, method='mfs'):
+        tags = self.tag(goldtags, cgold, method)
         j = self.dmrs_json()
         for node in j['nodes']:
             nid = node['nodeid']
             if nid in tags and len(tags[nid]) > 0:
                 node['senses'] = []
                 for tag, tagtype in tags[nid]:
-                    node['senses'].append({'synsetid': tag.sid, 'lemma': tag.lemma, 'type': tagtype})
+                    node['senses'].append({'synsetid': str(tag.synsetid), 'lemma': tag.lemma, 'type': tagtype})
         return j
 
-    def sense_tag_json_str(self, goldtags=None, cgold=None):
-        return json.dumps(self.sense_tag_json(goldtags, cgold))
+    def sense_tag_json_str(self, goldtags=None, cgold=None, method='mfs'):
+        return json.dumps(self.sense_tag_json(goldtags, cgold, method))
 
     def pred_candidates(self):
         ''' Get all sense candidates for a particular MRS)
@@ -240,10 +255,13 @@ class DMRS(object):
                 best_candidate_map[pred_to_key(pred)] = candidates[0]
         return best_candidate_map
 
-    def tag(self, goldtags=None, cgold=None):
+    def tag(self, goldtags=None, cgold=None, method='mfs'):
         best_candidate_map = self.pred_candidates()
         tags = dd(list)
-        for ep in self.mrs().eps():
+        eps = self.mrs().eps()
+        wsd = LeLeskWSD()
+        context = [p.pred.lemma for p in eps]
+        for ep in eps:
             if goldtags:
                 for tag in goldtags:
                     if int(tag[1]) == ep.cfrom and int(tag[2]) == ep.cto:
@@ -251,15 +269,24 @@ class DMRS(object):
                         # synset | lemma | type
                         sid = tag[3]
                         lemma = tag[4]
-                        sense = SenseInfo('', sid, '', lemma=lemma)
+                        sense = SenseInfo(sid, lemma=lemma)
                         tags[ep.nodeid].append((sense, 'gold'))
                         if cgold:
                             cgold.count('inserted')
             if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED):
-                key = '-'.join((str(ep.cfrom), str(ep.cto), str(ep.pred.pos), str(ep.pred.lemma), str(ep.pred.sense)))
-                if key in best_candidate_map:
-                    candidate = best_candidate_map[key]
-                    tags[ep.nodeid].append((candidate, 'isf'))
+                if method == 'lelesk':
+                    scores = wsd.lelesk_wsd(ep.pred.lemma, '', lemmatizing=False, context=context)
+                    if scores:
+                        # insert the top one
+                        candidate = None
+                        best = scores[0].candidate.synset
+                        # bl = best.terms[0].term if best.terms else ''
+                        tags[ep.nodeid].append((SenseInfo(best.sid, lemma=ep.pred.lemma), 'lelesk'))
+                else:  # mfs
+                    key = '-'.join((str(ep.cfrom), str(ep.cto), str(ep.pred.pos), str(ep.pred.lemma), str(ep.pred.sense)))
+                    if key in best_candidate_map:
+                        candidate = best_candidate_map[key]
+                        tags[ep.nodeid].append((candidate, 'mfs'))
         return tags
 
 
@@ -281,12 +308,11 @@ def tag_dmrs_xml(mrs, dmrs, goldtags=None, cgold=None):
             if key in best_candidate_map:
                 candidate = best_candidate_map[key]
                 candidate_node = etree.SubElement(node, 'sense')
-                candidate_node.set('pos', str(candidate.pos))
-                candidate_node.set('synsetid', str(candidate.sid)[1:] + '-' + str(candidate.pos))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                candidate_node.set('pos', str(candidate.synsetid.pos))
+                candidate_node.set('synsetid', str(candidate.synsetid))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
                 candidate_node.set('lemma', str(candidate.lemma))
                 candidate_node.set('score', str(candidate.tagcount))
 
-    
 
 def pred_to_key(pred):
     pred_obj = Pred.grammarpred(pred.label)
@@ -295,7 +321,7 @@ def pred_to_key(pred):
 
 class PredSense(object):
 
-    lwsd = LeLeskWSD(LLConfig.WORDNET_30_GLOSS_DB_PATH, LLConfig.WORDNET_30_PATH)
+    lwsd = LeLeskWSD()
 
     @staticmethod
     def unpack_pred(pred_text):
@@ -375,7 +401,7 @@ class PredSense(object):
 
         for lemma in lemmata:
             if lemma in sm:
-                potential = [x for x in sm[lemma] if x.pos == pos or pos in ('x', 'p')]
+                potential = [x for x in sm[lemma] if x.synsetid.pos == pos or pos in ('x', 'p')]
                 if potential:
                     return potential
         return []

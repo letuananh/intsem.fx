@@ -50,14 +50,10 @@ __status__ = "Prototype"
 
 ########################################################################
 
-import sys
-import os
-import argparse
 import unittest
-
 from lxml import etree
 
-import json
+from lelesk import LeLeskWSD
 
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence
@@ -65,8 +61,9 @@ from coolisf.util import Grammar
 
 ########################################################################
 
-TEST_SENTENCES  = 'data/bib.txt'
+TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
+
 
 class TestMain(unittest.TestCase):
 
@@ -123,8 +120,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(nodes[1]['type'], 'gpred')
         self.assertEqual(nodes[0]['pos'], 'q')
         self.assertEqual(nodes[7]['pos'], 'n')
-        print(dmrs.sense_tag_json_str())
-        
+        print("Tagged JSON (with MFS): {}".format(dmrs.sense_tag_json_str()))
+
     def test_mrs_formats(self):
         text = "Some dogs chase some cats."
         a_sent = self.ERG.txt2dmrs(text)
@@ -146,12 +143,38 @@ class TestMain(unittest.TestCase):
         # and they should look exactly the same
         xml_str2 = etree.tostring(m2.sense_tag(with_raw=False)).decode('utf-8')
         self.assertEqual(xml_str, xml_str2)
+        print(xml_str2)
         pass
+
+    def test_lelesk_integration(self):
+        text = "A big bird is flying on the sky."
+        a_sent = self.ERG.txt2dmrs(text)
+        context = [p.pred.lemma for p in a_sent.mrses[0].mrs().eps()]
+        preds = a_sent.mrses[0].mrs().eps()
+        wsd = LeLeskWSD()
+        for w, p in zip(context, preds):
+            scores = wsd.lelesk_wsd(w, '', lemmatizing=False, context=context)
+            if scores:
+                print("Word: {w} (p={p}|{nid}) => {ss} | Score: {sc} | Def: {d}".format(w=w, p=str(p.pred), nid=p.nodeid, ss=scores[0].candidate.synset, sc=scores[0].score, d=scores[0].candidate.synset.glosses[0].text()))
+            else:
+                print("Word: {w} => N/A".format(w=w))
+
+    def test_sensetag_using_lelesk(self):
+        text = "A big bird is flying on the sky."
+        print("Tagging ``{s}'' using lelesk".format(s=text))
+        a_sent = self.ERG.txt2dmrs(text)
+        js = a_sent.mrses[0].sense_tag_json_str(method='lelesk')
+        print("Tagged JSON (using LeLesk): {}".format(js))
+        # tags = a_sent.mrses[0].tag(method='lelesk')
+        # for k, v in tags.items():
+        #     print(k, [(x[0].synsetid, x[0].lemma, x[1]) for x in v])
 
 ########################################################################
 
+
 def main():
     unittest.main()
+
 
 if __name__ == "__main__":
     main()
