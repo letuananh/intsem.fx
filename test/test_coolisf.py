@@ -53,7 +53,7 @@ __status__ = "Prototype"
 import unittest
 from lxml import etree
 
-from lelesk import LeLeskWSD
+from lelesk import LeLeskWSD, LeskCache
 
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence
@@ -151,7 +151,7 @@ class TestMain(unittest.TestCase):
         a_sent = self.ERG.txt2dmrs(text)
         context = [p.pred.lemma for p in a_sent.mrses[0].mrs().eps()]
         preds = a_sent.mrses[0].mrs().eps()
-        wsd = LeLeskWSD()
+        wsd = LeLeskWSD(dbcache=LeskCache().setup())
         for w, p in zip(context, preds):
             scores = wsd.lelesk_wsd(w, '', lemmatizing=False, context=context)
             if scores:
