@@ -165,9 +165,17 @@ class TestMain(unittest.TestCase):
         a_sent = self.ERG.txt2dmrs(text)
         js = a_sent.mrses[0].sense_tag_json_str(method='lelesk')
         print("Tagged JSON (using LeLesk): {}".format(js))
-        # tags = a_sent.mrses[0].tag(method='lelesk')
-        # for k, v in tags.items():
-        #     print(k, [(x[0].synsetid, x[0].lemma, x[1]) for x in v])
+
+    def test_parse_no(self):
+        text = "I saw a girl with a big telescope which is nice."
+        a_sent = self.ERG.txt2dmrs(text)
+        self.assertEqual(len(a_sent.mrses), 5)  # default is 5
+        # increase parse count to 7
+        a_sent = self.ERG.txt2dmrs(text, parse_count=7)
+        self.assertEqual(len(a_sent.mrses), 7)
+        # increase parse count to 10
+        a_sent = self.ERG.txt2dmrs(text, parse_count=10)
+        self.assertEqual(len(a_sent.mrses), 10)
 
 ########################################################################
 
