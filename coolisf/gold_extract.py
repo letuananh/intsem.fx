@@ -18,27 +18,27 @@ References:
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = [ "Le Tuan Anh" ]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -80,9 +80,9 @@ from coolisf.util import read_ace_output
 ##########################################
 
 GOLD_PROFILE = FileTool.abspath('./data/gold')
-OUTPUT_FILE  = FileTool.abspath('./data/gold.out.txt')
-RAW_TEXT     = FileTool.abspath('./data/speckled.txt')
-GOLD_RAW     = FileTool.abspath('./data/gold.raw.txt')
+OUTPUT_FILE = FileTool.abspath('./data/gold.out.txt')
+RAW_TEXT = FileTool.abspath('./data/speckled.txt')
+GOLD_RAW = FileTool.abspath('./data/gold.raw.txt')
 
 GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
@@ -95,9 +95,12 @@ SOURCE_CODE_DIR = os.path.dirname(os.path.realpath(__file__))
 LICENSE_TEMPLATE_LOC = os.path.join(SOURCE_CODE_DIR, 'CCBY30_template.txt')
 LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
-prettify_xml = lambda x: xml.dom.minidom.parseString(x).toprettyxml()
 
 #-----------------------------------------------------------------------
+
+
+def prettify_xml(xml_str):
+    return xml.dom.minidom.parseString(xml_str).toprettyxml()
 
 
 class TSDBSentence:
@@ -174,7 +177,7 @@ def extract_tsdb_gold():
         for sent in gold_sentences:
             outfile.write('%s\t%s\t%s\t%s\n' % (sent.ntuid, sent.sid, sent.text, sent.mrs))
     t.end("Data has been written to file.")
-    
+
     # Verification
     t.start("Verifying file [%s] ..." % (OUTPUT_FILE,))
     with open(OUTPUT_FILE, 'r') as testfile:
@@ -337,11 +340,13 @@ def sent_to_visko_xml(sent):
 def export_to_visko(sents, doc_path):
     if not os.path.exists(doc_path):
         os.makedirs(doc_path)
-    print("Importing %s sentences" % (len(sents),))
+    print("Exporting %s sentences to Visko" % (len(sents),))
+    print("Visko doc path: {}".format(doc_path))
     for sent in sents:
         sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
         with gzip.open(sentpath, 'w') as f:
             f.write(etree.tostring(sent_to_visko_xml(sent), encoding='utf-8'))
+    print("Done!")
 
 
 def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
@@ -371,6 +376,7 @@ def dev():
 
 #-----------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(description="ISF Gold Extractor")
 
@@ -378,7 +384,7 @@ def main():
     parser.add_argument('--visko', help='Export to VISKO', action='store_true')
     parser.add_argument('-d', '--dev', help='Dev mode', action='store_true')
     parser.add_argument('-x', '--extract', help='Extract TSDB gold', action='store_true')
-    
+
     if len(sys.argv) == 1:
         # User didn't pass any value in, show help
         parser.print_help()

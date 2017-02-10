@@ -100,13 +100,17 @@ def process_sentence(sent, verbose=True, top_k=10):
             print('\n\n')
             mrs_id += 1
             if top_k < mrs_id:
-                break3
+                break
             # endif
 
 
 def to_visko(args):
     sents = read_ace_output(args.file)  # e.g. data/wndefs.nokey.mrs.txt
-    visko_data_dir = os.path.expanduser('~/wk/vk/data/biblioteche')
+    if args.bibloc:
+        visko_data_dir = os.path.abspath(args.bibloc)
+    else:
+        # default bibloc
+        visko_data_dir = os.path.expanduser('~/workspace/visualkopasu/data/biblioteche')
     export_path = os.path.join(visko_data_dir, args.biblioteca, args.corpus, args.doc)
     if args.topk:
         sents = sents[:int(args.topk)]
@@ -136,6 +140,7 @@ def main():
     export_task.add_argument('corpus')
     export_task.add_argument('doc')
     export_task.add_argument('-k', '--topk', help='Only extract top K sentences')
+    export_task.add_argument('-b', '--bibloc', help='Path to Biblioteche folder (corpus collection root)')
     export_task.set_defaults(func=to_visko)
 
     if len(sys.argv) == 1:
