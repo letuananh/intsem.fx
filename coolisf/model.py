@@ -75,10 +75,11 @@ from .mwemap import MWE_ERG_PRED_LEMMA
 
 class Sentence(object):
 
-    def __init__(self, text='', sid=-1):
+    def __init__(self, text='', sid=-1, goldtags=None):
         self.text = StringTool.strip(text)
         self.sid = sid
         self.mrses = list()
+        self.goldtags = goldtags
 
     def add(self, mrs):
         self.mrses.append(DMRS(StringTool.strip(mrs), sent=self))
@@ -92,7 +93,7 @@ class Sentence(object):
     def __str__(self):
         return "%s (%s mrs(es))" % (self.text, len(self.mrses))
 
-    def to_xml_node(self, doc_node=None, goldtags=None, cgold=None):
+    def to_xml_node(self, doc_node=None, goldtags=None):
         sent_node = etree.Element('sentence', sid=str(self.sid))
         if doc_node is not None:
             doc_node.append(sent_node)
@@ -100,12 +101,39 @@ class Sentence(object):
         dmrses_node = etree.SubElement(sent_node, 'dmrses')
         if len(self.mrses) > 0:
             for mrs in self.mrses:
-                dmrs_node = mrs.sense_tag(goldtags, cgold)
+                # tag using custom goldtags if given else self.goldtags
+                dmrs_node = mrs.sense_tag(goldtags if goldtags else self.goldtags)
                 dmrses_node.append(dmrs_node)
         return sent_node
 
     def to_xml_str(self, doc_node=None, goldtags=None, pretty_print=True):
         xml_node = self.to_xml_node(doc_node, goldtags)
+        return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
+
+    def to_visko_xml(self, method='mfs', goldtags=None, with_raw=True):
+        sent_node = etree.Element('sentence')
+        sent_node.set('id', str(self.sid))
+        sent_node.set('version', '0.1')
+        sent_node.set('lang', 'eng')
+        # Add license information
+        text_node = etree.SubElement(sent_node, 'text')
+        text_node.text = self.text
+        for id, mrs in enumerate(self.mrses):
+            intp_node = etree.SubElement(sent_node, 'interpretation')
+            intp_node.set('id', str(id))
+            intp_node.set('mode', 'active' if id == 0 else 'inactive')
+            # store MRS raw
+            if mrs.text:
+                mrs_node = etree.SubElement(intp_node, 'mrs')
+                mrs_node.text = mrs.text
+            # store DMRS
+            # tag using given goldtags else self.goldtags
+            dmrs_node = mrs.sense_tag(goldtags=goldtags if goldtags else self.goldtags, with_raw=with_raw, method='mfs')
+            intp_node.append(dmrs_node)
+        return sent_node
+
+    def to_visko_xml_str(self, method='mfs', goldtags=None, with_raw=True, pretty_print=True):
+        xml_node = self.to_visko_xml(method, goldtags, with_raw)
         return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
 
 
@@ -211,6 +239,9 @@ class DMRS(object):
         return [self.ep_to_taginfo(x) for x in self.mrs().eps()]
 
     def sense_tag(self, goldtags=None, cgold=None, with_raw=True, method='mfs'):
+        '''
+        Return a sense-tagged XML node
+        '''
         tags = self.tag(goldtags, cgold, method)
         dmrs = self.dmrs_xml(with_raw=with_raw)
         for node in dmrs.findall('node'):
