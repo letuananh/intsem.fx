@@ -82,13 +82,20 @@ class Sentence(object):
         self.goldtags = goldtags
 
     def add(self, mrs):
-        self.mrses.append(DMRS(StringTool.strip(mrs), sent=self))
+        d = DMRS(StringTool.strip(mrs), sent=self)
+        self.mrses.append(d)
+        return d
+
+    def __getitem__(self, key):
+        return self.mrses[key]
 
     def __len__(self):
         return len(self.mrses)
 
     def add_from_xml(self, xml):
-        self.mrses.append(DMRS(dmrs_xml=xml, sent=self))
+        d = DMRS(dmrs_xml=xml, sent=self)
+        self.mrses.append(d)
+        return d
 
     def __str__(self):
         return "%s (%s mrs(es))" % (self.text, len(self.mrses))
@@ -120,7 +127,7 @@ class Sentence(object):
         text_node.text = self.text
         for id, mrs in enumerate(self.mrses):
             intp_node = etree.SubElement(sent_node, 'interpretation')
-            intp_node.set('id', str(id))
+            intp_node.set('id', str(id + 1))
             intp_node.set('mode', 'active' if id == 0 else 'inactive')
             # store MRS raw
             if mrs.text:
@@ -144,6 +151,8 @@ class DMRS(object):
         self.dmrs_xml_raw = dmrs_xml
         self.mrs_obj = None
         self.dmrs_node = None
+        self.ID = None
+        self.ident = None
 
     def mrs(self):
         if self.mrs_obj is None:
@@ -172,7 +181,7 @@ class DMRS(object):
 
     def mrs_json(self):
         return Mrs.to_dict(self.mrs(), properties=True)
-    
+
     def mrs_json_str(self):
         '''MRS data in JSON format'''
         return json.dumps(self.mrs_json())
