@@ -119,13 +119,13 @@ class Grammar:
         self.ace_bin = ace_bin
 
     def txt2preds(self, text):
-        dmrses = self.txt2dmrs(text)
+        dmrses = self.parse(text)
         if dmrses:
             return [get_preds(x) for x in dmrses]
         else:
             print("Can't parse the sentence [%s]" % (text,))
 
-    def txt2dmrs(self, text, parse_count=None):
+    def parse(self, text, parse_count=None):
         s = Sentence(text)
         args = self.cmdargs
         if parse_count:

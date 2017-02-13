@@ -166,7 +166,7 @@ def mine_preds(args):
 def dev_mode(args):
     print("Quick dev mode")
     # parse a sentence using ERG
-    s = Grammar().txt2dmrs('Dogs are funnier than Asian tiger mosquitoes.')
+    s = Grammar().parse('Dogs are funnier than Asian tiger mosquitoes.')
     # print MRS in different formats
     print("var text = '%s';" % (s.text))
     print("// RAW MRS: %s" % (s.mrs[0].text))

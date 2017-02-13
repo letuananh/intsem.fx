@@ -63,6 +63,7 @@ from .util import Grammar
 from .gold_extract import generate_gold_profile
 from .gold_extract import read_ace_output
 from .gold_extract import export_to_visko
+from .gold_extract import read_gold_sentences
 
 ERG = Grammar()
 
@@ -90,13 +91,13 @@ def interactive_shell():
 def process_sentence(sent, verbose=True, top_k=10):
     if verbose:
         print("You have entered: %s" % sent)
-    tagged = ERG.txt2dmrs(sent)
+    sent = ERG.parse(sent)
     mrs_id = 1
-    if tagged and tagged.mrses:
-        for mrs in tagged.mrses:
+    if sent is not None and len(sent) > 0:
+        for parse in sent:
             print('-' * 80)
             print("MRS #%s\n" % mrs_id)
-            print(PredSense.tag_sentence(mrs))
+            print(PredSense.tag_sentence(parse.dmrs()))
             print('\n\n')
             mrs_id += 1
             if top_k < mrs_id:
@@ -105,15 +106,26 @@ def process_sentence(sent, verbose=True, top_k=10):
 
 
 def to_visko(args):
-    sents = read_ace_output(args.file)  # e.g. data/wndefs.nokey.mrs.txt
+    # determine docpath
     if args.bibloc:
         visko_data_dir = os.path.abspath(args.bibloc)
     else:
         # default bibloc
         visko_data_dir = os.path.expanduser('~/workspace/visualkopasu/data/biblioteche')
     export_path = os.path.join(visko_data_dir, args.biblioteca, args.corpus, args.doc)
-    if args.topk:
-        sents = sents[:int(args.topk)]
+    # which file to export
+    if args.file is not None:
+        # export MRS file
+        sents = read_ace_output(args.file)  # e.g. data/wndefs.nokey.mrs.txt
+        if args.topk:
+            sents = sents[:int(args.topk)]
+    else:
+        if input("No MRS file provided. Proceed to export gold profile to Visko (yes/no)? ").lower() in ['y', 'yes']:
+            print("Exporting gold profile to Visko")
+            sents = read_gold_sentences()
+        else:
+            print("Aborted")
+            return
     export_to_visko(sents, export_path)
 
 
@@ -135,7 +147,7 @@ def main():
     gold_task.set_defaults(func=lambda arsg: generate_gold_profile())
 
     export_task = tasks.add_parser('export', help='Export MRS to VISKO')
-    export_task.add_argument('file', help='MRS file')
+    export_task.add_argument('-f', '--file', help='MRS file')
     export_task.add_argument('biblioteca')
     export_task.add_argument('corpus')
     export_task.add_argument('doc')

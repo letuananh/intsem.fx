@@ -51,17 +51,11 @@ import os
 import sys
 import datetime
 import argparse
-from collections import namedtuple
 from collections import defaultdict as dd
 import gzip
 from lxml import etree
-import xml
-import xml.dom.minidom as minidom
 
 from delphin import itsdb
-from delphin.interfaces import ace
-from delphin.mrs import simplemrs
-from delphin.mrs.components import Pred
 
 from fuzzywuzzy import fuzz
 
@@ -71,8 +65,8 @@ from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.texttaglib import writelines
 
+from yawlib.models import SynsetID
 from coolisf.model import Sentence
-from coolisf.model import tag_dmrs_xml
 from coolisf.util import read_ace_output
 
 ##########################################
@@ -97,10 +91,6 @@ LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
 
 #-----------------------------------------------------------------------
-
-
-def prettify_xml(xml_str):
-    return xml.dom.minidom.parseString(xml_str).toprettyxml()
 
 
 class TSDBSentence:
@@ -256,15 +246,17 @@ def build_root_node():
 
 
 def read_gold_tags():
+    ''' Return a map from sid => tag tuple (sid cfrom cto sid lemma pos)
+    '''
     # Read sense annotations from NTU-MC
     print("Reading gold annotations from NTU-MC")
     golddata = read_data(GOLD_TAGS)
     sid_gold_map = dd(list)
     for datum in golddata:
         # sid cfrom cto sid lemma pos
-        if datum[3].startswith('='):
+        if datum[3][0] in '~=!':
             datum = list(datum)
-            datum[3] = datum[3][1:]
+            datum[3] = SynsetID.from_string(datum[3])
         sid_gold_map[datum[0]].append(datum)
     print("Gold map: %s" % [len(sid_gold_map)])
     return sid_gold_map
@@ -279,7 +271,7 @@ def read_gold_mrs():
             (ntuid, tsdbid, text, mrs) = line.split('\t')
             sent = Sentence(text=text, sid=int(ntuid))
             if mrs and len(mrs.strip()) > 0:
-                sent.add(mrs)
+                sent.add(mrs_str=mrs)
             sentences.append(sent)
     return sentences
 
@@ -300,7 +292,8 @@ def generate_gold_profile():
     for sent in sentences:
         sid_key = str(sent.sid)
         goldtags = sid_gold_map[sid_key]
-        sent.to_xml_node(doc_node, goldtags, cgold)
+        sent.tag(goldtags, cgold, method='mfs')
+        sent.to_xml_node(doc_node)
     print("Gold senses inserted")
     cgold.summarise()
     print("Dumping preds debug")
@@ -337,7 +330,7 @@ def sent_to_visko_xml(sent):
     # filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
 
 
-def export_to_visko(sents, doc_path):
+def export_to_visko(sents, doc_path, pretty_print=True):
     if not os.path.exists(doc_path):
         os.makedirs(doc_path)
     print("Exporting %s sentences to Visko" % (len(sents),))
@@ -345,34 +338,20 @@ def export_to_visko(sents, doc_path):
     for sent in sents:
         sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
         with gzip.open(sentpath, 'w') as f:
-            f.write(etree.tostring(sent_to_visko_xml(sent), encoding='utf-8'))
+            f.write(etree.tostring(sent.to_visko_xml(), encoding='utf-8', pretty_print=pretty_print))
     print("Done!")
 
 
-def gold_to_visko(doc_path='~/wk/vk/data/biblioteche/isf/ntumc/speckled'):
+def read_gold_sentences():
     sid_gold_map = read_gold_tags()
     sentences = read_gold_mrs()
-    doc_path = os.path.expanduser(doc_path)
-    FileTool.create_dir(doc_path)
     for sent in sentences:
-        snode = sent_to_visko_xml(sent)
-        interpretations = snode.findall('interpretation')
-        for mrs, i in zip(sent.mrses, interpretations):
-            children = i.findall('dmrs')
-            if children:
-                dmrs = children[0]
-                goldtags = sid_gold_map[str(sent.sid)]
-                tag_dmrs_xml(mrs, dmrs, goldtags)
-        sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
-        with gzip.open(sentpath, 'w') as f:
-            sstr = etree.tostring(snode, encoding='utf-8', pretty_print=True)
-            f.write(sstr)
+        if len(sent) > 0:
+            goldtags = sid_gold_map[str(sent.sid)]
+            sent.goldtags = goldtags
+            sent.tag(goldtags, method='mfs')
+    return sentences
 
-
-def dev():
-    print("DEV")
-    gold_to_visko()
-    pass
 
 #-----------------------------------------------------------------------
 
@@ -391,9 +370,7 @@ def main():
     else:
         # Parse input arguments
         args = parser.parse_args()
-        if args.dev:
-            dev()
-        elif args.extract:
+        if args.extract:
             extract_tsdb_gold()
         elif args.visko:
             sents = read_ace_output('data/wndefs.nokey.mrs.txt')
