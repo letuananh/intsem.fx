@@ -49,7 +49,7 @@ __status__ = "Prototype"
 ########################################################################
 
 import os
-
+import logging
 from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
@@ -68,11 +68,13 @@ ACE_ARGS = ['-n', '5']
 SEMCOR_TXT = 'data/semcor.txt'
 TOP_K = 10
 
+logger = logging.getLogger(__name__)
+
 
 ########################################################################
 
 def read_ace_output(ace_output_file):
-    print("Reading parsed MRS from %s..." % (ace_output_file,))
+    logger.info("Reading parsed MRS from %s..." % (ace_output_file,))
     c = Counter()
     items = []
     sentences = []
@@ -123,7 +125,7 @@ class Grammar:
         if dmrses:
             return [get_preds(x) for x in dmrses]
         else:
-            print("Can't parse the sentence [%s]" % (text,))
+            logging.warning("Can't parse the sentence {}".format(text))
 
     def parse(self, text, parse_count=None):
         s = Sentence(text)

@@ -51,6 +51,7 @@ __status__ = "Prototype"
 
 import io
 import json
+import logging
 from collections import defaultdict as dd
 
 from lxml import etree
@@ -66,11 +67,15 @@ from chirptext.leutile import StringTool
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
 from yawlib.models import SenseInfo
-from lelesk import LeLeskWSD  # WSDResources
+from lelesk import LeLeskWSD
+from lelesk import LeskCache  # WSDResources
 from .mwemap import MWE_ERG_PRED_LEMMA
 
 
 ########################################################################
+
+
+logger = logging.getLogger()
 
 
 class Sentence(object):
@@ -375,7 +380,6 @@ class DMRS(object):
                     sense_nodes = []
                 sg = n.find('sensegold')
                 if sg is not None:
-                    print("GOLD FOUND", sg)
                     sense_nodes.append(sg)
                     sg.attrib['method'] = TagInfo.GOLD
                 for s in sense_nodes:
@@ -403,7 +407,7 @@ class DMRS(object):
             goldtags = self.parse.sent.goldtags
         tags = dd(list)
         eps = self.obj().eps()
-        wsd = LeLeskWSD()
+        wsd = LeLeskWSD(dbcache=LeskCache())
         context = [p.pred.lemma for p in eps]
         for ep in eps:
             if goldtags:
@@ -418,7 +422,8 @@ class DMRS(object):
                         if cgold:
                             cgold.count('inserted')
             if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED):
-                if method == 'lelesk':
+                if method == TagInfo.LELESK:
+                    logger.debug("Performing WSD using {} on {}/{}".format(method, ep.pred.lemma, context))
                     scores = wsd.lelesk_wsd(ep.pred.lemma, '', lemmatizing=False, context=context)
                     if scores:
                         # insert the top one
@@ -543,9 +548,6 @@ class PredSense(object):
             if isinstance(tracer,list):
                 tracer.append(([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos, 'MWE', 'See also?: ' + Pred.grammarpred(pred_str).lemma))
             ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos)
-            #print("Looking at %s" % (pred_str))
-            #if ss:
-            #    print("MWE detected")
             return sorted(ss, key=lambda x: x.tagcount, reverse=True)
         else:
             return PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma, tracer)

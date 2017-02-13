@@ -64,7 +64,7 @@ from coolisf.util import Grammar
 
 
 logger = logging.getLogger()
-
+logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
 
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
@@ -226,9 +226,8 @@ class TestMain(unittest.TestCase):
         <post>NEQ</post>
       </link>
     </dmrs>''')
-        print(d.json())
-        print(d.tags)
-
+        logger.debug("JSON obj: {}", d.json())
+        logger.debug("All tags: {}", d.tags)
 
     def test_preserve_xml_tag_in_json(self):
         sent = self.ERG.parse('I like hot dog.')
@@ -243,7 +242,7 @@ class TestMain(unittest.TestCase):
         ss, method = d.tags[10006][0]
         self.assertEqual(method, TagInfo.GOLD)
         self.assertEqual(ss.synsetid, '12345678-n')
-        print(d.json_str())
+        logger.debug("JSON str: {}".format(d.json_str()))
 
 ########################################################################
 
