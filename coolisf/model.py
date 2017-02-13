@@ -450,7 +450,7 @@ def pred_to_key(pred):
 
 class PredSense(object):
 
-    lwsd = LeLeskWSD()
+    lwsd = LeLeskWSD(dbcache=LeskCache())
 
     @staticmethod
     def unpack_pred(pred_text):
