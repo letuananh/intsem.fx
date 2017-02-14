@@ -418,8 +418,10 @@ class DMRS(object):
     def match(self, tag, ep):
         sent_text = self.parse.sent.text if self.parse is not None and self.parse.sent is not None else None
         cfrom, cto, surface = self.fix_tokenization(ep, sent_text)
-        if int(tag[1]) == cfrom:
-            if int(tag[2]) == cto:
+        # logging.debug(cfrom, cto, ep.cfrom, ep.cto, ep.pred.lemma)
+        if int(tag[1]) == cfrom or tag[1] == ep.cfrom:
+            if int(tag[2]) == cto or tag[2] == ep.cto:
+                # logging.debug(tag, ep)
                 return True
             elif ep.pred.lemma == tag[4] or surface == tag[4]:
                 return True

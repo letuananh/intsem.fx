@@ -144,7 +144,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(nodes[1]['type'], 'gpred')
         self.assertEqual(nodes[0]['pos'], 'q')
         self.assertEqual(nodes[7]['pos'], 'n')
-        print("Tagged JSON (with MFS): {}".format(p.dmrs().json_str()))
+        logging.debug("Tagged JSON (with MFS): {}".format(p.dmrs().json_str()))
 
     def test_mrs_formats(self):
         text = "Some dogs chase some cats."
@@ -184,7 +184,7 @@ class TestMain(unittest.TestCase):
 
     def test_sensetag_using_lelesk(self):
         text = "A big bird is flying on the sky."
-        print("Tagging ``{s}'' using lelesk".format(s=text))
+        logging.info("Tagging ``{s}'' using lelesk".format(s=text))
         a_sent = self.ERG.parse(text)
         d = a_sent[0].dmrs()
         d.tag(method='lelesk')
@@ -206,14 +206,10 @@ class TestMain(unittest.TestCase):
         text = 'It rains.'
         sent = self.ERG.parse(text)
         # to visko
-        # sent[0].dmrs().tag_xml()
-        print(sent[0].dmrs().xml_str())
-        # print(sent.to_visko_xml_str())
         d = sent[0].dmrs()
         logger.debug("JSON obj: {}", d.json())
         logger.debug("All tags: {}", d.tags)
         ep = d.obj().ep(10000)
-        print(ep.pred.lemma)
         print(d.fix_tokenization(ep, text))
 
     def text_isf_visko(self):
@@ -274,7 +270,9 @@ class TestMain(unittest.TestCase):
             for g in goldtags:
                 gold_map[get_key(g)].append(g)
         # compare
-        notinused = set()
+        notinused_lemmas = Counter()
+        notinused_tags = list()
+        new_tasg = list()
         print("usedtags", len(usedtags))
         print("goldtags", len(goldtags))
         # compare maps
@@ -304,8 +302,8 @@ class TestMain(unittest.TestCase):
                     if g[0] in '10001, 10060, 10189, 10229, 10240, 10573':
                         c.count("NotParsed")
                     else:
-                        print("NotInUsed", g)
-                        notinused.add(g[4])
+                        notinused_tags.append(g)
+                        notinused_lemmas.count(g[4])
                         c.count("NotInUsed")
         # check used against goldtags
         for u in usedtags:
@@ -318,11 +316,15 @@ class TestMain(unittest.TestCase):
             else:
                 if 'GOLD' not in u and u[1] != u[2]:
                     c.count("New")
-                    print("NEW", u)
+                    new_tasg.append(u)
                 # print("UNotInGold", u)
                 c.count("UNotInGold")
         c.summarise()
-        print("Not in used", notinused)
+        with open(os.path.join(TEST_DATA, 'debug_notinused.txt'), 'w') as niufile:
+            niufile.write('\n'.join(['\t'.join(x) for x in notinused_tags]))
+            niufile.write('\n\n')
+            for k, v in notinused_lemmas.get_report_order():
+                niufile.write("%s: %d\n" % (k, v))
 
 ########################################################################
 
