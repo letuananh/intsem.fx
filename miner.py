@@ -66,20 +66,6 @@ from coolisf.util import Grammar
 is_nounep = lambda e : e and len(e.args) == 1 and 'ARG0' in e.args and e.pred.pos == 'n'
 
 
-# A sample MRS
-text = 'The cat dog barks.'
-mrs_str = '''[ LTOP: h0
-INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
-RELS: < [ _the_q_rel<0:3> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg IND: + ] RSTR: h5 BODY: h6 ]
- [ compound_rel<4:11> LBL: h7 ARG0: e8 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x3 ARG2: x9 [ x IND: + PT: notpro ] ]
- [ udef_q_rel<4:7> LBL: h10 ARG0: x9 RSTR: h11 BODY: h12 ]
- [ "_cat_n_1_rel"<4:7> LBL: h13 ARG0: x9 ]
- [ "_dog_n_1_rel"<8:11> LBL: h7 ARG0: x3 ]
- [ "_bark_v_1_rel"<12:18> LBL: h1 ARG0: e2 ARG1: x3 ] >
-HCONS: < h0 qeq h1 h5 qeq h7 h11 qeq h13 >
-ICONS: < > ]'''
-mrs = simplemrs.loads_one(mrs_str)
-
 def mine_compoundnoun(text, mrs):
     compounds = []
     if mrs:
@@ -96,6 +82,7 @@ def mine_compoundnoun(text, mrs):
                 print(surface_str[-1], surface_str)
                 compounds.append((ep, surface_str))                
     return compounds
+
 
 def mine_preds(args):
     r = TextReport('data/mining.txt')
@@ -163,19 +150,6 @@ def mine_preds(args):
     # print(len(sentset))
 
 
-def dev_mode(args):
-    print("Quick dev mode")
-    # parse a sentence using ERG
-    s = Grammar().parse('Dogs are funnier than Asian tiger mosquitoes.')
-    # print MRS in different formats
-    print("var text = '%s';" % (s.text))
-    print("// RAW MRS: %s" % (s.mrs[0].text))
-    print("var mrs_json = '%s';" % s.mrs[0].mrs_json_str())
-    print("var dmrs_json = '%s';" % s.mrs[0].dmrs_json_str())
-    print(s.mrs[0].dmrs_str())
-    print("Done")
-
-
 def find_compound(args):
     raw_file = args.filepath + '.txt'
     mrs_file = args.filepath + '.mrs.txt'
@@ -191,6 +165,34 @@ def find_compound(args):
                     cpfile.write('SENT: {}\n{}\n\n\n'.format(s.text, mrs))
     print("Done")
 
+
+def validate_goldtags(args):
+    r = TextReport('data/valgold.txt')
+    # r = TextReport()
+    # r.header("Validate gold tags")
+    from coolisf.gold_extract import read_gold_sentences
+    sents = read_gold_sentences()
+    for sent in sents:
+        if len(sent) == 0:
+            print("WARNING: {} is not parsed".format(sent.sid))
+        for d in sent:
+            extract_tags(r, d.dmrs(), sent.sid)
+
+
+def extract_tags(report, d, sentid=None):
+    d.json()  # call this to extract tags and sort them too
+    for nodeid, tags in d.tags.items():
+        ep = d.obj().ep(int(nodeid))
+        tag_str = []
+        for tag in tags:
+            tag_str.append('\t'.join((str(tag[0].synsetid), tag[0].lemma, tag[1].upper())))
+        cfrom, cto, surface = d.fix_tokenization(ep, d.parse.sent.text)
+        report.print('\t'.join((str(sentid), str(cfrom), str(cto), '\t'.join(tag_str))))
+
+
+def mine_stuff():
+    print("Yay")
+
 ########################################################################
 
 def main():
@@ -205,12 +207,12 @@ def main():
     mine_preds_task = task_parsers.add_parser('mine')
     mine_preds_task.set_defaults(func=mine_preds)
 
-    dev_task = task_parsers.add_parser('dev')
-    dev_task.set_defaults(func=dev_mode)
-
     find_compound_task = task_parsers.add_parser('fcomp')
     find_compound_task.add_argument('filepath')
     find_compound_task.set_defaults(func=find_compound)
+
+    valgold_task = task_parsers.add_parser('vgold')
+    valgold_task.set_defaults(func=validate_goldtags)
 
     # Optional argument(s)
     group = parser.add_mutually_exclusive_group()

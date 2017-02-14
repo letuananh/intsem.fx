@@ -50,12 +50,16 @@ __status__ = "Prototype"
 
 ########################################################################
 
+import os
 import unittest
 import logging
 from lxml import etree
 
+import delphin
+
 from lelesk import LeLeskWSD, LeskCache
 
+from coolisf.gold_extract import read_gold_sentences, export_to_visko
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence, DMRS
 from coolisf.util import Grammar
@@ -66,6 +70,8 @@ from coolisf.util import Grammar
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
 
+TEST_DIR = os.path.dirname(__file__)
+TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 
@@ -196,38 +202,43 @@ class TestMain(unittest.TestCase):
         a_sent = self.ERG.parse(text, parse_count=10)
         self.assertEqual(len(a_sent), 10)
 
-    def test_xml_to_dmrs(self):
-        d = DMRS(dmrs_xml='''<dmrs cfrom="-1" cto="-1">
-      <node cfrom="0" cto="4" nodeid="10000">
-        <realpred lemma="some" pos="q"/>
-        <sortinfo/>
-      </node>
-      <node cfrom="5" cto="9" nodeid="10001">
-        <realpred lemma="dog" pos="n" sense="1"/>
-        <sortinfo cvarsort="x" ind="+" num="pl" pers="3"/>
-        <sense synsetid="02084071-n" lemma="dog" score="42"/>
-        <sensegold synsetid="12345678-n" lemma="uberdog" score="42"/>
-      </node>
-      <node cfrom="10" cto="15" nodeid="10002">
-        <realpred lemma="bark" pos="v" sense="1"/>
-        <sortinfo cvarsort="e" mood="indicative" perf="-" prog="-" sf="prop" tense="pres"/>
-        <sense synsetid="01047596-v" lemma="bark" score="1"/>
-      </node>
-      <link from="0" to="10002">
-        <rargname/>
-        <post>H</post>
-      </link>
-      <link from="10000" to="10001">
-        <rargname>RSTR</rargname>
-        <post>H</post>
-      </link>
-      <link from="10002" to="10001">
-        <rargname>ARG1</rargname>
-        <post>NEQ</post>
-      </link>
-    </dmrs>''')
+    def test_fix_tokenization(self):
+        text = 'It rains.'
+        sent = self.ERG.parse(text)
+        # to visko
+        # sent[0].dmrs().tag_xml()
+        print(sent[0].dmrs().xml_str())
+        # print(sent.to_visko_xml_str())
+        d = sent[0].dmrs()
         logger.debug("JSON obj: {}", d.json())
         logger.debug("All tags: {}", d.tags)
+        ep = d.obj().ep(10000)
+        print(ep.pred.lemma)
+        print(d.fix_tokenization(ep, text))
+
+    def text_isf_visko(self):
+        sents = read_gold_sentences(auto_tag=False)
+        s10044 = sents[44]
+        p = s10044[0]
+        # test convert back and forth
+        print(p.mrs().to_dmrs().to_mrs().obj())
+        # test export to visko (XML)
+        from chirptext.leutile import FileTool
+        FileTool.create_dir(TEST_DATA)
+        export_to_visko([s10044], TEST_DATA)
+        # test re-read that visko XML
+        x = s10044.to_visko_xml_str()
+        d = DMRS(x)
+        self.assertIsNotNone(d.obj())
+        # Test read back from XML file
+        f = os.path.join(TEST_DATA, 'v10044.xml')
+        print(f)
+        with open(f, 'r') as infile:
+            print("Read back from file")
+            x = infile.read()
+            print(len(x))
+            d = DMRS(x)
+            print(d.obj())
 
     def test_preserve_xml_tag_in_json(self):
         sent = self.ERG.parse('I like hot dog.')
@@ -243,6 +254,75 @@ class TestMain(unittest.TestCase):
         self.assertEqual(method, TagInfo.GOLD)
         self.assertEqual(ss.synsetid, '12345678-n')
         logger.debug("JSON str: {}".format(d.json_str()))
+
+    def test_gold_extract(self):
+        # make this format: sentid - cfrom cto - synset - lemma - pos
+        import csv
+        from collections import defaultdict as dd
+        from chirptext.leutile import Counter
+        get_key = lambda tag : (int(tag[0]), int(tag[1]), int(tag[2]))
+        used_map = dd(list)
+        used_sidmap = dd(list)
+        with open('data/valgold.txt', 'r') as csvfile:
+            usedtags = list(csv.reader(csvfile, delimiter='\t'))
+            for u in usedtags:
+                used_map[get_key(u)].append(u)
+                used_sidmap[u[0]].append(u)
+        gold_map = dd(list)
+        with open('data/speckled_tags_gold.txt', 'r') as csvfile:
+            goldtags = list(csv.reader(csvfile, delimiter='\t'))
+            for g in goldtags:
+                gold_map[get_key(g)].append(g)
+        # compare
+        notinused = set()
+        print("usedtags", len(usedtags))
+        print("goldtags", len(goldtags))
+        # compare maps
+        # print(list(used_map.items())[:5])
+        # print(list(gold_map.items())[:5])
+        c = Counter()
+        for g in goldtags:
+            if get_key(g) in used_map:
+                used = used_map[get_key(g)]
+                if len(used) > 0 and g[3] in used[0]:
+                    # print(g, len(used), "=>", used)
+                    c.count("Correct")
+                    pass
+                else:
+                    c.count("Diff")
+                    print(g, len(used), "=>", used)
+            else:
+                # all used synsets, if it's there => just cto mismatch
+                sent_used = used_sidmap[g[0]]
+                found = False
+                for t in sent_used:
+                    if t[1] == g[1] and t[3] == g[3]:
+                        found = True
+                if found:
+                    c.count("UsedMismatch")
+                else:
+                    if g[0] in '10001, 10060, 10189, 10229, 10240, 10573':
+                        c.count("NotParsed")
+                    else:
+                        print("NotInUsed", g)
+                        notinused.add(g[4])
+                        c.count("NotInUsed")
+        # check used against goldtags
+        for u in usedtags:
+            if get_key(u) in gold_map:
+                gold = gold_map[get_key(u)]
+                if len(gold) > 0 and u[3] in gold[0]:
+                    c.count("UCorrect")
+                else:
+                    c.count("UDiff")
+            else:
+                if 'GOLD' not in u and u[1] != u[2]:
+                    c.count("New")
+                    print("NEW", u)
+                # print("UNotInGold", u)
+                c.count("UNotInGold")
+        c.summarise()
+        print("Not in used", notinused)
 
 ########################################################################
 

@@ -135,7 +135,7 @@ class Sentence(object):
             # store MRS raw
             if parse.mrs():
                 mrs_node = etree.SubElement(intp_node, 'mrs')
-                mrs_node.text = parse.mrs().tostring()
+                mrs_node.text = etree.CDATA(parse.mrs().tostring())
             # store DMRS
             intp_node.append(parse.dmrs().xml())
         return sent_node
@@ -150,12 +150,10 @@ class Parse(object):
     def __init__(self, mrs_raw=None, dmrs_raw=None, sent=None):
         self._mrs = None  # These should never be accessed directly
         self._dmrs = None
-        self.mrs(mrs_raw)
-        self.dmrs(dmrs_raw)
-#        if mrs_raw is not None and dmrs_raw is None:
-#            self.update_dmrs()
-#        if dmrs_raw is not None and mrs_raw is None:
-#            self.update_mrs()
+        if mrs_raw is not None and len(mrs_raw) > 0:
+            self.mrs(mrs_raw)
+        if dmrs_raw is not None and len(dmrs_raw) > 0:
+            self.dmrs(dmrs_raw)
         self.sent = sent
 
     def update_mrs(self):
@@ -215,7 +213,7 @@ class MRS(object):
         # insert RAW to dmrs_xml
         if with_raw:
             raw_node = etree.Element('raw')
-            raw_node.text = etree.CDATA(self._raw)
+            raw_node.text = etree.CDATA(self.tostring())
             dmrs_node.insert(0, raw_node)
         return DMRS(etree.tostring(dmrs_node).decode('utf-8'), parse=self.parse)
 
@@ -261,6 +259,8 @@ class DMRS(object):
         return self._node
 
     def xml_str(self, pretty_print=False):
+        if self._raw is not None and not pretty_print:
+            return self._raw
         return etree.tostring(self.xml(), pretty_print=pretty_print).decode('utf-8')
 
     def json(self):
@@ -290,7 +290,10 @@ class DMRS(object):
 
     def json_str(self):
         '''DMRS data in JSON format'''
-        return json.dumps(self.json())
+        try:
+            return json.dumps(self.json())
+        except:
+            return None
 
     def tostring(self, pretty_print=True):
         '''prettified DMRS string'''
@@ -398,8 +401,33 @@ class DMRS(object):
                 self.tags = tags
         return self.tags
 
+    SPECIAL_CHARS = '''?!"$-_&|.,;:'''
+
+    def fix_tokenization(self, ep, sent_text=None):
+        cfrom = ep.cfrom
+        cto = ep.cto
+        surface = sent_text[cfrom:cto] if sent_text is not None else ''
+        while len(surface) > 0 and surface[0] in self.SPECIAL_CHARS:
+            surface = surface[1:]
+            cfrom += 1
+        while len(surface) > 0 and surface[-1] in self.SPECIAL_CHARS:
+            surface = surface[:-1]
+            cto -= 1
+        return cfrom, cto, surface
+
+    def match(self, tag, ep):
+        sent_text = self.parse.sent.text if self.parse is not None and self.parse.sent is not None else None
+        cfrom, cto, surface = self.fix_tokenization(ep, sent_text)
+        if int(tag[1]) == cfrom:
+            if int(tag[2]) == cto:
+                return True
+            elif ep.pred.lemma == tag[4] or surface == tag[4]:
+                return True
+        return False
+
     def tag(self, goldtags=None, cgold=None, method=TagInfo.MFS):
         ''' Return a map from nodeid to a list of tuples in this format (SenseInfo, sensetype=str)
+        method can be set to None to prevent WSD to be performed
         '''
         best_candidate_map = self.pred_candidates()
         if goldtags is None and self.parse is not None and self.parse.sent is not None:
@@ -412,7 +440,8 @@ class DMRS(object):
         for ep in eps:
             if goldtags:
                 for tag in goldtags:
-                    if int(tag[1]) == ep.cfrom and int(tag[2]) == ep.cto:
+                    # exact matching <cfrom:cto> or cfrom:lemma
+                    if self.match(tag, ep):
                         # sense gold
                         # synset | lemma | type
                         sid = tag[3]

@@ -308,28 +308,6 @@ def generate_gold_profile():
     print("All done!")
 
 
-def sent_to_visko_xml(sent):
-    sent_node = etree.Element('sentence')
-    sent_node.set('id', str(sent.sid))
-    sent_node.set('version', '0.1')
-    sent_node.set('lang', 'eng')
-    # Add license information
-    text_node = etree.SubElement(sent_node, 'text')
-    text_node.text = sent.text
-    for id, mrs in enumerate(sent.mrses):
-        intp_node = etree.SubElement(sent_node, 'interpretation')
-        intp_node.set('id', str(id))
-        intp_node.set('mode', 'active' if id == 0 else 'inactive')
-
-        mrs_node = etree.SubElement(intp_node, 'mrs')
-        mrs_node.text = mrs.text
-
-        dmrs_node = mrs.dmrs_xml(False)
-        intp_node.append(dmrs_node)
-    return sent_node
-    # filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
-
-
 def export_to_visko(sents, doc_path, pretty_print=True):
     if not os.path.exists(doc_path):
         os.makedirs(doc_path)
@@ -342,14 +320,15 @@ def export_to_visko(sents, doc_path, pretty_print=True):
     print("Done!")
 
 
-def read_gold_sentences():
+def read_gold_sentences(auto_tag=True):
     sid_gold_map = read_gold_tags()
     sentences = read_gold_mrs()
     for sent in sentences:
         if len(sent) > 0:
             goldtags = sid_gold_map[str(sent.sid)]
             sent.goldtags = goldtags
-            sent.tag(goldtags, method='mfs')
+            if auto_tag:
+                sent.tag(goldtags, method='mfs')
     return sentences
 
 
