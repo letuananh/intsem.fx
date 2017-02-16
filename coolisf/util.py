@@ -56,12 +56,12 @@ from delphin.mrs.components import Pred
 from chirptext.leutile import Counter
 from chirptext.texttaglib import writelines
 
-
 from .model import Sentence
 
 ##########################################
 # CONFIGURATION
 ##########################################
+
 ERG_GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
 ACE_ARGS = ['-n', '5']

@@ -39,7 +39,7 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = [ "Le Tuan Anh" ]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -51,16 +51,11 @@ __status__ = "Prototype"
 import os
 import codecs
 import re
-from collections import namedtuple
+import logging
 from collections import defaultdict
-import xml.etree.ElementTree as ET
-import xml.dom.minidom
 import csv
 
-from delphin.interfaces import ace
-from delphin.mrs.components import Pred
 
-from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.leutile import FileTool
 from chirptext.leutile import TextReport
@@ -69,28 +64,32 @@ from chirptext.leutile import Timer
 from chirptext.leutile import header
 from chirptext.texttaglib import writelines
 
-from lelesk import LeLeskWSD # WSDResources
-from lelesk.config import LLConfig
-
-from .model import Sentence
-from .util import PredSense
+from yawlib import YLConfig
+from yawlib import WordnetSQL as WNSQL
+from .model import PredSense
 
 ########################################################################
 
 MWE_NOTFOUND = os.path.expanduser('data/mwe_notfound.txt')
 MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
-LEXDB = os.path.expanduser('data/lexdb.rev')
+LEXDB = FileTool.abspath('data/lexdb.rev')
+ERG_LEX_FILE = FileTool.abspath('data/lexicon.tdl')
 ERG_PRED_FILE = FileTool.abspath('data/ergpreds.py')
 ERG_PRED_NOT_FOUND_FILE = FileTool.abspath("data/ergpreds_not_mapped.txt")
-ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'),'r').read()
+ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'), 'r').read()
 
-ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
+
 
 class ERGLex:
-    
-    def __init__(self, name, userid, modstamp, dead, lextype, orthography, keyrel, altkey, alt2key, keytag, altkeytag, compkey, ocompkey, pronunciation, complete, semclasses, preferences, 
-                classifier, selectrest, jlink, comments, exemplars, usages, lang, country, dialect, domains, genres, register, confidence, source):
+
+    def __init__(self, name, userid, modstamp, dead, lextype, orthography, keyrel, altkey, alt2key, keytag,
+                 altkeytag, compkey, ocompkey, pronunciation, complete, semclasses, preferences,
+                 classifier, selectrest, jlink, comments, exemplars, usages, lang, country, dialect, domains, genres, register, confidence, source):
         # user defined
         # LexDbFieldMappings >>> HOW TO create initial .fld file (first 4 columns are name, userid, modstamp, dead)
         self.name          = name
@@ -125,20 +124,27 @@ class ERGLex:
         self.register      = register
         self.confidence    = confidence
         self.source        = source
-        
+
+    def __repr__(self):
+        return self.keyrel
+
     def __str__(self):
         return "name = %s | userid = %s | modstamp = %s | dead = %s | lextype = %s | orthography = %s | keyrel = %s | altkey = %s | alt2key = %s | keytag = %s | altkeytag = %s | compkey = %s | ocompkey = %s | pronunciation = %s | complete = %s | semclasses = %s | preferences = %s | classifier = %s | selectrest = %s | jlink = %s | comments = %s | exemplars = %s | usages = %s | lang = %s | country = %s | dialect = %s | domains = %s | genres = %s | register = %s | confidence = %s | source = %s" % (self.name, self.userid, self.modstamp, self.dead, self.lextype, self.orthography, self.keyrel, self.altkey, self.alt2key, self.keytag, self.altkeytag, self.compkey, self.ocompkey, self.pronunciation, self.complete, self.semclasses, self.preferences, self.classifier, self.selectrest, self.jlink, self.comments, self.exemplars, self.usages, self.lang, self.country, self.dialect, self.domains, self.genres, self.register, self.confidence, self.source)
-        
-def to_sense_map(k,v):
-    return '"%s" : [ %s ]' % (k,", ".join([ "SenseInfo('%s-%s', '%s', %s)" % (x.sid, x.pos, x.sk.replace("'", "\\'"), x.tagcount) for x in v ]))
 
-def get_erg_lex():
-    senses_map = defaultdict(list)
-    c = Counter()
 
+def to_sense_map(k, v):
+    sinfos = ["SenseInfo('{sid}', {tc})".format(sid=x.sid, tc=x.tagcount) for x in v]
+    return '"%s" : [ %s ]' % (k, ", ".join(sinfos))
+
+
+def read_erg_lex():
+    if not os.path.isfile(LEXDB):
+        logging.error("ERG DB cannot be found")
+        return []
     with open(LEXDB, 'r') as lexdb:
         rows = list(csv.reader(lexdb, delimiter='\t'))
-    return [ ERGLex(*row) for row in rows ]
+    return [ERGLex(*row) for row in rows]
+
 
 def dev():
     # TODO: Something is wrong with _pass_v_along ...
@@ -151,14 +157,13 @@ def dev():
     #return
 
     outfiles = FileHub('.txt')
-    lexs  = get_erg_lex()
+    lexs = read_erg_lex()
     c = Counter()
-    lpsr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\\/\$]+_[a-zA-Z]+_[0-9]+_rel") # _dog_n_1_rel
-    lpr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_rel") # _dog_n_rel
-    lr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\]+_rel") # person_rel
-    llr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z\-\+\\]+_rel") # comp_not+so_rel
-    lplr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_[a-zA-Z0-9\+\-]+_rel") # _abate_v_cause_rel
-    
+    lpsr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\\/\$]+_[a-zA-Z]+_[0-9]+_rel")  # _dog_n_1_rel
+    lpr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_rel")  # _dog_n_rel
+    lr_pattern = re.compile(r"_?[a-zA-Z0-9\-\+\\]+_rel")  # person_rel
+    llr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z\-\+\\]+_rel")  # comp_not+so_rel
+    lplr_pattern = re.compile(r"_?[a-zA-Z\-\+\\]+_[a-zA-Z]+_[a-zA-Z0-9\+\-]+_rel")  # _abate_v_cause_rel
     # Create output files
     outfiles.create('data/ergpreds_lpsr')
     outfiles.create('data/ergpreds_lpr')
@@ -166,7 +171,7 @@ def dev():
     outfiles.create('data/ergpreds_llr')
     outfiles.create('data/ergpreds_lplr')
     outfiles.create('data/ergpreds_unknown')
-    
+
     found_preds = set()
     for lex in lexs:
         c.count("Total")
@@ -196,6 +201,7 @@ def dev():
     c.summarise()
     print("-" * 20)
 
+
 def extract_all_rel():
     # report header
     t = Timer()
@@ -204,7 +210,7 @@ def extract_all_rel():
     c = Counter()
 
     t.start("Extracting preds from ERG")
-    lex_entries = get_erg_lex()
+    lex_entries = read_erg_lex()
     t.end()
 
     t.start("Mapping those to wordnet senses")
@@ -224,23 +230,23 @@ def extract_all_rel():
     t.start("Saving predlinks to file")
     report.print(ERG_PRED_FILE_TEMPLATE)
     report.print("ERG_PRED_MAP = {")
-    senses_list = [ to_sense_map(k,v) for k,v in senses_map.items() ] 
+    senses_list = [to_sense_map(k, v) for k, v in senses_map.items()]
     report.print(",\n".join(senses_list))
     report.print("}")
     c.summarise()
     report.close()
     t.end("Mapping info has been written to %s" % (ERG_PRED_FILE,))
-    
+
     # Investigate senses that can't be mapped
     not_mapped_file = TextReport(ERG_PRED_NOT_FOUND_FILE)
-    mc = Counter() # Mapped count
+    mc = Counter()  # Mapped count
 
     maxlength = 0
     for k in senses_map.keys():
         if len(k) > maxlength:
-            maxlength = len(k) 
+            maxlength = len(k)
 
-    for k,v in senses_map.items():
+    for k, v in senses_map.items():
         if not v:
             tracer = []
             PredSense.search_pred_string(k, tracer=tracer)
@@ -256,75 +262,69 @@ def extract_all_rel():
 
     print("Mapped     >>> %s" % (ERG_PRED_FILE,))
     print("Not Mapped >>> %s" % (ERG_PRED_NOT_FOUND_FILE,))
-
-            
     pass
+
+
+def find_mwe():
+    mwe_list = set()
+
+    print("Extracting MWE from ERG's lexicon")
+    if not os.path.isfile(ERG_LEX_FILE):
+        logging.error("ERG lexicon file cannot be found")
+    else:
+        with codecs.open(ERG_LEX_FILE, 'r', encoding='utf-8') as erg:
+            mwe = None
+            for l in erg:
+                if ':=' in l:
+                    m = re.match(r"([a-z_]+)_v[0-9]+ := v_p[_-]", l)
+                    if m:
+                        ms = m.group(1).split('_')
+                        mwe = " ".join(ms)
+                    else:
+                        mwe = None
+                if mwe:
+                    mm = re.search(r"KEYREL.PRED \"([-a-z_]+)\"", l)
+                    if mm:
+                        mwe_list.add((mwe, mm.group(1)))
+    return mwe_list
+
 
 def extract_mwe():
     print("Loading WordNet ...")
-    all_senses = WSDResources.singleton(True).wnsql.all_senses()
-    
-    print("Extracting MWE from ERG's lexicon")
-    erg = codecs.open(os.path.expanduser("~/logon/lingo/erg/lexicon.tdl"), 'r', encoding='utf-8')
-    pvs = set()
-    prt = set()
-    mwe = None
-    mwe_list = set()
-    mwe_lemma_map = {}
-    for l in erg:
-        if ':=' in l:
-            m = re.match(r"([a-z_]+)_v[0-9]+ := v_p[_-]", l)
-        
-            if m:
-                ms = m.group(1).split('_')
-                # print "%s\t%s" % (ms, m)
-                mwe = " ".join(ms)
-                #if len(ms) > 2:
-                #   print(mwe)
-            else:
-                mwe = None
-        if mwe: 
-            mm = re.search(r"KEYREL.PRED \"([-a-z_]+)\"", l)
-            
-            if mm:
-                # print("%s\t%s" % (mwe, mm.group(1)))
-                mwe_list.add((mwe, mm.group(1)))
-                mwe_lemma_map[mm.group(1)] = mwe
-    with open('data/mwe.txt', 'w') as outfile:
-        for mwe in mwe_list:
-            outfile.write('\t'.join(mwe))
-            outfile.write('\n')
-            
+    all_senses = WNSQL(YLConfig.WNSQL30_PATH).all_senses()
+    mwe_list = find_mwe()
     # Searching for lexicon
     print("Mapping to WordNet ...")
     c = Counter()
     mwe_found = []
     mwe_notfound = []
     for mwe in mwe_list:
-        print("Looking for [%s]" % (mwe[0],))
+        logger.debug("Looking for [%s]" % (mwe[0],))
         if mwe[0] in all_senses:
             candidates = all_senses[mwe[0]]
-            mwe_found.append(',"%s"' % (mwe[1],) + ': [' + ', '.join(('"%s-%s"' % (str(x.sid)[1:], x.pos) for x in candidates)) + "] # " + mwe[0])
+            mwe_found.append(',"%s"' % (mwe[1],) + ': [' + ', '.join(('"%s"' % (x.sid) for x in candidates)) + "] # " + mwe[0])
             c.count("Found")
         else:
             c.count("Not found")
             mwe_notfound.append('\t'.join(mwe))
         c.count("Total")
     c.summarise()
-    mwe_found = [ '# This file contains predicates in ERG which have been mapped to concept in WordNet', '# ' ] + mwe_notfound
+    mwe_found = ['# This file contains predicates in ERG which have been mapped to concept in WordNet', '# '] + mwe_notfound
     writelines(mwe_found, MWE_FOUND)
-    mwe_notfound = [ '# This file contains predicates in ERG which cannot be found in WordNet', '# ' ] + mwe_notfound
+    mwe_notfound = ['# This file contains predicates in ERG which could not be found in WordNet', '# '] + mwe_notfound
     writelines(mwe_notfound, MWE_NOTFOUND)
-    pred_lemma =  [ '# This file contains all VV preds in ERG and their lemmas', "# " ]
-    pred_lemma += [ ",'%s' : '%s'" % (x[1], x[0]) for x in mwe_list ] 
+    pred_lemma = ['# This file contains all VV preds in ERG and their lemmas', "# "]
+    pred_lemma += [",'%s' : '%s'" % (x[1], x[0]) for x in mwe_list]
     writelines(pred_lemma, MWE_PRED_LEMMA)
     print("All done")
     pass
 
+
 def main():
-    dev()
+    # dev()
+    extract_mwe()
     extract_all_rel()
-    # extract_mwe()
-    
+
+
 if __name__ == "__main__":
     main()

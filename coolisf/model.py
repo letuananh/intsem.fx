@@ -66,7 +66,7 @@ from delphin.mrs.components import Pred
 from chirptext.leutile import StringTool
 from chirptext.texttaglib import TagInfo
 from chirptext.texttaglib import TaggedSentence
-from yawlib.models import SenseInfo
+from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 from .mwemap import MWE_ERG_PRED_LEMMA
@@ -391,7 +391,7 @@ class DMRS(object):
                     lemma = s.attrib['lemma']
                     score = s.attrib['score'] if 'score' in s.attrib else None
                     method = s.attrib['method'] if 'method' in s.attrib else TagInfo.ISF
-                    sinfo = SenseInfo(sid, lemma=lemma)
+                    sinfo = Synset(sid, lemma=lemma)
                     if score is not None:
                         sinfo.tagcount = score
                     tags[nodeid].append((sinfo, method))
@@ -428,7 +428,7 @@ class DMRS(object):
         return False
 
     def tag(self, goldtags=None, cgold=None, method=TagInfo.MFS):
-        ''' Return a map from nodeid to a list of tuples in this format (SenseInfo, sensetype=str)
+        ''' Return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
         method can be set to None to prevent WSD to be performed
         '''
         best_candidate_map = self.pred_candidates()
@@ -448,7 +448,7 @@ class DMRS(object):
                         # synset | lemma | type
                         sid = tag[3]
                         lemma = tag[4]
-                        sense = SenseInfo(sid, lemma=lemma)
+                        sense = Synset(sid, lemma=lemma)
                         tags[ep.nodeid].append((sense, TagInfo.GOLD))
                         if cgold:
                             cgold.count('inserted')
@@ -461,7 +461,7 @@ class DMRS(object):
                         candidate = None
                         best = scores[0].candidate.synset
                         # bl = best.terms[0].term if best.terms else ''
-                        tags[ep.nodeid].append((SenseInfo(best.sid, lemma=ep.pred.lemma), 'lelesk'))
+                        tags[ep.nodeid].append((Synset(best.sid, lemma=ep.pred.lemma), 'lelesk'))
                 elif method == TagInfo.MFS:  # mfs
                     key = '-'.join((str(ep.cfrom), str(ep.cto), str(ep.pred.pos), str(ep.pred.lemma), str(ep.pred.sense)))
                     if key in best_candidate_map:
@@ -567,16 +567,14 @@ class PredSense(object):
         return []
 
     # alias
-    def search_pred_string(pred_str,extend_lemma=True, tracer=None):
+    def search_pred_string(pred_str, extend_lemma=True, tracer=None):
         if pred_str is None:
             return []
-        
-        if pred_str.startswith("_"):
-            pred_str = pred_str[1:]
-        
+        # if pred_str.startswith("_"):
+        #     pred_str = pred_str[1:]
         if pred_str in MWE_ERG_PRED_LEMMA:
-            pred = Pred.grammarpred(pred_str)
-            if isinstance(tracer,list):
+            pred = Pred.string_or_grammar_pred(pred_str)
+            if isinstance(tracer, list):
                 tracer.append(([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos, 'MWE', 'See also?: ' + Pred.grammarpred(pred_str).lemma))
             ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos)
             return sorted(ss, key=lambda x: x.tagcount, reverse=True)
@@ -618,16 +616,16 @@ class PredSense(object):
     def search_pred(pred, auto_expand=True, tracer=None):
         if not pred:
             return None
-        
+
         lemmata = (pred.lemma,) if not auto_expand else PredSense.extend_lemma(pred.lemma)
-        pos     = pred.pos
+        pos = pred.pos
 
         if (lemmata, pos) in PredSense.AUTO_EXTEND:
             lemmata, pos = PredSense.AUTO_EXTEND[(lemmata, pos)]
         elif (lemmata,) in PredSense.AUTO_EXTEND:
             lemmata = PredSense.AUTO_EXTEND[(lemmata,)]
 
-        if isinstance(tracer,list):
+        if isinstance(tracer, list):
             tracer.append((lemmata, pos))
         ss = PredSense.search_sense(lemmata, pos)
 
