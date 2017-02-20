@@ -277,6 +277,9 @@ class DMRS(object):
                 for tag, tagtype in tags[nid]:
                     node['senses'].append({'synsetid': str(tag.synsetid), 'lemma': tag.lemma, 'type': tagtype})
         # These are for visko
+        # add sentence text if it's available
+        if self.parse is not None and self.parse.sent is not None:
+            j['text'] = self.parse.sent.text
         # Add pred type and pos
         for node, ep in zip(j['nodes'], self.obj().eps()):
             node['type'] = 'gpred' if (ep.pred.type == Pred.GRAMMARPRED) else 'realpred'
