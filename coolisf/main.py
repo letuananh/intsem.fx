@@ -113,6 +113,8 @@ def to_visko(args):
         # default bibloc
         visko_data_dir = os.path.expanduser('~/workspace/visualkopasu/data/biblioteche')
     export_path = os.path.join(visko_data_dir, args.biblioteca, args.corpus, args.doc)
+    print("Biblioteche location: {}".format(visko_data_dir))
+    print("Document location   : {}".format(export_path))
     # which file to export
     if args.file is not None:
         # export MRS file
