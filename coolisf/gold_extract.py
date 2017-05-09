@@ -265,6 +265,9 @@ def read_gold_tags():
 def read_gold_mrs():
     # Read gold profile from ITSDB (ERG-TRUNK)
     sentences = []
+    # Generate INPUT_MRS file (gold.out.txt) if needed
+    if not os.path.isfile(INPUT_MRS):
+        extract_tsdb_gold()
     with open(INPUT_MRS) as input_mrs:
         lines = input_mrs.readlines()
         for line in lines:
