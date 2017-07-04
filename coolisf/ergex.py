@@ -57,7 +57,7 @@ import csv
 
 
 from chirptext.leutile import Counter
-from chirptext.leutile import FileTool
+from chirptext.leutile import FileHelper
 from chirptext.leutile import TextReport
 from chirptext.leutile import FileHub
 from chirptext.leutile import Timer
@@ -73,11 +73,11 @@ from .model import PredSense
 MWE_NOTFOUND = os.path.expanduser('data/mwe_notfound.txt')
 MWE_FOUND = os.path.expanduser('data/mwe_found.txt')
 MWE_PRED_LEMMA = os.path.expanduser('data/mwe_pred_lemma.txt')
-LEXDB = FileTool.abspath('data/lexdb.rev')
-ERG_LEX_FILE = FileTool.abspath('data/lexicon.tdl')
-ERG_PRED_FILE = FileTool.abspath('data/ergpreds.py')
-ERG_PRED_NOT_FOUND_FILE = FileTool.abspath("data/ergpreds_not_mapped.txt")
-ERG_PRED_FILE_TEMPLATE = open(FileTool.abspath('data/ergpreds.template.py'), 'r').read()
+LEXDB = FileHelper.abspath('data/lexdb.rev')
+ERG_LEX_FILE = FileHelper.abspath('data/lexicon.tdl')
+ERG_PRED_FILE = FileHelper.abspath('data/ergpreds.py')
+ERG_PRED_NOT_FOUND_FILE = FileHelper.abspath("data/ergpreds_not_mapped.txt")
+ERG_PRED_FILE_TEMPLATE = open(FileHelper.abspath('data/ergpreds.template.py'), 'r').read()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

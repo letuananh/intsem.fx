@@ -59,7 +59,7 @@ from delphin import itsdb
 
 from fuzzywuzzy import fuzz
 
-from chirptext.leutile import FileTool
+from chirptext.leutile import FileHelper
 from chirptext.leutile import Timer
 from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
@@ -73,10 +73,10 @@ from coolisf.util import read_ace_output
 # CONFIGURATION
 ##########################################
 
-GOLD_PROFILE = FileTool.abspath('./data/gold')
-OUTPUT_FILE = FileTool.abspath('./data/gold.out.txt')
-RAW_TEXT = FileTool.abspath('./data/speckled.txt')
-GOLD_RAW = FileTool.abspath('./data/gold.raw.txt')
+GOLD_PROFILE = FileHelper.abspath('./data/gold')
+OUTPUT_FILE = FileHelper.abspath('./data/gold.out.txt')
+RAW_TEXT = FileHelper.abspath('./data/speckled.txt')
+GOLD_RAW = FileHelper.abspath('./data/gold.raw.txt')
 
 GRAM_FILE = './data/erg.dat'
 ACE_BIN = os.path.expanduser('~/bin/ace')
