@@ -52,6 +52,7 @@ from django.http import HttpResponse, Http404
 
 from chirptext.texttaglib import TagInfo
 import coolisf
+from coolisf.util import Grammar
 
 
 # ---------------------------------------------------------------------
@@ -91,8 +92,41 @@ def index(request):
     return HttpResponse('coolisf-REST is up and running - coolisf-{v}/Django-{dv}'.format(v=coolisf.__version__, dv=django.get_version()), 'text/html')
 
 
+RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
+GRAMMARS = ('ERG', 'JACY')  # TODO: Make this more flexible
+
+
 @jsonp
 def parse(request):
+    ''' Parse a sentence using ISF
+    Mapping: /restisf/parse/ '''
+    # inputs
+    sentence_text = request.GET['sent']
+    parse_count = request.GET['parse_count']
+    tagger = request.GET['tagger']
+    grammar = request.GET['grammar']
+
+    # validation
+    if not sentence_text:
+        raise Http404('Sentence cannot be empty')
+    elif int(parse_count) not in RESULTS:
+        raise Http404('Invalid parse count')
+    elif grammar not in GRAMMARS:
+        raise Http404('Unknown grammar')
+    # Parse sentence
+    sent = Grammar().parse(sentence_text, parse_count=parse_count)
+    sent.tag(method=TagInfo.LELESK)
+
+    # Return result
+    return {'sent': sentence_text,
+            'parse_count': parse_count,
+            'tagger': tagger,
+            'grammar': grammar,
+            'parses': [x.dmrs().json() for x in sent]}
+
+
+@jsonp
+def mockup(request):
     ''' Parse a sentence using ISF
     Mapping: /restisf/parse/ '''
     sent = request.GET['sent']
@@ -104,11 +138,11 @@ def parse(request):
 
     if not sent:
         raise Http404('Invalid sentence')
-    return { 'sent': sent,
-             'parse_count': parse_count,
-             'tagger': tagger,
-             'grammar': grammar,
-             'parses': [mockup, mockup2]}
+    return {'sent': sent,
+            'parse_count': parse_count,
+            'tagger': tagger,
+            'grammar': grammar,
+            'parses': [mockup, mockup2]}
 
 
 @jsonp
