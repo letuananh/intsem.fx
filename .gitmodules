@@ -1,15 +1,15 @@
 [submodule "modules/chirptext"]
 	path = modules/chirptext
-	url = git@github.com:letuananh/chirptext
+	url = https://github.com/letuananh/chirptext
 [submodule "modules/lelesk"]
 	path = modules/lelesk
-	url = git@github.com:letuananh/lelesk
+	url = https://github.com/letuananh/lelesk
 [submodule "modules/demophin"]
 	path = modules/demophin
-	url = git@github.com:neocl/demophin
+	url = https://github.com/neocl/demophin
 [submodule "modules/puchikarui"]
 	path = modules/puchikarui
-	url = git@github.com:letuananh/puchikarui
+	url = https://github.com/letuananh/puchikarui
 [submodule "modules/yawlib"]
 	path = modules/yawlib
 	url = https://github.com/letuananh/yawlib
