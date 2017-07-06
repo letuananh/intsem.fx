@@ -92,12 +92,23 @@ def index(request):
 
 
 @jsonp
-def parse(request, sent, parse_count=5, tagmethod=TagInfo.LELESK, grammar='ERG'):
-    ''' Get a synset by ID
-    Mapping: /yawol/synset/<synsetID> '''
+def parse(request):
+    ''' Parse a sentence using ISF
+    Mapping: /restisf/parse/ '''
+    sent = request.GET['sent']
+    parse_count = request.GET['parse_count']
+    tagger = request.GET['tagger']
+    grammar = request.GET['grammar']
+    mockup = {"lnk": {"from": -1, "to": -1}, "nodes": [{"type": "realpred", "senses": [{"lemma": "some", "type": "lelesk", "synsetid": "02267308-a"}], "lnk": {"from": 0, "to": 4}, "predicate": "_some_q", "pos": "q", "nodeid": 10000}, {"sortinfo": {"cvarsort": "x", "ind": "+", "num": "pl", "pers": "3"}, "senses": [{"lemma": "dog", "type": "lelesk", "synsetid": "02084071-n"}], "type": "realpred", "lnk": {"from": 5, "to": 9}, "predicate": "_dog_n_1", "pos": "n", "nodeid": 10001}, {"sortinfo": {"cvarsort": "e", "tense": "past", "mood": "indicative", "prog": "-", "sf": "prop", "perf": "-"}, "senses": [{"lemma": "bark", "type": "lelesk", "synsetid": "07376731-n"}], "type": "realpred", "lnk": {"from": 10, "to": 17}, "predicate": "_bark_v_1", "pos": "v", "nodeid": 10002}], "text": "Some dogs barked.", "links": [{"post": "H", "from": 0, "rargname": None, "to": 10002}, {"post": "H", "from": 10000, "rargname": "RSTR", "to": 10001}, {"post": "NEQ", "from": 10002, "rargname": "ARG1", "to": 10001}]}
+    mockup2 = {"lnk": {"from": -1, "to": -1}, "nodes": [{"type": "realpred", "senses": [{"lemma": "some", "type": "lelesk", "synsetid": "02267308-a"}], "lnk": {"from": 0, "to": 4}, "predicate": "_some_q", "pos": "q", "nodeid": 10000}, {"sortinfo": {"cvarsort": "x", "ind": "+", "num": "pl", "pers": "3"}, "senses": [{"lemma": "dog", "type": "lelesk", "synsetid": "09886220-n"}], "type": "realpred", "lnk": {"from": 5, "to": 9}, "predicate": "_dog_n_1", "pos": "n", "nodeid": 10001}, {"sortinfo": {"cvarsort": "e", "tense": "past", "mood": "indicative", "prog": "-", "sf": "prop", "perf": "-"}, "senses": [{"lemma": "bark", "type": "lelesk", "synsetid": "07376731-n"}], "type": "realpred", "lnk": {"from": 10, "to": 17}, "predicate": "_bark_v_1", "pos": "v", "nodeid": 10002}], "text": "Some dogs barked.", "links": [{"post": "H", "from": 0, "rargname": None, "to": 10002}, {"post": "H", "from": 10000, "rargname": "RSTR", "to": 10001}, {"post": "NEQ", "from": 10002, "rargname": "ARG1", "to": 10001}]}
+
     if not sent:
         raise Http404('Invalid sentence')
-    return {'sent': sent}
+    return { 'sent': sent,
+             'parse_count': parse_count,
+             'tagger': tagger,
+             'grammar': grammar,
+             'parses': [mockup, mockup2]}
 
 
 @jsonp
