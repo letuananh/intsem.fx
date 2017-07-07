@@ -93,6 +93,7 @@ def index(request):
 
 
 RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
+TAGGERS = (TagInfo.LELESK, TagInfo.MFS)
 GRAMMARS = ('ERG', 'JACY')  # TODO: Make this more flexible
 
 
@@ -110,10 +111,14 @@ def parse(request):
     if not sentence_text:
         raise Http404('Sentence cannot be empty')
     elif int(parse_count) not in RESULTS:
-        raise Http404('Invalid parse count')
+        raise Http404('Invalid parse count: ' + parse_count)
+    elif tagger not in TAGGERS:
+        raise Http404('Unknown tagger: ' + tagger)
     elif grammar not in GRAMMARS:
         raise Http404('Unknown grammar')
+
     # Parse sentence
+    logger.info("Parsing sentence: " + sentence_text)
     sent = Grammar().parse(sentence_text, parse_count=parse_count)
     sent.tag(method=TagInfo.LELESK)
 
