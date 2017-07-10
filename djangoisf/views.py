@@ -121,22 +121,28 @@ def parse(request):
     logger.info("Parsing sentence: " + sentence_text)
     sent = Grammar().parse(sentence_text, parse_count=parse_count)
     sent.tag(method=TagInfo.LELESK)
-    xml_str = sent.to_visko_xml_str(method=tagger)
 
     # Return result
-    return {'sent': sentence_text,
+    return sent2json(sent, sentence_text, parse_count, tagger, grammar)
+
+
+def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):
+    xml_str = sent.to_visko_xml_str()
+    return {'sent': sentence_text if sentence_text else sent.text,
             'parse_count': parse_count,
             'tagger': tagger,
             'grammar': grammar,
-            'parses': [sent2json(x) for x in sent],
+            'parses': [parse2json(x) for x in sent],
             'xml': xml_str}
 
 
-def sent2json(sent):
-    return {'mrs': sent.mrs().json(),
-            'dmrs': sent.dmrs().json(),
-            'mrs_raw': sent.mrs().tostring(),
-            'dmrs_raw': sent.dmrs().tostring()}
+def parse2json(parse):
+    return {'pid': parse.ID,
+            'ident': parse.ident,
+            'mrs': parse.mrs().json(),
+            'dmrs': parse.dmrs().json(),
+            'mrs_raw': parse.mrs().tostring(),
+            'dmrs_raw': parse.dmrs().tostring()}
 
 
 @jsonp

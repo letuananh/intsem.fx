@@ -155,6 +155,8 @@ class Parse(object):
         if dmrs_raw is not None and len(dmrs_raw) > 0:
             self.dmrs(dmrs_raw)
         self.sent = sent
+        self.ID = None  # Visko integration
+        self.ident = None  # Visko integration
 
     def update_mrs(self):
         if self._dmrs is not None:
