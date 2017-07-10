@@ -1,1 +1,3 @@
-
+pydelphin==0.6.0
+nltk==3.2.1
+bs4
