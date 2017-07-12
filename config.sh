@@ -2,6 +2,7 @@
 
 bold=$(tput bold)
 normal=$(tput sgr0)
+WORKSPACE_FOLDER=~/workspace
 py3=`python -c "import sys; print('1' if sys.version_info >= (3,0) else '0')"`
 
 function link_folder {
@@ -34,14 +35,11 @@ if [ ${py3} -eq 0 ]; then
     echo "+-------------------------------+"
 fi
 
-# Where you check out projects to
-WORKSPACE_FOLDER=~/workspace
+# init submodules
+submodule init && submodule update
 
 # prerequisite packages
-pip install -r requirements.txt
-# link_folder `readlink -f ${WORKSPACE_FOLDER}/pydelphin/delphin` delphin
-# link_folder `readlink -f ${WORKSPACE_FOLDER}/nltk/nltk` nltk
-# link_folder `readlink -f ${WORKSPACE_FOLDER}/beautifulsoup/bs4-python3` bs4
+pip install -r requirements.txt -qq
 
 link_folder `readlink -f ./modules/chirptext/chirptext` chirptext
 link_folder `readlink -f ./modules/lelesk/lelesk` lelesk
