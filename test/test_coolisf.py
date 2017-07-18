@@ -53,17 +53,13 @@ __status__ = "Prototype"
 import os
 import unittest
 import logging
-import json
-from lxml import etree
-
-import delphin
 
 from lelesk import LeLeskWSD, LeskCache
 
 from coolisf.gold_extract import read_gold_sentences, export_to_visko
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence, DMRS
-from coolisf.util import Grammar, GrammarHub
+from coolisf.util import GrammarHub
 from yawlib import YLConfig, WordnetSQL as WSQL
 
 
@@ -193,8 +189,8 @@ class TestMain(unittest.TestCase):
         # add new DMRS from XML
         sent.add(dmrs_xml=xml_str)
         self.assertEqual(len(sent), 2)  # now we should have 2 MRSes
-        m2 = sent[1]
-        # and they should look exactly the same
+        m2 = sent[1] 
+       # and they should look exactly the same
         xml_str2 = m2.dmrs().xml_str()
         self.assertEqual(xml_str, xml_str2)
         pass

@@ -69,6 +69,7 @@ CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
 PC_INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'initpc.sql')
 AC_INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'initac.sql')
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 ########################################################################
@@ -141,14 +142,15 @@ class AceCache(Schema):
         self.add_table('mrs', ['ID', 'sid', 'mrs'])
 
     def save(self, sent, grm, pc):
-        self.sent.insert((sent.text, grm, pc))
-        sid = self.ds().cur.lastrowid
+        sid = self.sent.insert((sent.text, grm, pc))
         for p in sent:
             self.mrs.insert((sid, p.mrs()._raw))
-        self.commit()
 
     def load(self, sent, grm, pc):
-        sobj = self.sent.select_single('text=? AND grm=? AND pc=?', (sent, grm, pc))
+        if pc is None:
+            sobj = self.sent.select_single('text=? AND grm=? AND pc IS NULL', (sent, grm))
+        else:
+            sobj = self.sent.select_single('text=? AND grm=? AND pc=?', (sent, grm, pc))
         if not sobj:
             return None
         else:
@@ -167,15 +169,16 @@ class ISFCache(Schema):
         self.add_table('parse', ['ID', 'sid', 'pid', 'ident', 'jmrs', 'jdmrs', 'mrs', 'dmrs'])
 
     def save(self, sent, grammar, pc, tagger):
-        self.sent.insert([sent.text, pc, tagger, grammar, sent.to_visko_xml_str()])
-        sid = self.ds().cur.lastrowid
+        sid = self.sent.insert([sent.text, pc, tagger, grammar, sent.to_visko_xml_str()])
         for p in sent:
             # insert parses
             self.parse.insert([sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring()])
-        self.commit()
 
     def load(self, txt, grm, pc, tagger):
-        sobj = self.sent.select_single('text=? AND pc=? AND tagger=? AND grm=?', (txt, pc, tagger, grm))
+        if pc is None:
+            sobj = self.sent.select_single('text=? AND pc IS NULL AND tagger=? AND grm=?', (txt, pc, tagger, grm))
+        else:
+            sobj = self.sent.select_single('text=? AND pc=? AND tagger=? AND grm=?', (txt, pc, tagger, grm))
         if not sobj:
             return None
         # else
@@ -237,10 +240,10 @@ class GrammarHub:
         if self.cache:
             s = self.cache.load(txt, grm, pc, tagger)
             if s is not None:
-                logger.debug("Retrieved {} parse(s) from cache for sent: {}".format(len(s), s['sent']))
+                logger.info("Retrieved {} parse(s) from cache for sent: {}".format(len(s), s['sent']))
                 return s
         # Parse sentence
-        logger.info("Parsing sentence: {}".format(txt))
+        logger.debug("Parsing sentence: {}".format(txt))
         sent = self[grm].parse(txt, parse_count=pc)
         if tagger:
             sent.tag(method=tagger)
