@@ -53,6 +53,7 @@ __status__ = "Prototype"
 import os
 import unittest
 import logging
+import json
 from lxml import etree
 
 import delphin
@@ -62,23 +63,52 @@ from lelesk import LeLeskWSD, LeskCache
 from coolisf.gold_extract import read_gold_sentences, export_to_visko
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence, DMRS
-from coolisf.util import Grammar
+from coolisf.util import Grammar, GrammarHub
+from yawlib import YLConfig, WordnetSQL as WSQL
+
 
 ########################################################################
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
 
+wsql = WSQL(YLConfig.WNSQL30_PATH)
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 
 
+class TestGrammarHub(unittest.TestCase):
+
+    ghub = GrammarHub()
+
+    def test_config(self):
+        erg = self.ghub.ERG
+        self.assertIsNotNone(erg)
+
+    def test_parse_cache(self):
+        txt = "I saw a girl with a telescope."
+        self.ghub.ERG.parse(txt, 5)
+        s = self.ghub.ERG.cache.load(txt, self.ghub.ERG.name, 5)
+        self.assertIsNotNone(s)
+        self.assertEqual(len(s), 5)
+
+    def test_isf_cache(self):
+        txt = "I saw a girl with a telescope."
+        grm = "ERG"
+        pc = 5
+        tagger = "MFS"
+        s = self.ghub.parse(txt, grm, pc, tagger)
+        s = self.ghub.cache.load(txt, grm, pc, tagger)
+        self.assertIsNotNone(s)
+        self.assertEqual(len(s['parses']), 5)
+
+
 class TestMain(unittest.TestCase):
 
-    ERG = Grammar()
+    ghub = GrammarHub()
+    ERG = ghub.ERG
 
     def test_models(self):
         raw_text = 'It rains.'
@@ -271,6 +301,9 @@ class TestMain(unittest.TestCase):
                 gold_map[get_key(g)].append(g)
         # compare
         notinused_lemmas = Counter()
+        notinused_sids = Counter()
+        sid_lemma_map = {}
+        sid_sent_map = dd(set)
         notinused_tags = list()
         new_tasg = list()
         print("usedtags", len(usedtags))
@@ -304,6 +337,10 @@ class TestMain(unittest.TestCase):
                     else:
                         notinused_tags.append(g)
                         notinused_lemmas.count(g[4])
+                        notinused_sids.count(g[3])
+                        sid_sent_map[g[3]].add(g[0])
+                        if g[3] not in sid_lemma_map:
+                            sid_lemma_map[g[3]] = g[4]
                         c.count("NotInUsed")
         # check used against goldtags
         for u in usedtags:
@@ -323,8 +360,16 @@ class TestMain(unittest.TestCase):
         with open(os.path.join(TEST_DATA, 'debug_notinused.txt'), 'w') as niufile:
             niufile.write('\n'.join(['\t'.join(x) for x in notinused_tags]))
             niufile.write('\n\n')
-            for k, v in notinused_lemmas.get_report_order():
+            for k, v in notinused_lemmas.sorted_by_count():
                 niufile.write("%s: %d\n" % (k, v))
+            niufile.write('\nSynset ID\n')
+            for k, v in notinused_sids.sorted_by_count():
+                ss = wsql.get_synset_by_id(k)
+                if ss is not None:
+                    niufile.write("      %s - %s: %d | %s\n" % (k, sid_lemma_map[k], v, sid_sent_map[k]))
+                else:
+                    niufile.write("N/A | %s - %s: %d | %s\n" % (k, sid_lemma_map[k], v, sid_sent_map[k]))
+
 
 ########################################################################
 

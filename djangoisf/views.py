@@ -52,7 +52,7 @@ from django.http import HttpResponse, Http404
 
 from chirptext.texttaglib import TagInfo
 import coolisf
-from coolisf.util import Grammar
+from coolisf.util import GrammarHub
 
 
 # ---------------------------------------------------------------------
@@ -60,6 +60,11 @@ from coolisf.util import Grammar
 # ---------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
+TAGGERS = (TagInfo.LELESK, TagInfo.MFS)
+GRAMMARS = ('ERG', 'JACY')  # TODO: Make this more flexible
+ghub = GrammarHub()
 
 
 # ---------------------------------------------------------------------
@@ -92,11 +97,6 @@ def index(request):
     return HttpResponse('coolisf-REST is up and running - coolisf-{v}/Django-{dv}'.format(v=coolisf.__version__, dv=django.get_version()), 'text/html')
 
 
-RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
-TAGGERS = (TagInfo.LELESK, TagInfo.MFS)
-GRAMMARS = ('ERG', 'JACY')  # TODO: Make this more flexible
-
-
 @jsonp
 def parse(request):
     ''' Parse a sentence using ISF
@@ -118,12 +118,10 @@ def parse(request):
         raise Http404('Unknown grammar')
 
     # Parse sentence
-    logger.info("Parsing sentence: " + sentence_text)
-    sent = Grammar().parse(sentence_text, parse_count=parse_count)
-    sent.tag(method=TagInfo.LELESK)
-
-    # Return result
-    return sent2json(sent, sentence_text, parse_count, tagger, grammar)
+    logger.info("Parsing sentence: ... " + sentence_text)
+    sent = ghub.parse(sentence_text, grammar, parse_count, tagger)
+    logger.info("Done parsing")
+    return sent
 
 
 def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):

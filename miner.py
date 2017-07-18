@@ -39,7 +39,7 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2016, ISF"
-__credits__ = [ "Le Tuan Anh" ]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -168,8 +168,6 @@ def find_compound(args):
 
 def validate_goldtags(args):
     r = TextReport('data/valgold.txt')
-    # r = TextReport()
-    # r.header("Validate gold tags")
     from coolisf.gold_extract import read_gold_sentences
     sents = read_gold_sentences()
     for sent in sents:
@@ -193,12 +191,12 @@ def extract_tags(report, d, sentid=None):
 def mine_stuff():
     print("Yay")
 
+
 ########################################################################
 
 def main():
     ''' ISF Miner
     '''
-
     parser = argparse.ArgumentParser(description="ISF Miner")
 
     # Positional argument(s)
@@ -211,6 +209,7 @@ def main():
     find_compound_task.add_argument('filepath')
     find_compound_task.set_defaults(func=find_compound)
 
+    # validate gold tags
     valgold_task = task_parsers.add_parser('vgold')
     valgold_task.set_defaults(func=validate_goldtags)
 
@@ -228,6 +227,7 @@ def main():
         # Parse input arguments
         args = parser.parse_args()
         args.func(args)
+
 
 if __name__ == "__main__":
     main()

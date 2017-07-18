@@ -1,0 +1,11 @@
+{
+  "grammars": {
+    "ERG": {
+      "path": "data/erg.dat",
+      "args": ["-n", "5"]
+    }
+  },
+  "cache": "data/parses.db",
+  "ace": "~/bin/ace",
+  "acecache": "data/ace.db"
+}

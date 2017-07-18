@@ -50,11 +50,13 @@ __status__ = "Prototype"
 
 import os
 import logging
+import json
 from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
-from chirptext.leutile import Counter
+from chirptext import Counter, FileHelper
 from chirptext.texttaglib import writelines
+from puchikarui import Schema
 
 from .model import Sentence
 
@@ -62,12 +64,10 @@ from .model import Sentence
 # CONFIGURATION
 ##########################################
 
-ERG_GRAM_FILE = './data/erg.dat'
-ACE_BIN = os.path.expanduser('~/bin/ace')
-ACE_ARGS = ['-n', '5']
-SEMCOR_TXT = 'data/semcor.txt'
-TOP_K = 10
-
+MY_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
+PC_INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'initpc.sql')
+AC_INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'initac.sql')
 logger = logging.getLogger(__name__)
 
 
@@ -114,20 +114,168 @@ def get_preds(dmrs):
         return [Pred.normalize_pred_string(x.pred.string) for x in dmrs.nodes]
 
 
-class Grammar:
-    def __init__(self, gram_file=ERG_GRAM_FILE, cmdargs=ACE_ARGS, ace_bin=ACE_BIN):
-        self.gram_file = gram_file
-        self.cmdargs = cmdargs
-        self.ace_bin = ace_bin
+def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):
+    xml_str = sent.to_visko_xml_str()
+    return {'sent': sentence_text if sentence_text else sent.text,
+            'parse_count': parse_count,
+            'tagger': tagger,
+            'grammar': grammar,
+            'parses': [parse2json(x) for x in sent],
+            'xml': xml_str}
 
-    def txt2preds(self, text):
-        dmrses = self.parse(text)
-        if dmrses:
-            return [get_preds(x) for x in dmrses]
+
+def parse2json(parse):
+    return {'pid': parse.ID,
+            'ident': parse.ident,
+            'mrs': parse.mrs().json(),
+            'dmrs': parse.dmrs().json(),
+            'mrs_raw': parse.mrs().tostring(),
+            'dmrs_raw': parse.dmrs().tostring()}
+
+
+class AceCache(Schema):
+
+    def __init__(self, data_source, setup_script=None, setup_file=AC_INIT_SCRIPT):
+        Schema.__init__(self, data_source, setup_script=setup_script, setup_file=setup_file)
+        self.add_table('sent', ['ID', 'text', 'grm', 'pc'])
+        self.add_table('mrs', ['ID', 'sid', 'mrs'])
+
+    def save(self, sent, grm, pc):
+        self.sent.insert((sent.text, grm, pc))
+        sid = self.ds().cur.lastrowid
+        for p in sent:
+            self.mrs.insert((sid, p.mrs()._raw))
+        self.commit()
+
+    def load(self, sent, grm, pc):
+        sobj = self.sent.select_single('text=? AND grm=? AND pc=?', (sent, grm, pc))
+        if not sobj:
+            return None
         else:
-            logging.warning("Can't parse the sentence {}".format(text))
+            s = Sentence(sobj.text)
+            parses = self.mrs.select('sid=?', (sobj.ID,))
+            for p in parses:
+                s.add(p.mrs)
+            return s
+
+
+class ISFCache(Schema):
+
+    def __init__(self, data_source, setup_script=None, setup_file=PC_INIT_SCRIPT):
+        Schema.__init__(self, data_source, setup_script=setup_script, setup_file=setup_file)
+        self.add_table('sent', ['ID', 'text', 'pc', 'tagger', 'grm', 'xml'])
+        self.add_table('parse', ['ID', 'sid', 'pid', 'ident', 'jmrs', 'jdmrs', 'mrs', 'dmrs'])
+
+    def save(self, sent, grammar, pc, tagger):
+        self.sent.insert([sent.text, pc, tagger, grammar, sent.to_visko_xml_str()])
+        sid = self.ds().cur.lastrowid
+        for p in sent:
+            # insert parses
+            self.parse.insert([sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring()])
+        self.commit()
+
+    def load(self, txt, grm, pc, tagger):
+        sobj = self.sent.select_single('text=? AND pc=? AND tagger=? AND grm=?', (txt, pc, tagger, grm))
+        if not sobj:
+            return None
+        # else
+        sent = {'sent': sobj.text,
+                'parse_count': sobj.pc,
+                'tagger': sobj.tagger,
+                'grammar': sobj.grm,
+                'parses': [],
+                'xml': sobj.xml}
+        # select parses
+        parses = self.parse.select('sid=?', (sobj.ID,))
+        for p in parses:
+            sent['parses'].append({'pid': p.pid,
+                                   'ident': p.ident,
+                                   'mrs': json.loads(p.jmrs),
+                                   'dmrs': json.loads(p.jdmrs),
+                                   'mrs_raw': p.mrs,
+                                   'dmrs_raw': p.dmrs})
+        return sent
+
+
+class GrammarHub:
+
+    def __init__(self, cfg_path=CONFIG_FILE):
+        self.read_config(cfg_path)
+        self.grammars = {}
+        if self.cache_path:
+            self.cache = ISFCache(self.cache_path)
+        else:
+            self.cache = None
+
+    def read_config(self, cfg_path=CONFIG_FILE):
+        logger.info("Reading grammars configuration from: {}".format(cfg_path))
+        with open(cfg_path) as cfgfile:
+            self.cfg = json.loads(cfgfile.read())
+            self.cache_path = FileHelper.abspath(self.cfg['cache'])
+            logger.info("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
+        return self.cfg
+
+    def __getitem__(self, grm):
+        return self.get_grammar(grm)
+
+    def get_grammar(self, grm):
+        if grm not in self.cfg['grammars']:
+            raise LookupError("Unknown grammar ({})".format(grm))
+        if grm not in self.grammars:
+            ginfo = self.cfg['grammars'][grm]
+            ace_bin = ginfo['ace'] if 'ace' in ginfo else self.cfg['ace']
+            cache_loc = ginfo['acecache'] if 'acecache' in ginfo else self.cfg['acecache'] if 'acecache' in self.cfg else None
+            self.grammars[grm] = Grammar(grm, ginfo['path'], ginfo['args'], ace_bin, cache_loc)
+        return self.grammars[grm]
+
+    def parse(self, txt, grm, pc=None, tagger=None):
+        ''' Parse a sentence using ISF '''
+        # validation
+        if not txt:
+            raise ValueError('Sentence cannot be empty')
+        # look up from cache first
+        if self.cache:
+            s = self.cache.load(txt, grm, pc, tagger)
+            if s is not None:
+                logger.debug("Retrieved {} parse(s) from cache for sent: {}".format(len(s), s['sent']))
+                return s
+        # Parse sentence
+        logger.info("Parsing sentence: {}".format(txt))
+        sent = self[grm].parse(txt, parse_count=pc)
+        if tagger:
+            sent.tag(method=tagger)
+        # cache sent if possible
+        if self.cache:
+            self.cache.save(sent, grm, pc, tagger)
+        # Return result
+        return sent2json(sent, txt, pc, tagger, grm)
+
+    @property
+    def ERG(self):
+        return self.get_grammar('ERG')
+
+
+class Grammar:
+    def __init__(self, name, gram_file, cmdargs, ace_bin, cache_loc):
+        self.name = name
+        self.gram_file = FileHelper.abspath(gram_file)
+        self.cmdargs = cmdargs
+        self.ace_bin = FileHelper.abspath(ace_bin)
+        logger.info("GRM Path: [{g}] - ACE: [{a}]".format(g=self.gram_file, a=self.ace_bin))
+        if cache_loc:
+            self.cache_loc = FileHelper.abspath(cache_loc)
+            self.cache = AceCache(self.cache_loc)
+            logger.info("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
+        else:
+            self.cache = None
 
     def parse(self, text, parse_count=None):
+        if self.cache:
+            # try to fetch from cache first
+            s = self.cache.load(text, self.name, parse_count)
+            if s:
+                logger.debug("Retrieved {pc} parses from cache for sent: {s}".format(s=text, pc=len(s)))
+                return s
         s = Sentence(text)
         args = self.cmdargs
         if parse_count:
@@ -138,6 +286,9 @@ class Grammar:
                 top_res = result['RESULTS']
                 for mrs in top_res:
                     s.add(mrs['MRS'])
+        # cache it
+        if self.cache:
+            self.cache.save(s, self.name, parse_count)
         return s
 
 

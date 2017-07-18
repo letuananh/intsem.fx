@@ -54,9 +54,9 @@ import os
 import unittest
 import logging
 
-from coolisf.ergex import read_erg_lex, extract_all_rel, extract_mwe, find_mwe
+from coolisf.ergex import read_erg_lex, find_mwe
 from coolisf.model import PredSense
-from coolisf.util import Grammar
+from coolisf.util import GrammarHub
 
 ########################################################################
 
@@ -73,7 +73,7 @@ ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 class TestMain(unittest.TestCase):
 
     lexdb = read_erg_lex()
-    ERG = Grammar()
+    ERG = GrammarHub().ERG
 
     def test_find_mwe(self):
         mwe_list = find_mwe()
