@@ -48,6 +48,7 @@ __status__ = "Prototype"
 
 ########################################################################
 
+import sys
 import os
 import logging
 import json
@@ -59,6 +60,11 @@ from chirptext.texttaglib import writelines
 from puchikarui import Schema
 
 from .model import Sentence
+
+try:
+    from chirptext.deko import wakati
+except:
+    logging.warning('chirptext.deko cannot be imported. JNLP mode is disabled')
 
 ##########################################
 # CONFIGURATION
@@ -142,6 +148,10 @@ class AceCache(Schema):
         self.add_table('mrs', ['ID', 'sid', 'mrs'])
 
     def save(self, sent, grm, pc):
+        if pc is None:
+            self.sent.delete("text=? AND grm=? AND pc IS NULL", (sent.text, grm))
+        else:
+            self.sent.delete("text=? AND grm=? AND pc=?", (sent.text, grm, pc))
         sid = self.sent.insert((sent.text, grm, pc))
         for p in sent:
             self.mrs.insert((sid, p.mrs()._raw))
@@ -168,17 +178,33 @@ class ISFCache(Schema):
         self.add_table('sent', ['ID', 'text', 'pc', 'tagger', 'grm', 'xml'])
         self.add_table('parse', ['ID', 'sid', 'pid', 'ident', 'jmrs', 'jdmrs', 'mrs', 'dmrs'])
 
+    def build_query(self, sent, grammar, pc, tagger):
+        q = 'text=? AND grm=?'
+        p = [sent, grammar]
+        if tagger is None:
+            q += ' AND tagger IS NULL'
+        else:
+            q += ' AND tagger=?'
+            p.append(tagger)
+        if pc is None:
+            q += ' AND pc IS NULL'
+        else:
+            q += ' AND pc=?'
+            p.append(pc)
+        return (q, p)
+
     def save(self, sent, grammar, pc, tagger):
+        # delete old data
+        dq, dp = self.build_query(sent.text, grammar, pc, tagger)
+        self.sent.delete(dq, dp)
         sid = self.sent.insert([sent.text, pc, tagger, grammar, sent.to_visko_xml_str()])
         for p in sent:
             # insert parses
             self.parse.insert([sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring()])
 
     def load(self, txt, grm, pc, tagger):
-        if pc is None:
-            sobj = self.sent.select_single('text=? AND pc IS NULL AND tagger=? AND grm=?', (txt, pc, tagger, grm))
-        else:
-            sobj = self.sent.select_single('text=? AND pc=? AND tagger=? AND grm=?', (txt, pc, tagger, grm))
+        query, params = self.build_query(txt, grm, pc, tagger)
+        sobj = self.sent.select_single(query, params)
         if not sobj:
             return None
         # else
@@ -209,6 +235,7 @@ class GrammarHub:
             self.cache = ISFCache(self.cache_path)
         else:
             self.cache = None
+        self.preps = {}
 
     def read_config(self, cfg_path=CONFIG_FILE):
         logger.info("Reading grammars configuration from: {}".format(cfg_path))
@@ -217,6 +244,13 @@ class GrammarHub:
             self.cache_path = FileHelper.abspath(self.cfg['cache'])
             logger.info("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
         return self.cfg
+
+    @property
+    def names(self):
+        return tuple(self.cfg['grammars'].keys())
+
+    def __getattr__(self, name):
+        return self.get_grammar(name)
 
     def __getitem__(self, grm):
         return self.get_grammar(grm)
@@ -228,19 +262,33 @@ class GrammarHub:
             ginfo = self.cfg['grammars'][grm]
             ace_bin = ginfo['ace'] if 'ace' in ginfo else self.cfg['ace']
             cache_loc = ginfo['acecache'] if 'acecache' in ginfo else self.cfg['acecache'] if 'acecache' in self.cfg else None
-            self.grammars[grm] = Grammar(grm, ginfo['path'], ginfo['args'], ace_bin, cache_loc)
+            preps = self.lookup_preps(ginfo)
+            self.grammars[grm] = Grammar(grm, ginfo['path'], ginfo['args'], ace_bin, cache_loc, preps)
+        # done creating grammar
         return self.grammars[grm]
 
-    def parse(self, txt, grm, pc=None, tagger=None):
+    def lookup_preps(self, gcfg):
+        if 'preps' not in gcfg:
+            return None
+        else:
+            preps = []
+            for prep in gcfg['preps']:
+                if prep not in self.preps:
+                    # create the prep
+                    self.preps['mecab'] = PrepMeCab()
+                preps.append(self.preps[prep])
+            return preps
+
+    def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
         ''' Parse a sentence using ISF '''
         # validation
         if not txt:
             raise ValueError('Sentence cannot be empty')
         # look up from cache first
-        if self.cache:
+        if not ignore_cache and self.cache:
             s = self.cache.load(txt, grm, pc, tagger)
             if s is not None:
-                logger.info("Retrieved {} parse(s) from cache for sent: {}".format(len(s), s['sent']))
+                logger.info("Retrieved {} parse(s) from cache for sent: {}".format(len(s['parses']), s['sent']))
                 return s
         # Parse sentence
         logger.debug("Parsing sentence: {}".format(txt))
@@ -253,13 +301,15 @@ class GrammarHub:
         # Return result
         return sent2json(sent, txt, pc, tagger, grm)
 
-    @property
-    def ERG(self):
-        return self.get_grammar('ERG')
+
+class PrepMeCab(object):
+
+    def process(self, text):
+        return wakati(text)
 
 
 class Grammar:
-    def __init__(self, name, gram_file, cmdargs, ace_bin, cache_loc):
+    def __init__(self, name, gram_file, cmdargs, ace_bin, cache_loc, preps=None):
         self.name = name
         self.gram_file = FileHelper.abspath(gram_file)
         self.cmdargs = cmdargs
@@ -271,24 +321,30 @@ class Grammar:
             logger.info("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
         else:
             self.cache = None
+        self.preps = preps
 
-    def parse(self, text, parse_count=None):
-        if self.cache:
+    def parse(self, text, parse_count=None, ignore_cache=False):
+        if not ignore_cache and self.cache:
             # try to fetch from cache first
             s = self.cache.load(text, self.name, parse_count)
             if s:
-                logger.debug("Retrieved {pc} parses from cache for sent: {s}".format(s=text, pc=len(s)))
+                logger.debug("Retrieved {pc} parses from cache for sent: {s}".format(s=text, pc=len(s.parses)))
                 return s
         s = Sentence(text)
         args = self.cmdargs
         if parse_count:
             args += ['-n', str(parse_count)]
         with ace.AceParser(self.gram_file, executable=self.ace_bin, cmdargs=args) as parser:
-            result = parser.interact(text)
-            if result and result['RESULTS']:
-                top_res = result['RESULTS']
-                for mrs in top_res:
-                    s.add(mrs['MRS'])
+            # preprocessor
+            input_text = text
+            if self.preps:
+                for prep in self.preps:
+                    input_text = prep.process(input_text)
+            result = parser.interact(input_text)
+        if result and 'RESULTS' in result:
+            top_res = result['RESULTS']
+            for mrs in top_res:
+                s.add(mrs['MRS'])
         # cache it
         if self.cache:
             self.cache.save(s, self.name, parse_count)

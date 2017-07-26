@@ -79,6 +79,10 @@ class TestGrammarHub(unittest.TestCase):
 
     ghub = GrammarHub()
 
+    def test_all_grammars(self):
+        for n in ('JACY', 'VRG', 'ERG'):
+            self.assertIn(n, self.ghub.names)
+
     def test_config(self):
         erg = self.ghub.ERG
         self.assertIsNotNone(erg)
@@ -200,7 +204,7 @@ class TestMain(unittest.TestCase):
         a_sent = self.ERG.parse(text)
         context = [p.pred.lemma for p in a_sent[0].dmrs().obj().eps()]
         preds = a_sent[0].dmrs().obj().eps()
-        wsd = LeLeskWSD(dbcache=LeskCache().setup())
+        wsd = LeLeskWSD(dbcache=LeskCache())
         for w, p in zip(context, preds):
             scores = wsd.lelesk_wsd(w, '', lemmatizing=False, context=context)
             if scores:
