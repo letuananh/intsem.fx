@@ -71,7 +71,7 @@ class TestVirgo(unittest.TestCase):
 
     def test_virgo(self):
         s = self.ghub.VRG.parse("chim bay.")
-        print(s[0].mrs())
+        print(s[0].dmrs().json_str())
 
 
 #-------------------------------------------------------------------------------

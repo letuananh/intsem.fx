@@ -284,6 +284,10 @@ class GrammarHub:
                 preps.append(self.preps[prep])
             return preps
 
+    def parse_json(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
+        isf_sent = self.parse(txt, grm, pc, tagger, ignore_cache)
+        return sent2json(isf_sent, txt, pc, tagger, grm)
+
     def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
         ''' Parse a sentence using ISF '''
         # validation
@@ -299,12 +303,12 @@ class GrammarHub:
         logger.debug("Parsing sentence: {}".format(txt))
         sent = self[grm].parse(txt, parse_count=pc)
         if tagger:
+            print("Tagging using {}".format(tagger))
             sent.tag(method=tagger)
         # cache sent if possible
         if self.cache:
             self.cache.save(sent, grm, pc, tagger)
-        # Return result
-        return sent2json(sent, txt, pc, tagger, grm)
+        return sent
 
 
 class PrepMeCab(object):

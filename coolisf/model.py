@@ -269,7 +269,8 @@ class DMRS(object):
         j = Dmrs.to_dict(self.obj(), properties=True)
         # sense-tagging if possible
         # JSON will be tagged with mfs by default
-        tags = self.tags if self.tags else self.tag(method=TagInfo.MFS)
+        # [2017-07-26] Don't tag JSON by default
+        tags = self.tags if self.tags else self.tag(method=TagInfo.DEFAULT)
         for node in j['nodes']:
             nid = node['nodeid']
             if nid in tags and len(tags[nid]) > 0:
