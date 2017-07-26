@@ -83,6 +83,10 @@ class TestGrammarHub(unittest.TestCase):
         for n in ('JACY', 'VRG', 'ERG'):
             self.assertIn(n, self.ghub.names)
 
+    def test_grammar_names(self):
+        gm = self.ghub.available
+        self.assertEqual(gm['JACYMC'], 'JACY/MeCab')
+
     def test_config(self):
         erg = self.ghub.ERG
         self.assertIsNotNone(erg)

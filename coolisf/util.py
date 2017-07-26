@@ -249,6 +249,11 @@ class GrammarHub:
     def names(self):
         return tuple(self.cfg['grammars'].keys())
 
+    @property
+    def available(self):
+        ''' Available grammars and their friendly names '''
+        return {k: g['name'] for k, g in self.cfg['grammars'].items()}
+
     def __getattr__(self, name):
         return self.get_grammar(name)
 

@@ -351,7 +351,7 @@ class DMRS(object):
                         gold_node.set('synsetid', str(tag.synsetid))
                         gold_node.set('lemma', tag.lemma)
                         gold_node.set('type', tagtype)
-                    else:
+                    elif tagtype == TagInfo.MFS:
                         realpred = node.find('realpred')
                         if realpred is not None:
                             candidate_node = etree.SubElement(node, 'sense')
@@ -360,6 +360,10 @@ class DMRS(object):
                             candidate_node.set('lemma', str(tag.lemma))
                             candidate_node.set('score', str(tag.tagcount))
                             candidate_node.set('type', tagtype)
+                    else:
+                        # DEFAULT? etc.
+                        # Do nothing for now
+                        pass
         # update self.xml?
         if update_back:
             self.update(root)

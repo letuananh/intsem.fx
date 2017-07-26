@@ -2,18 +2,22 @@
   "grammars": {
     "ERG": {
       "path": "data/erg.dat",
+      "name": "ERG",
       "args": ["-n", "5"]
     },
     "JACYMC": {
       "path": "data/jacy.dat",
+      "name": "JACY/MeCab",
       "args": ["-n", "5"],
       "preps": ["mecab"]
     },
     "JACY": {
+      "name": "JACY",
       "path": "data/jacy.dat",
       "args": ["-n", "5"]
     },
     "VRG": {
+      "name": "Virgo",
       "path": "data/virgo.dat",
       "args": ["-n", "5"]
     }
