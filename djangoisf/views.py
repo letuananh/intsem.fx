@@ -62,7 +62,7 @@ from coolisf.util import GrammarHub
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
-TAGGERS = (TagInfo.LELESK, TagInfo.MFS, TagInfo.DEFAULT)
+TAGGERS = {TagInfo.LELESK: "LeLesk", TagInfo.MFS: "MFS", TagInfo.DEFAULT: "None"}
 ghub = GrammarHub()
 
 
