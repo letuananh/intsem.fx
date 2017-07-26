@@ -56,7 +56,7 @@ import logging
 
 from lelesk import LeLeskWSD, LeskCache
 
-from coolisf.gold_extract import read_gold_sentences, export_to_visko
+from coolisf.gold_extract import export_to_visko
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence, DMRS
 from coolisf.util import GrammarHub
@@ -197,8 +197,8 @@ class TestMain(unittest.TestCase):
         # add new DMRS from XML
         sent.add(dmrs_xml=xml_str)
         self.assertEqual(len(sent), 2)  # now we should have 2 MRSes
-        m2 = sent[1] 
-       # and they should look exactly the same
+        m2 = sent[1]
+        # and they should look exactly the same
         xml_str2 = m2.dmrs().xml_str()
         self.assertEqual(xml_str, xml_str2)
         pass
@@ -222,6 +222,7 @@ class TestMain(unittest.TestCase):
         a_sent = self.ERG.parse(text)
         d = a_sent[0].dmrs()
         d.tag(method='lelesk')
+        self.assertTrue(d.tags)
         js = d.json_str()
         logger.debug("Tagged JSON (using LeLesk): {}".format(js))
 
@@ -284,98 +285,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(method, TagInfo.GOLD)
         self.assertEqual(ss.synsetid, '12345678-n')
         logger.debug("JSON str: {}".format(d.json_str()))
-
-    def test_gold_extract(self):
-        # make this format: sentid - cfrom cto - synset - lemma - pos
-        import csv
-        from collections import defaultdict as dd
-        from chirptext.leutile import Counter
-        get_key = lambda tag : (int(tag[0]), int(tag[1]), int(tag[2]))
-        used_map = dd(list)
-        used_sidmap = dd(list)
-        if not os.path.isfile('data/valgold.txt'):
-            print("Skipping this test")
-            return
-        with open('data/valgold.txt', 'r') as csvfile:
-            usedtags = list(csv.reader(csvfile, delimiter='\t'))
-            for u in usedtags:
-                used_map[get_key(u)].append(u)
-                used_sidmap[u[0]].append(u)
-        gold_map = dd(list)
-        with open('data/speckled_tags_gold.txt', 'r') as csvfile:
-            goldtags = list(csv.reader(csvfile, delimiter='\t'))
-            for g in goldtags:
-                gold_map[get_key(g)].append(g)
-        # compare
-        notinused_lemmas = Counter()
-        notinused_sids = Counter()
-        sid_lemma_map = {}
-        sid_sent_map = dd(set)
-        notinused_tags = list()
-        new_tasg = list()
-        print("usedtags", len(usedtags))
-        print("goldtags", len(goldtags))
-        # compare maps
-        # print(list(used_map.items())[:5])
-        # print(list(gold_map.items())[:5])
-        c = Counter()
-        for g in goldtags:
-            if get_key(g) in used_map:
-                used = used_map[get_key(g)]
-                if len(used) > 0 and g[3] in used[0]:
-                    # print(g, len(used), "=>", used)
-                    c.count("Correct")
-                    pass
-                else:
-                    c.count("Diff")
-                    print(g, len(used), "=>", used)
-            else:
-                # all used synsets, if it's there => just cto mismatch
-                sent_used = used_sidmap[g[0]]
-                found = False
-                for t in sent_used:
-                    if t[1] == g[1] and t[3] == g[3]:
-                        found = True
-                if found:
-                    c.count("UsedMismatch")
-                else:
-                    if g[0] in '10001, 10060, 10189, 10229, 10240, 10573':
-                        c.count("NotParsed")
-                    else:
-                        notinused_tags.append(g)
-                        notinused_lemmas.count(g[4])
-                        notinused_sids.count(g[3])
-                        sid_sent_map[g[3]].add(g[0])
-                        if g[3] not in sid_lemma_map:
-                            sid_lemma_map[g[3]] = g[4]
-                        c.count("NotInUsed")
-        # check used against goldtags
-        for u in usedtags:
-            if get_key(u) in gold_map:
-                gold = gold_map[get_key(u)]
-                if len(gold) > 0 and u[3] in gold[0]:
-                    c.count("UCorrect")
-                else:
-                    c.count("UDiff")
-            else:
-                if 'GOLD' not in u and u[1] != u[2]:
-                    c.count("New")
-                    new_tasg.append(u)
-                # print("UNotInGold", u)
-                c.count("UNotInGold")
-        c.summarise()
-        with open(os.path.join(TEST_DATA, 'debug_notinused.txt'), 'w') as niufile:
-            niufile.write('\n'.join(['\t'.join(x) for x in notinused_tags]))
-            niufile.write('\n\n')
-            for k, v in notinused_lemmas.sorted_by_count():
-                niufile.write("%s: %d\n" % (k, v))
-            niufile.write('\nSynset ID\n')
-            for k, v in notinused_sids.sorted_by_count():
-                ss = wsql.get_synset_by_id(k)
-                if ss is not None:
-                    niufile.write("      %s - %s: %d | %s\n" % (k, sid_lemma_map[k], v, sid_sent_map[k]))
-                else:
-                    niufile.write("N/A | %s - %s: %d | %s\n" % (k, sid_lemma_map[k], v, sid_sent_map[k]))
 
 
 ########################################################################

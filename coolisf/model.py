@@ -114,7 +114,13 @@ class Sentence(object):
 
     def tag(self, goldtags=None, cgold=None, method=None):
         for parse in self:
-            parse.dmrs().tag_xml(goldtags, cgold, method=method, update_back=True)
+            parse.dmrs().tag(goldtags, cgold, method=method)
+        return self
+
+    def tag_xml(self, goldtags=None, cgold=None, method=None, update_back=True):
+        for parse in self:
+            parse.dmrs().tag_xml(goldtags, cgold, method=method, update_back=update_back)
+        return self
 
     def to_xml_str(self, doc_node=None, goldtags=None, pretty_print=True):
         xml_node = self.to_xml_node(doc_node)
@@ -439,13 +445,13 @@ class DMRS(object):
 
     def tag(self, goldtags=None, cgold=None, method=TagInfo.MFS):
         ''' Return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
-        method can be set to None to prevent WSD to be performed
+        method can be set to None or TagInfo.DEFAULT to prevent WSD to be performed
         '''
         best_candidate_map = self.pred_candidates()
         if goldtags is None and self.parse is not None and self.parse.sent is not None:
             # try to use parse's sentence's goldtags
             goldtags = self.parse.sent.goldtags
-        tags = dd(list)
+        tags = self.tags if self.tags else dd(list)
         eps = self.obj().eps()
         wsd = LeLeskWSD(dbcache=LeskCache())
         context = [p.pred.lemma for p in eps]

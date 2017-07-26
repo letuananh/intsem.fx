@@ -60,7 +60,7 @@ from .util import GrammarHub
 from .gold_extract import generate_gold_profile
 from .gold_extract import read_ace_output
 from .gold_extract import export_to_visko
-from .gold_extract import read_gold_sentences
+# from .gold_extract import read_gold_sentences
 
 ghub = GrammarHub()
 ERG = ghub.ERG

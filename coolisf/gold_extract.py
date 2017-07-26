@@ -63,35 +63,30 @@ from chirptext.leutile import FileHelper
 from chirptext.leutile import Timer
 from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
-from chirptext.texttaglib import writelines
+from chirptext.texttaglib import TaggedDoc, TagInfo
 
 from yawlib.models import SynsetID
 from coolisf.model import Sentence
 from coolisf.util import read_ace_output
 
+from .lexsem import tag_gold
+
 ##########################################
 # CONFIGURATION
 ##########################################
 
-GOLD_PROFILE = FileHelper.abspath('./data/gold')
-OUTPUT_FILE = FileHelper.abspath('./data/gold.out.txt')
-RAW_TEXT = FileHelper.abspath('./data/speckled.txt')
-GOLD_RAW = FileHelper.abspath('./data/gold.raw.txt')
-
-GRAM_FILE = './data/erg.dat'
-ACE_BIN = os.path.expanduser('~/bin/ace')
-INPUT_TXT = 'data/speckled.txt'
-INPUT_MRS = 'data/gold.out.txt'
+DATA_DIR = FileHelper.abspath('./data')
+GOLD_PROFILE = os.path.join(DATA_DIR, 'gold')
+GOLD_MRS_FILE = 'data/gold.out.txt'
+tagdoc = TaggedDoc(DATA_DIR, 'gold')
 OUTPUT_ISF = 'data/spec-isf.xml'
-PRED_DEBUG_DUMP = 'data/speckled_synset_debug.txt'
-GOLD_TAGS = 'data/speckled_tags_gold.txt'
-SOURCE_CODE_DIR = os.path.dirname(os.path.realpath(__file__))
-LICENSE_TEMPLATE_LOC = os.path.join(SOURCE_CODE_DIR, 'CCBY30_template.txt')
+
+MY_DIR = os.path.dirname(os.path.realpath(__file__))
+LICENSE_TEMPLATE_LOC = os.path.join(MY_DIR, 'CCBY30_template.txt')
 LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
 
 #-----------------------------------------------------------------------
-
 
 class TSDBSentence:
     def __init__(self, sid, text, mrs=''):
@@ -100,37 +95,27 @@ class TSDBSentence:
         self.text = text
         self.mrs = mrs
 
+
 #-----------------------------------------------------------------------
 
-
 def extract_tsdb_gold():
-    t = Timer()
-
-    t.start("Loading raw text from [%s] ..." % (RAW_TEXT,))
+    # read NTU-MC
     raw_sentences = []
-    with open(RAW_TEXT, 'r') as rawtext:
-        lines = rawtext.readlines()
-        for line in lines:
-            parts = line.strip().split('\t')
-            raw_sentences.append(TSDBSentence(parts[0], parts[1]))
-    print("Number of raw sentences: %s" % len(raw_sentences))
-    t.end("Raw text has been loaded.")
-
-    t.start("Loading gold profile from: [%s] ..." % (GOLD_PROFILE,))
+    tagdoc.read()
+    for s in tagdoc:
+        raw_sentences.append(TSDBSentence(s.ID, s.text))
+    # read Itsdb
     prof = itsdb.ItsdbProfile(GOLD_PROFILE)
 
     # Read all items
     tbl_item = prof.read_table('item')
     gold_sentences = []
     sentences_map = dict()
-    with open(GOLD_RAW, 'w') as gold_raw:
-        for row in tbl_item:
-            iid = row.get('i-id')
-            raw_text = row.get('i-input').strip()
-            sentences_map[iid] = TSDBSentence(iid, raw_text)
-            gold_sentences.append(sentences_map[iid])
-            gold_raw.write('%s\n' % raw_text)
-            # print('%s: %s ' % (iid, raw_text))
+    for row in tbl_item:
+        iid = row.get('i-id')
+        raw_text = row.get('i-input').strip()
+        sentences_map[iid] = TSDBSentence(iid, raw_text)
+        gold_sentences.append(sentences_map[iid])
 
     # Read all parse results
     tbl_result = prof.read_table('result')
@@ -141,7 +126,6 @@ def extract_tsdb_gold():
             print('pid %s cannot be found' % pid)
         else:
             sentences_map[pid].mrs = StringTool.to_str(mrs)
-    t.end('Gold profile has been loaded.')
 
     # Compare raw sentences with sentences from ITSDB
     c = Counter()
@@ -162,21 +146,16 @@ def extract_tsdb_gold():
     c.summarise()
 
     # Write found sentences and parse results to a text file
-    t.start("Writing found sentences and parse results to [%s] ..." % (OUTPUT_FILE))
-    with open(OUTPUT_FILE, 'w') as outfile:
+    with open(GOLD_MRS_FILE, 'w') as outfile:
         for sent in gold_sentences:
             outfile.write('%s\t%s\t%s\t%s\n' % (sent.ntuid, sent.sid, sent.text, sent.mrs))
-    t.end("Data has been written to file.")
 
     # Verification
-    t.start("Verifying file [%s] ..." % (OUTPUT_FILE,))
-    with open(OUTPUT_FILE, 'r') as testfile:
+    with open(GOLD_MRS_FILE, 'r') as testfile:
         for line in testfile:
             parts = line.split('\t')
             if len(parts) != 4:
                 print("WARNING: INVALID LINE")
-    t.end("Output file has been verified.")
-
     print("All done!")
 
 
@@ -245,30 +224,13 @@ def build_root_node():
     return isf_node
 
 
-def read_gold_tags():
-    ''' Return a map from sid => tag tuple (sid cfrom cto sid lemma pos)
-    '''
-    # Read sense annotations from NTU-MC
-    print("Reading gold annotations from NTU-MC")
-    golddata = read_data(GOLD_TAGS)
-    sid_gold_map = dd(list)
-    for datum in golddata:
-        # sid cfrom cto sid lemma pos
-        if datum[3][0] in '~=!':
-            datum = list(datum)
-            datum[3] = SynsetID.from_string(datum[3])
-        sid_gold_map[datum[0]].append(datum)
-    print("Gold map: %s" % [len(sid_gold_map)])
-    return sid_gold_map
-
-
 def read_gold_mrs():
     # Read gold profile from ITSDB (ERG-TRUNK)
     sentences = []
     # Generate INPUT_MRS file (gold.out.txt) if needed
-    if not os.path.isfile(INPUT_MRS):
+    if not os.path.isfile(GOLD_MRS_FILE):
         extract_tsdb_gold()
-    with open(INPUT_MRS) as input_mrs:
+    with open(GOLD_MRS_FILE) as input_mrs:
         lines = input_mrs.readlines()
         for line in lines:
             (ntuid, tsdbid, text, mrs) = line.split('\t')
@@ -280,7 +242,8 @@ def read_gold_mrs():
 
 
 def generate_gold_profile():
-    sid_gold_map = read_gold_tags()
+    tagdoc.read()
+    filter_wrong_senses(tagdoc)
     sentences = read_gold_mrs()
     # Process data
     print("Creating XML file ...")
@@ -289,18 +252,16 @@ def generate_gold_profile():
     # Add document nodes
     doc_node = etree.SubElement(isf_node, 'document')
     doc_node.set('name', 'speckled band')
-    preds_debug = []
 
-    cgold = Counter()
     for sent in sentences:
-        sid_key = str(sent.sid)
-        goldtags = sid_gold_map[sid_key]
-        sent.tag(goldtags, cgold, method='mfs')
-        sent.to_xml_node(doc_node)
-    print("Gold senses inserted")
-    cgold.summarise()
-    print("Dumping preds debug")
-    writelines(['\t'.join([str(i) for i in x]) for x in preds_debug], PRED_DEBUG_DUMP)
+        if len(sent) == 0:
+            print("WARNING: empty sentence #{}: {}".format(sent.sid, sent.text))
+            continue
+        dmrs = sent[0].dmrs()
+        tagged = tagdoc.sent_map[str(sent.sid)]
+        tag_gold(dmrs, tagged, sent.text)
+        sent.tag(method=TagInfo.MFS)
+        sent.tag_xml().to_xml_node(doc_node)
 
     with open(OUTPUT_ISF, 'wb') as output_isf:
         print("Making it beautiful ...")
@@ -309,6 +270,27 @@ def generate_gold_profile():
         output_isf.write(xml_string)
     print("ISF gold profile has been written to %s" % (OUTPUT_ISF,))
     print("All done!")
+
+
+GOLD_WRONG = {
+    '02108026-v': [10109, 10114, 10178, 10593],  # => {'have'}
+    '00066781-r': [10405, 10498, 10501],  # => {'in front'}
+    '01554230-a': [10468, 10582],  # => {'such'}
+    '01712704-v': [10061, 10265, 10358, 10384],  # => {'do'}
+    '01188342-v': [10292],  # => {'be full'}
+}
+
+
+def filter_wrong_senses(doc):
+    for sent in doc:
+        to_remove = []
+        for c in sent.concepts:
+            if c.tag[0] in '=!':
+                c.tag = c.tag[1:]
+            if c.tag in GOLD_WRONG and int(sent.ID) in GOLD_WRONG[c.tag]:
+                to_remove.append(c)
+        for c in to_remove:
+            sent.concept_map.pop(c.cid)
 
 
 def export_to_visko(sents, doc_path, pretty_print=True):
@@ -321,18 +303,6 @@ def export_to_visko(sents, doc_path, pretty_print=True):
         with gzip.open(sentpath, 'w') as f:
             f.write(etree.tostring(sent.to_visko_xml(), encoding='utf-8', pretty_print=pretty_print))
     print("Done!")
-
-
-def read_gold_sentences(auto_tag=True):
-    sid_gold_map = read_gold_tags()
-    sentences = read_gold_mrs()
-    for sent in sentences:
-        if len(sent) > 0:
-            goldtags = sid_gold_map[str(sent.sid)]
-            sent.goldtags = goldtags
-            if auto_tag:
-                sent.tag(goldtags, method='mfs')
-    return sentences
 
 
 #-----------------------------------------------------------------------
