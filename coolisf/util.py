@@ -340,6 +340,8 @@ class Grammar:
             if self.preps:
                 for prep in self.preps:
                     input_text = prep.process(input_text)
+            # update sentence text
+            s.text = input_text
             result = parser.interact(input_text)
         if result and 'RESULTS' in result:
             top_res = result['RESULTS']

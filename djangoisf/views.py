@@ -62,8 +62,7 @@ from coolisf.util import GrammarHub
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
-TAGGERS = (TagInfo.LELESK, TagInfo.MFS)
-GRAMMARS = ('ERG', 'JACY')  # TODO: Make this more flexible
+TAGGERS = (TagInfo.LELESK, TagInfo.MFS, TagInfo.DEFAULT)
 ghub = GrammarHub()
 
 
@@ -110,11 +109,11 @@ def parse(request):
     # validation
     if not sentence_text:
         raise Http404('Sentence cannot be empty')
-    elif int(parse_count) not in RESULTS:
+    elif int(parse_count) < 0:
         raise Http404('Invalid parse count: ' + parse_count)
     elif tagger not in TAGGERS:
         raise Http404('Unknown tagger: ' + tagger)
-    elif grammar not in GRAMMARS:
+    elif grammar not in ghub.names:
         raise Http404('Unknown grammar')
 
     # Parse sentence
@@ -122,45 +121,6 @@ def parse(request):
     sent = ghub.parse(sentence_text, grammar, parse_count, tagger)
     logger.info("Done parsing")
     return sent
-
-
-def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):
-    xml_str = sent.to_visko_xml_str()
-    return {'sent': sentence_text if sentence_text else sent.text,
-            'parse_count': parse_count,
-            'tagger': tagger,
-            'grammar': grammar,
-            'parses': [parse2json(x) for x in sent],
-            'xml': xml_str}
-
-
-def parse2json(parse):
-    return {'pid': parse.ID,
-            'ident': parse.ident,
-            'mrs': parse.mrs().json(),
-            'dmrs': parse.dmrs().json(),
-            'mrs_raw': parse.mrs().tostring(),
-            'dmrs_raw': parse.dmrs().tostring()}
-
-
-@jsonp
-def mockup(request):
-    ''' Parse a sentence using ISF
-    Mapping: /restisf/parse/ '''
-    sent = request.GET['sent']
-    parse_count = request.GET['parse_count']
-    tagger = request.GET['tagger']
-    grammar = request.GET['grammar']
-    mockup = {"lnk": {"from": -1, "to": -1}, "nodes": [{"type": "realpred", "senses": [{"lemma": "some", "type": "lelesk", "synsetid": "02267308-a"}], "lnk": {"from": 0, "to": 4}, "predicate": "_some_q", "pos": "q", "nodeid": 10000}, {"sortinfo": {"cvarsort": "x", "ind": "+", "num": "pl", "pers": "3"}, "senses": [{"lemma": "dog", "type": "lelesk", "synsetid": "02084071-n"}], "type": "realpred", "lnk": {"from": 5, "to": 9}, "predicate": "_dog_n_1", "pos": "n", "nodeid": 10001}, {"sortinfo": {"cvarsort": "e", "tense": "past", "mood": "indicative", "prog": "-", "sf": "prop", "perf": "-"}, "senses": [{"lemma": "bark", "type": "lelesk", "synsetid": "07376731-n"}], "type": "realpred", "lnk": {"from": 10, "to": 17}, "predicate": "_bark_v_1", "pos": "v", "nodeid": 10002}], "text": "Some dogs barked.", "links": [{"post": "H", "from": 0, "rargname": None, "to": 10002}, {"post": "H", "from": 10000, "rargname": "RSTR", "to": 10001}, {"post": "NEQ", "from": 10002, "rargname": "ARG1", "to": 10001}]}
-    mockup2 = {"lnk": {"from": -1, "to": -1}, "nodes": [{"type": "realpred", "senses": [{"lemma": "some", "type": "lelesk", "synsetid": "02267308-a"}], "lnk": {"from": 0, "to": 4}, "predicate": "_some_q", "pos": "q", "nodeid": 10000}, {"sortinfo": {"cvarsort": "x", "ind": "+", "num": "pl", "pers": "3"}, "senses": [{"lemma": "dog", "type": "lelesk", "synsetid": "09886220-n"}], "type": "realpred", "lnk": {"from": 5, "to": 9}, "predicate": "_dog_n_1", "pos": "n", "nodeid": 10001}, {"sortinfo": {"cvarsort": "e", "tense": "past", "mood": "indicative", "prog": "-", "sf": "prop", "perf": "-"}, "senses": [{"lemma": "bark", "type": "lelesk", "synsetid": "07376731-n"}], "type": "realpred", "lnk": {"from": 10, "to": 17}, "predicate": "_bark_v_1", "pos": "v", "nodeid": 10002}], "text": "Some dogs barked.", "links": [{"post": "H", "from": 0, "rargname": None, "to": 10002}, {"post": "H", "from": 10000, "rargname": "RSTR", "to": 10001}, {"post": "NEQ", "from": 10002, "rargname": "ARG1", "to": 10001}]}
-
-    if not sent:
-        raise Http404('Invalid sentence')
-    return {'sent': sent,
-            'parse_count': parse_count,
-            'tagger': tagger,
-            'grammar': grammar,
-            'parses': [mockup, mockup2]}
 
 
 @jsonp

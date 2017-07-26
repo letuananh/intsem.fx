@@ -82,6 +82,8 @@ class TestJacy(unittest.TestCase):
         self.assertTrue(s)
         s = self.ghub.JACYMC.parse(txt2)
         self.assertTrue(s)
+        self.assertEqual(s.text, '猫 が 好き です 。 \n')
+        print(s.text)
 
 
 #-------------------------------------------------------------------------------

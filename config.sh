@@ -48,3 +48,5 @@ link_folder `readlink -f ./modules/puchikarui/puchikarui` puchikarui
 link_folder `readlink -f ./modules/yawlib/yawlib` yawlib
 
 link_file `readlink -f ${WORKSPACE_FOLDER}/cldata/erg.dat` data/erg.dat
+link_file `readlink -f ${WORKSPACE_FOLDER}/cldata/jacy.dat` data/jacy.dat
+link_file `readlink -f ${WORKSPACE_FOLDER}/cldata/virgo.dat` data/virgo.dat
