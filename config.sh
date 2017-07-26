@@ -36,7 +36,7 @@ if [ ${py3} -eq 0 ]; then
 fi
 
 # init submodules
-submodule init && submodule update
+git submodule init && git submodule update
 
 # prerequisite packages
 pip install -r requirements.txt -qq
