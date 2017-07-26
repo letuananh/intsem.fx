@@ -285,11 +285,6 @@ class GrammarHub:
             return preps
 
     def parse_json(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
-        isf_sent = self.parse(txt, grm, pc, tagger, ignore_cache)
-        return sent2json(isf_sent, txt, pc, tagger, grm)
-
-    def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
-        ''' Parse a sentence using ISF '''
         # validation
         if not txt:
             raise ValueError('Sentence cannot be empty')
@@ -299,15 +294,25 @@ class GrammarHub:
             if s is not None:
                 logger.info("Retrieved {} parse(s) from cache for sent: {}".format(len(s['parses']), s['sent']))
                 return s
+        # else parse it ...
+        sent = self.parse(txt, grm, pc, tagger, ignore_cache)
+        # cache sent if possible
+        if self.cache:
+            self.cache.save(sent, grm, pc, tagger)
+        # make it JSON
+        return sent2json(sent, txt, pc, tagger, grm)
+
+    def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
+        ''' Parse a sentence using ISF '''
+        # validation
+        if not txt:
+            raise ValueError('Sentence cannot be empty')
         # Parse sentence
         logger.debug("Parsing sentence: {}".format(txt))
         sent = self[grm].parse(txt, parse_count=pc)
         if tagger:
-            print("Tagging using {}".format(tagger))
+            logger.info("Sense-tagging sentence using {}".format(tagger))
             sent.tag(method=tagger)
-        # cache sent if possible
-        if self.cache:
-            self.cache.save(sent, grm, pc, tagger)
         return sent
 
 
