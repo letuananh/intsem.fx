@@ -135,7 +135,7 @@ class Sentence(object):
         text_node = etree.SubElement(sent_node, 'text')
         text_node.text = self.text
         for id, parse in enumerate(self):
-            intp_node = etree.SubElement(sent_node, 'interpretation')
+            intp_node = etree.SubElement(sent_node, 'reading')
             intp_node.set('id', str(id + 1))
             intp_node.set('mode', 'active' if id == 0 else 'inactive')
             # store MRS raw
@@ -358,7 +358,7 @@ class DMRS(object):
                         gold_node.set('synsetid', str(tag.synsetid))
                         gold_node.set('lemma', tag.lemma)
                         gold_node.set('type', tagtype)
-                    elif tagtype == TagInfo.MFS:
+                    elif tagtype in (TagInfo.MFS, TagInfo.LELESK):
                         realpred = node.find('realpred')
                         if realpred is not None:
                             candidate_node = etree.SubElement(node, 'sense')
