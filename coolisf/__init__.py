@@ -50,6 +50,8 @@ __status__ = "Prototype"
 
 ########################################################################
 
-# from mappred import WordNetPredMapping
+from .lexsem import Lexsem, tag_gold
+from .util import GrammarHub
+from .model import Sentence
 
-# __all__ = [ WordNetPredMapping ]
+__all__ = ['Lexsem', 'tag_gold', 'GrammarHub', 'Sentence']

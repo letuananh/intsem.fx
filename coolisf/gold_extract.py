@@ -241,18 +241,11 @@ def read_gold_mrs():
     return sentences
 
 
-def generate_gold_profile():
+def read_gold_sents():
     tagdoc.read()
     filter_wrong_senses(tagdoc)
     sentences = read_gold_mrs()
-    # Process data
-    print("Creating XML file ...")
-    # build root XML node for data file
-    isf_node = build_root_node()
-    # Add document nodes
-    doc_node = etree.SubElement(isf_node, 'document')
-    doc_node.set('name', 'speckled band')
-
+    # sense tagging
     for sent in sentences:
         if len(sent) == 0:
             print("WARNING: empty sentence #{}: {}".format(sent.sid, sent.text))
@@ -261,8 +254,23 @@ def generate_gold_profile():
         tagged = tagdoc.sent_map[str(sent.sid)]
         tag_gold(dmrs, tagged, sent.text)
         sent.tag(method=TagInfo.MFS)
-        sent.tag_xml().to_xml_node(doc_node)
+        sent.tag_xml()
+    return sentences
 
+
+def generate_gold_profile():
+    sentences = read_gold_sents()
+    # Process data
+    print("Creating XML file ...")
+    # build root XML node for data file
+    isf_node = build_root_node()
+    # Add document nodes
+    doc_node = etree.SubElement(isf_node, 'document')
+    doc_node.set('name', 'speckled band')
+    # export to XML
+    for sent in sentences:
+        sent.to_xml_node(doc_node)
+    # write to file
     with open(OUTPUT_ISF, 'wb') as output_isf:
         print("Making it beautiful ...")
         xml_string = etree.tostring(isf_node, encoding='utf-8', pretty_print=True)

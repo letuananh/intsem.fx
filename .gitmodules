@@ -4,9 +4,6 @@
 [submodule "modules/lelesk"]
 	path = modules/lelesk
 	url = https://github.com/letuananh/lelesk
-[submodule "modules/demophin"]
-	path = modules/demophin
-	url = https://github.com/neocl/demophin
 [submodule "modules/puchikarui"]
 	path = modules/puchikarui
 	url = https://github.com/letuananh/puchikarui

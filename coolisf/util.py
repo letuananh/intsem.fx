@@ -48,7 +48,6 @@ __status__ = "Prototype"
 
 ########################################################################
 
-import sys
 import os
 import logging
 import json
@@ -152,9 +151,9 @@ class AceCache(Schema):
             self.sent.delete("text=? AND grm=? AND pc IS NULL", (sent.text, grm))
         else:
             self.sent.delete("text=? AND grm=? AND pc=?", (sent.text, grm, pc))
-        sid = self.sent.insert((sent.text, grm, pc))
+        sid = self.sent.insert(sent.text, grm, pc)
         for p in sent:
-            self.mrs.insert((sid, p.mrs()._raw))
+            self.mrs.insert(sid, p.mrs()._raw)
 
     def load(self, sent, grm, pc):
         if pc is None:
@@ -197,10 +196,10 @@ class ISFCache(Schema):
         # delete old data
         dq, dp = self.build_query(sent.text, grammar, pc, tagger)
         self.sent.delete(dq, dp)
-        sid = self.sent.insert([sent.text, pc, tagger, grammar, sent.to_visko_xml_str()])
+        sid = self.sent.insert(sent.text, pc, tagger, grammar, sent.to_visko_xml_str())
         for p in sent:
             # insert parses
-            self.parse.insert([sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring()])
+            self.parse.insert(sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring())
 
     def load(self, txt, grm, pc, tagger):
         query, params = self.build_query(txt, grm, pc, tagger)

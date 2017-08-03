@@ -54,9 +54,10 @@ import os
 import unittest
 import logging
 
+from chirptext import FileHelper
 from lelesk import LeLeskWSD, LeskCache
 
-from coolisf.gold_extract import export_to_visko
+from coolisf.gold_extract import export_to_visko, read_gold_mrs
 from coolisf.util import read_ace_output
 from coolisf.model import Sentence, DMRS
 from coolisf.util import GrammarHub
@@ -225,6 +226,7 @@ class TestMain(unittest.TestCase):
         self.assertTrue(d.tags)
         js = d.json_str()
         logger.debug("Tagged JSON (using LeLesk): {}".format(js))
+        print(js)
 
     def test_parse_no(self):
         text = "I saw a girl with a big telescope which is nice."
@@ -247,15 +249,35 @@ class TestMain(unittest.TestCase):
         ep = d.obj().ep(10000)
         print(d.fix_tokenization(ep, text))
 
+    def test_mrs_xml(self):
+        mrs = '''[ TOP: h0
+  RELS: < [ def_explicit_q_rel<0:3> LBL: h1 ARG0: x12 [ x NUM: sg IND: + PERS: 3 ] RSTR: h17 ]
+          [ poss_rel<0:3> LBL: h2 ARG0: e10 [ e MOOD: indicative PERF: - SF: prop PROG: - TENSE: untensed ] ARG1: x12 ARG2: x11 [ x NUM: sg PT: std PERS: 1 ] ]
+          [ pronoun_q_rel<0:3> LBL: h3 ARG0: x11 RSTR: h18 ]
+          [ pron_rel<0:3> LBL: h4 ARG0: x11 ]
+          [ _name_n_of_rel<4:8> LBL: h2 ARG0: x12 ]
+          [ _be_v_id_rel<9:11> LBL: h5 ARG0: e13 [ e MOOD: indicative PERF: - SF: prop PROG: - TENSE: pres ] ARG1: x12 ARG2: x16 [ x NUM: sg IND: + PERS: 3 ] ]
+          [ proper_q_rel<12:28> LBL: h6 ARG0: x16 RSTR: h19 ]
+          [ compound_rel<12:28> LBL: h7 ARG0: e14 [ e MOOD: indicative PERF: - SF: prop PROG: - TENSE: untensed ] ARG1: x16 ARG2: x15 [ x NUM: sg PT: notpro IND: + PERS: 3 ] ]
+          [ proper_q_rel<12:20> LBL: h8 ARG0: x15 RSTR: h20 ]
+          [ named_rel<12:20> LBL: h9 ARG0: x15 CARG: "Sherlock" ]
+          [ named_rel<21:28> LBL: h7 ARG0: x16 CARG: "Holmes" ] >
+  HCONS: < h0 qeq h5 h17 qeq h2 h18 qeq h4 h19 qeq h7 h20 qeq h9 > ]
+'''
+        sent = Sentence()
+        sent.add(mrs)
+        print(sent.to_xml_str())
+        sent.add(dmrs_xml=sent[0].dmrs().xml_str())
+        print(sent[1])
+
     def text_isf_visko(self):
-        sents = read_gold_sentences(auto_tag=False)
+        sents = read_gold_mrs()
         s10044 = sents[44]
         p = s10044[0]
         # test convert back and forth
         print(p.mrs().to_dmrs().to_mrs().obj())
         # test export to visko (XML)
-        from chirptext.leutile import FileTool
-        FileTool.create_dir(TEST_DATA)
+        FileHelper.create_dir(TEST_DATA)
         export_to_visko([s10044], TEST_DATA)
         # test re-read that visko XML
         x = s10044.to_visko_xml_str()

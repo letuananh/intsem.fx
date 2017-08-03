@@ -60,17 +60,13 @@ from .util import GrammarHub
 from .gold_extract import generate_gold_profile
 from .gold_extract import read_ace_output
 from .gold_extract import export_to_visko
-# from .gold_extract import read_gold_sentences
+from .gold_extract import read_gold_sents
 
 ghub = GrammarHub()
 ERG = ghub.ERG
 
+
 ########################################################################
-
-
-# def read_data():
-#     return [StringTool.strip(x) for x in open(SEMCOR_TXT).readlines()]
-
 
 def enter_sentence():
     return input("Enter a sentence (empty to exit): ")
@@ -122,7 +118,7 @@ def to_visko(args):
     else:
         if input("No MRS file provided. Proceed to export gold profile to Visko (yes/no)? ").lower() in ['y', 'yes']:
             print("Exporting gold profile to Visko")
-            sents = read_gold_sentences()
+            sents = read_gold_sents()
         else:
             print("Aborted")
             return

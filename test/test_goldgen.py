@@ -57,7 +57,8 @@ from delphin.mrs.components import Pred
 
 from chirptext import header, Counter, TextReport
 from chirptext.texttaglib import TaggedDoc, TagInfo
-from coolisf.lexsem import tag_gold
+from coolisf import tag_gold, Lexsem
+from coolisf.gold_extract import filter_wrong_senses
 from coolisf.gold_extract import extract_tsdb_gold
 from coolisf.gold_extract import read_gold_mrs
 
@@ -69,12 +70,12 @@ from coolisf.gold_extract import read_gold_mrs
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_GOLD_DIR = 'data'
 
+
 #-------------------------------------------------------------------------------
 # DATA STRUCTURES
 #-------------------------------------------------------------------------------
 
-
-class TestMainApp(unittest.TestCase):
+class TestMRSTagging(unittest.TestCase):
 
     def test_read_tsdb(self):
         gold = extract_tsdb_gold()
@@ -185,7 +186,7 @@ class TestMainApp(unittest.TestCase):
                     fix_texts.append((s.sid, s.text, tagged.text))
                 # try to tag ...
                 dmrs = s[0].dmrs()
-                matched, not_matched = tag_gold(dmrs, tagged, s.text)
+                matched, not_matched = tag_gold(dmrs, tagged, s.text, mode=Lexsem.ROBUST)
                 if not not_matched:
                     count_good_bad.count("Perfect")
                     perfects.append((s, matched))
@@ -230,27 +231,6 @@ class TestMainApp(unittest.TestCase):
         #     print(t2)
         count_good_bad.summarise()
         instances.summarise()
-
-
-GOLD_WRONG = {
-    '02108026-v': [10109, 10114, 10178, 10593],  # => {'have'}
-    '00066781-r': [10405, 10498, 10501],  # => {'in front'}
-    '01554230-a': [10468, 10582],  # => {'such'}
-    '01712704-v': [10061, 10265, 10358, 10384],  # => {'do'}
-    '01188342-v': [10292],  # => {'be full'}
-}
-
-
-def filter_wrong_senses(doc):
-    for sent in doc:
-        to_remove = []
-        for c in sent.concepts:
-            if c.tag[0] in '=!':
-                c.tag = c.tag[1:]
-            if c.tag in GOLD_WRONG and int(sent.ID) in GOLD_WRONG[c.tag]:
-                to_remove.append(c)
-        for c in to_remove:
-            sent.concept_map.pop(c.cid)
 
 
 #-------------------------------------------------------------------------------

@@ -65,9 +65,16 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 SPECIAL_CHARS = '''?!"'$-_&|.,;:'''
 
+
 #-------------------------------------------------------------------------------
 # FUNCTIONS
 #-------------------------------------------------------------------------------
+
+class Lexsem(object):
+
+    STRICT = 'strict'
+    FLEXIBLE = 'flexible'
+    ROBUST = 'robust'
 
 
 def fix_tokenization(ep, sent_text=None):
@@ -163,7 +170,7 @@ def filter_small_senses(tagged):
             tagged.concept_map.pop(cid)
 
 
-def tag_gold(dmrs, tagged_sent, sent_text):
+def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
     ''' Use a TaggedSentence to tag a DMRS
     Results (matched, not_matched) in which
         matched => (concept, ep.nodeid, ep.pred)
@@ -174,11 +181,12 @@ def tag_gold(dmrs, tagged_sent, sent_text):
     # filter (what I considered) non-senses out
     concepts = filter_concepts(tagged_sent.concepts)
     # idv_concepts = [c for c in concepts if len(c.words) == 1]
-    # match single pred first
-    # eps = taggable_eps(dmrs.obj().eps())
     if not dmrs.tags:
         dmrs.tags = dd(list)
-    eps = dmrs.obj().eps()
+    if mode == Lexsem.STRICT:
+        eps = taggable_eps(dmrs.obj().eps())
+    else:
+        eps = dmrs.obj().eps()
     matched_preds = []
     not_matched = []
     for c in concepts:
@@ -193,10 +201,4 @@ def tag_gold(dmrs, tagged_sent, sent_text):
                 break
         if not matched:
             not_matched.append(c)
-    # match mwe
-    # mwe = [c for c in concepts if len(c.words) > 1]
-    # for c in mwe:
-    #     for ep in eps:
-    #         # try to match by the first word?)
-    #         match(c, ep, sent_text)
     return matched_preds, not_matched
