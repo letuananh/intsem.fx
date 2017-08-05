@@ -61,6 +61,7 @@ from coolisf import tag_gold, Lexsem
 from coolisf.gold_extract import filter_wrong_senses
 from coolisf.gold_extract import extract_tsdb_gold
 from coolisf.gold_extract import read_gold_mrs
+from coolisf import GrammarHub
 
 
 #-------------------------------------------------------------------------------
@@ -94,7 +95,24 @@ class TestMRSTagging(unittest.TestCase):
     def test_get_eps(self):
         sents = read_gold_mrs()
         s = sents[0]
-        self.assertTrue(s[0].dmrs().obj().eps())
+        l = s[0].dmrs().latex()
+        print(l)
+        self.assertTrue(l)
+
+    def test_generate_latex(self):
+        sents = read_gold_mrs()
+        smap = {str(s.sid): s for s in sents}
+        s = smap['10283']
+        print(s.to_latex())
+        self.assertTrue(s.to_latex())
+
+    def test_sent2latex(self):
+        txt = 'Everyone is a soul.'
+        ghub = GrammarHub()
+        s = ghub.parse(txt, "ERG")
+        out = s.to_latex()
+        for i in range(1, 3):
+            self.assertIn('%%% {}'.format(i), out)
 
     def test_ep_types(self):
         sid = '10598'

@@ -5,7 +5,8 @@ CREATE TABLE sent (
        pc INTEGER,
        tagger TEXT,
        grm TEXT NOT NULL,
-       xml TEXT
+       xml TEXT,
+       latex TEXT
 );
 
 CREATE TABLE parse (

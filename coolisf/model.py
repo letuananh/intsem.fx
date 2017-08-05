@@ -57,6 +57,7 @@ from collections import defaultdict as dd
 from lxml import etree
 
 import delphin
+from delphin.extra.latex import dmrs_tikz_dependency
 from delphin.mrs import simplemrs
 from delphin.mrs import simpledmrs
 from delphin.mrs import dmrx
@@ -149,6 +150,9 @@ class Sentence(object):
     def to_visko_xml_str(self, method=TagInfo.MFS, goldtags=None, with_raw=True, pretty_print=True):
         xml_node = self.to_visko_xml(method, goldtags, with_raw)
         return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
+
+    def to_latex(self):
+        return dmrs_tikz_dependency([p.dmrs().obj() for p in self])
 
 
 class Parse(object):
@@ -270,6 +274,9 @@ class DMRS(object):
         if self._raw is not None and not pretty_print:
             return self._raw
         return etree.tostring(self.xml(), pretty_print=pretty_print).decode('utf-8')
+
+    def latex(self):
+        return dmrs_tikz_dependency(self.obj())
 
     def json(self):
         j = Dmrs.to_dict(self.obj(), properties=True)

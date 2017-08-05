@@ -127,7 +127,8 @@ def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N
             'tagger': tagger,
             'grammar': grammar,
             'parses': [parse2json(x) for x in sent],
-            'xml': xml_str}
+            'xml': xml_str,
+            'latex': sent.to_latex()}
 
 
 def parse2json(parse):
@@ -174,7 +175,7 @@ class ISFCache(Schema):
 
     def __init__(self, data_source, setup_script=None, setup_file=PC_INIT_SCRIPT):
         Schema.__init__(self, data_source, setup_script=setup_script, setup_file=setup_file)
-        self.add_table('sent', ['ID', 'text', 'pc', 'tagger', 'grm', 'xml'])
+        self.add_table('sent', ['ID', 'text', 'pc', 'tagger', 'grm', 'xml', 'latex'])
         self.add_table('parse', ['ID', 'sid', 'pid', 'ident', 'jmrs', 'jdmrs', 'mrs', 'dmrs'])
 
     def build_query(self, sent, grammar, pc, tagger):
@@ -196,7 +197,7 @@ class ISFCache(Schema):
         # delete old data
         dq, dp = self.build_query(sent.text, grammar, pc, tagger)
         self.sent.delete(dq, dp)
-        sid = self.sent.insert(sent.text, pc, tagger, grammar, sent.to_visko_xml_str())
+        sid = self.sent.insert(sent.text, pc, tagger, grammar, sent.to_visko_xml_str(), sent.to_latex())
         for p in sent:
             # insert parses
             self.parse.insert(sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring())
@@ -212,7 +213,8 @@ class ISFCache(Schema):
                 'tagger': sobj.tagger,
                 'grammar': sobj.grm,
                 'parses': [],
-                'xml': sobj.xml}
+                'xml': sobj.xml,
+                'latex': sobj.latex}
         # select parses
         parses = self.parse.select('sid=?', (sobj.ID,))
         for p in parses:

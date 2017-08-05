@@ -22,7 +22,7 @@
       "args": ["-n", "5"]
     }
   },
-  "cache": "data/parses.db",
+  "cache": "data/isf_parses.db",
   "ace": "~/bin/ace",
-  "acecache": "data/ace.db"
+  "acecache": "data/isf_ace.db"
 }
