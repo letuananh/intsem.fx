@@ -55,6 +55,7 @@ import unittest
 import logging
 
 from chirptext import FileHelper
+from chirptext.texttaglib import TagInfo
 from lelesk import LeLeskWSD, LeskCache
 
 from coolisf.gold_extract import export_to_visko, read_gold_mrs
@@ -104,7 +105,8 @@ class TestGrammarHub(unittest.TestCase):
         grm = "ERG"
         pc = 5
         tagger = "MFS"
-        s = self.ghub.parse(txt, grm, pc, tagger)
+        s = self.ghub.parse_json(txt, grm, pc, tagger)
+        print(self.ghub.cache.ds.path)
         s = self.ghub.cache.load(txt, grm, pc, tagger)
         self.assertIsNotNone(s)
         self.assertEqual(len(s['parses']), 5)
@@ -239,16 +241,6 @@ class TestMain(unittest.TestCase):
         a_sent = self.ERG.parse(text, parse_count=10)
         self.assertEqual(len(a_sent), 10)
 
-    def test_fix_tokenization(self):
-        text = 'It rains.'
-        sent = self.ERG.parse(text)
-        # to visko
-        d = sent[0].dmrs()
-        logger.debug("JSON obj: {}", d.json())
-        logger.debug("All tags: {}", d.tags)
-        ep = d.obj().ep(10000)
-        print(d.fix_tokenization(ep, text))
-
     def test_mrs_xml(self):
         mrs = '''[ TOP: h0
   RELS: < [ def_explicit_q_rel<0:3> LBL: h1 ARG0: x12 [ x NUM: sg IND: + PERS: 3 ] RSTR: h17 ]
@@ -295,17 +287,12 @@ class TestMain(unittest.TestCase):
 
     def test_preserve_xml_tag_in_json(self):
         sent = self.ERG.parse('I like hot dog.')
-        goldtags = ((-1, 11, 15, '12345678-n', 'uberdog', 'NN'),)
-        sent.tag(goldtags, method='mfs')
+        sent.tag(TagInfo.MFS)
         d = sent[0].dmrs()
-        # now tag this manually
-        from chirptext.texttaglib import TagInfo
         self.assertIsNotNone(d.json_str())
         self.assertEqual(len(d.tags), 3)
-        self.assertEqual(len(d.tags[10006]), 2)
+        self.assertEqual(len(d.tags[10006]), 1)
         ss, method = d.tags[10006][0]
-        self.assertEqual(method, TagInfo.GOLD)
-        self.assertEqual(ss.synsetid, '12345678-n')
         logger.debug("JSON str: {}".format(d.json_str()))
 
 

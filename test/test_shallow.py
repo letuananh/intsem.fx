@@ -108,7 +108,7 @@ class TestMain(unittest.TestCase):
         tsent = a.analyse(txt)
         self.assertEqual(words, ['猫', 'が', '好き', 'です', '。'])
         self.assertEqual(lemmas, ['ねこ', 'が', 'すき', 'です', '。'])
-        print(tags)
+        print("Tags: ", tags)
         self.assertEqual(tags, [('猫', '名詞-一般'), ('が', '助詞-格助詞-一般'), ('好き', '名詞-形容動詞語幹'), ('です', '助動詞'), ('。', '記号-句点'), ('EOS', '')])
         twords = [t.label for t in tsent]
         self.assertEqual(twords, ['猫', 'が', '好き', 'です', '。'])

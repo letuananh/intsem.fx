@@ -144,7 +144,6 @@ class JapaneseAnalyser(Analyser):
 
     def lemmatize(self, words):
         msent = txt2mecab(' '.join(words))
-        print(msent)
         return [m.reading_hira() for m in msent if not m.is_eos]
 
     def pos_tag(self, words):

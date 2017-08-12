@@ -62,7 +62,6 @@ from chirptext.leutile import TextReport
 from chirptext.leutile import FileHub
 from chirptext.leutile import Timer
 from chirptext.leutile import header
-from chirptext.texttaglib import writelines
 
 from yawlib import YLConfig
 from yawlib import WordnetSQL as WNSQL
@@ -310,12 +309,12 @@ def extract_mwe():
         c.count("Total")
     c.summarise()
     mwe_found = ['# This file contains predicates in ERG which have been mapped to concept in WordNet', '# '] + mwe_notfound
-    writelines(mwe_found, MWE_FOUND)
+    FileHelper.save(MWE_FOUND, '\n'.join(mwe_found))
     mwe_notfound = ['# This file contains predicates in ERG which could not be found in WordNet', '# '] + mwe_notfound
-    writelines(mwe_notfound, MWE_NOTFOUND)
+    FileHelper.save(MWE_NOTFOUND, '\n'.join(mwe_notfound))
     pred_lemma = ['# This file contains all VV preds in ERG and their lemmas', "# "]
     pred_lemma += [",'%s' : '%s'" % (x[1], x[0]) for x in mwe_list]
-    writelines(pred_lemma, MWE_PRED_LEMMA)
+    FileHelper.save(MWE_PRED_LEMMA, '\n'.join(pred_lemma))
     print("All done")
     pass
 

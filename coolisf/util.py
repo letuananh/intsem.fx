@@ -55,7 +55,6 @@ from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
 from chirptext import Counter, FileHelper
-from chirptext.texttaglib import writelines
 from puchikarui import Schema
 
 from .model import Sentence
@@ -111,13 +110,8 @@ def read_ace_output(ace_output_file):
             else:
                 break
     c.summarise()
-    writelines(skipped, ace_output_file + '.skipped.txt')
+    FileHelper.save(ace_output_file + '.skipped.txt', '\n'.join(skipped))
     return sentences
-
-
-def get_preds(dmrs):
-    if dmrs:
-        return [Pred.normalize_pred_string(x.pred.string) for x in dmrs.nodes]
 
 
 def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):

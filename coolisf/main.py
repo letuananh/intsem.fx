@@ -54,50 +54,13 @@ import os
 import sys
 import argparse
 
-from .model import PredSense
-from .util import GrammarHub
-
 from .gold_extract import generate_gold_profile
 from .gold_extract import read_ace_output
 from .gold_extract import export_to_visko
 from .gold_extract import read_gold_sents
 
-ghub = GrammarHub()
-ERG = ghub.ERG
-
 
 ########################################################################
-
-def enter_sentence():
-    return input("Enter a sentence (empty to exit): ")
-
-
-def interactive_shell():
-    while True:
-        sent = enter_sentence()
-        if not sent:
-            break
-        else:
-            process_sentence(sent)
-        # done
-
-
-def process_sentence(sent, verbose=True, top_k=10):
-    if verbose:
-        print("You have entered: %s" % sent)
-    sent = ERG.parse(sent)
-    mrs_id = 1
-    if sent is not None and len(sent) > 0:
-        for parse in sent:
-            print('-' * 80)
-            print("MRS #%s\n" % mrs_id)
-            print(PredSense.tag_sentence(parse.dmrs()))
-            print('\n\n')
-            mrs_id += 1
-            if top_k < mrs_id:
-                break
-            # endif
-
 
 def to_visko(args):
     # determine docpath
@@ -125,19 +88,10 @@ def to_visko(args):
     export_to_visko(sents, export_path)
 
 
-def main_shell():
-    print("Integrated Semantic Framework has been loaded.")
-    process_sentence("Hello! I am an integrated semantic framework.", verbose=False, top_k=1)
-    interactive_shell()
-
-
 def main():
     parser = argparse.ArgumentParser(description="CoolISF Main Application")
 
     tasks = parser.add_subparsers(help='Task to be done')
-
-    shell_task = tasks.add_parser('shell', help='Interactive shell')
-    shell_task.set_defaults(func=lambda args: main_shell())
 
     gold_task = tasks.add_parser('gold', help='Extract gold profile')
     gold_task.set_defaults(func=lambda arsg: generate_gold_profile())

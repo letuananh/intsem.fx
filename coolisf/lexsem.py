@@ -181,8 +181,6 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
     # filter (what I considered) non-senses out
     concepts = filter_concepts(tagged_sent.concepts)
     # idv_concepts = [c for c in concepts if len(c.words) == 1]
-    if not dmrs.tags:
-        dmrs.tags = dd(list)
     if mode == Lexsem.STRICT:
         eps = taggable_eps(dmrs.obj().eps())
     else:
