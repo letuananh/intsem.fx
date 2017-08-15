@@ -9,8 +9,8 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 References:
     Python documentation:
         https://docs.python.org/
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
+    ACE:
+        http://moin.delph-in.net/AceOptions
     PEP 257 - Python Docstring Conventions:
         https://www.python.org/dev/peps/pep-0257/
 
@@ -51,12 +51,16 @@ __status__ = "Prototype"
 import os
 import logging
 import json
+import importlib
+import threading
+from collections import namedtuple
 from delphin.interfaces import ace
 from delphin.mrs.components import Pred
 
 from chirptext import Counter, FileHelper
 from puchikarui import Schema
 
+from .shallow import JapaneseAnalyser, EnglishAnalyser
 from .model import Sentence
 
 try:
@@ -78,7 +82,102 @@ logger.setLevel(logging.INFO)
 
 ########################################################################
 
+
+PrepInfo = namedtuple("PrepInfo", ["module_name", "class_name"])
+
+
+class PrepManager(object):
+
+    def __init__(self):
+        self.prep_canon_map = {}  # map (module, cls) to an actual prep object
+        self.name_map = {}  # map a friendly name to a prep object
+
+    def register(self, friendly_name, module_name, class_name):
+        self.name_map[friendly_name] = PrepInfo(module_name, class_name)
+
+    def build_prep(self, prep_info, prep_name=""):
+        ''' Build or retrieve a preprocessor object based on its specs '''
+        if prep_info not in self.prep_canon_map:
+            with threading.Lock():
+                module = importlib.import_module(prep_info.module_name)
+                cls = getattr(module, prep_info.class_name)
+                prep = cls(prep_info, prep_name)
+                self.prep_canon_map[prep_info] = prep
+        return self.prep_canon_map[prep_info]
+
+    def __getitem__(self, prep_name):
+        if prep_name not in self.name_map:
+            raise LookupError("Invalid prep_name ({} was provided)".format(prep_name))
+        prep_info = self.name_map[prep_name]
+        return self.build_prep(prep_info, prep_name)
+
+    @staticmethod
+    def from_json(json_data):
+        man = PrepManager()
+        for k, info in json_data.items():
+            man.register(k, info["module"], info["class"])
+        return man
+
+
+class Preprocessor(object):
+    ''' Standard preprocessor structure '''
+
+    def __init__(self, info, name=""):
+        self.info = info
+        self.name = name
+
+    def process(self, text):
+        return text
+
+
+class PrepDeko(Preprocessor):
+
+    def __init__(self, info, name="deko"):
+        super().__init__(info, name)
+        self.parser = JapaneseAnalyser()
+
+    def process(self, sent):
+        if isinstance(sent, Sentence):
+            sent.shallow = self.parser.analyse(sent.text)
+            sent.text = ' '.join(t.label for t in sent.shallow.tokens)
+            return sent
+        else:
+            return self.process(Sentence(sent))
+
+
+class PrepNLTK(Preprocessor):
+
+    def __init__(self, info, name="nltk"):
+        super().__init__(info, name)
+        self.parser = EnglishAnalyser()
+
+    def process(self, sent):
+        if isinstance(sent, Sentence):
+            sent.shallow = self.parser.analyse(sent.text)
+            sent.text = ' '.join(t.label for t in sent.shallow.tokens)
+            return sent
+        else:
+            return self.process(Sentence(sent))
+
+
+class PrepMeCab(Preprocessor):
+
+    def __init__(self, info, name="mecab"):
+        super().__init__(info, name)
+
+    def process(self, sent):
+        if isinstance(sent, Sentence):
+            sent.text = wakati(sent.text)
+            return sent
+        else:
+            return wakati(sent)
+
+
 def read_ace_output(ace_output_file):
+    ''' Read output file from ACE batch mode
+    Sample command: ace -g grammar.dat infile.txt > outfile.txt
+    Read more: http://moin.delph-in.net/AceOptions
+    '''
     logger.info("Reading parsed MRS from %s..." % (ace_output_file,))
     c = Counter()
     items = []
@@ -116,13 +215,15 @@ def read_ace_output(ace_output_file):
 
 def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):
     xml_str = sent.to_visko_xml_str()
-    return {'sent': sentence_text if sentence_text else sent.text,
-            'parse_count': parse_count,
-            'tagger': tagger,
-            'grammar': grammar,
-            'parses': [parse2json(x) for x in sent],
-            'xml': xml_str,
-            'latex': sent.to_latex()}
+    sent_json = {'sent': sentence_text if sentence_text else sent.text,
+                 'parse_count': parse_count,
+                 'tagger': tagger,
+                 'grammar': grammar,
+                 'parses': [parse2json(x) for x in sent],
+                 'xml': xml_str,
+                 'latex': sent.to_latex(),
+                 'shallow': sent.shallow.to_json() if sent.shallow else {}}
+    return sent_json
 
 
 def parse2json(parse):
@@ -169,12 +270,12 @@ class ISFCache(Schema):
 
     def __init__(self, data_source, setup_script=None, setup_file=PC_INIT_SCRIPT):
         Schema.__init__(self, data_source, setup_script=setup_script, setup_file=setup_file)
-        self.add_table('sent', ['ID', 'text', 'pc', 'tagger', 'grm', 'xml', 'latex'])
+        self.add_table('sent', ['ID', 'raw', 'grm', 'pc', 'tagger', 'text', 'xml', 'latex', 'shallow'])
         self.add_table('parse', ['ID', 'sid', 'pid', 'ident', 'jmrs', 'jdmrs', 'mrs', 'dmrs'])
 
-    def build_query(self, sent, grammar, pc, tagger):
-        q = 'text=? AND grm=?'
-        p = [sent, grammar]
+    def build_query(self, txt, grammar, pc, tagger):
+        q = 'raw=? AND grm=?'
+        p = [txt, grammar]
         if tagger is None:
             q += ' AND tagger IS NULL'
         else:
@@ -187,11 +288,12 @@ class ISFCache(Schema):
             p.append(pc)
         return (q, p)
 
-    def save(self, sent, grammar, pc, tagger):
+    def save(self, txt, grammar, pc, tagger, sent):
         # delete old data
-        dq, dp = self.build_query(sent.text, grammar, pc, tagger)
-        self.sent.delete(dq, dp)
-        sid = self.sent.insert(sent.text, pc, tagger, grammar, sent.to_visko_xml_str(), sent.to_latex())
+        # dq, dp = self.build_query(sent.text, grammar, pc, tagger)
+        # self.sent.delete(dq, dp)
+        # TODO: delete parses as well ...
+        sid = self.sent.insert(txt, grammar, pc, tagger, sent.text, sent.to_visko_xml_str(), sent.to_latex(), json.dumps(sent.shallow.to_json()) if sent.shallow else None)
         for p in sent:
             # insert parses
             self.parse.insert(sid, p.ID, p.ident, p.mrs().json_str(), p.dmrs().json_str(), p.mrs().tostring(), p.dmrs().tostring())
@@ -199,6 +301,7 @@ class ISFCache(Schema):
     def load(self, txt, grm, pc, tagger):
         query, params = self.build_query(txt, grm, pc, tagger)
         sobj = self.sent.select_single(query, params)
+        # logger.debug("q", query, "p", params, "sobj", sobj)
         if not sobj:
             return None
         # else
@@ -208,7 +311,8 @@ class ISFCache(Schema):
                 'grammar': sobj.grm,
                 'parses': [],
                 'xml': sobj.xml,
-                'latex': sobj.latex}
+                'latex': sobj.latex,
+                'shallow': json.loads(sobj.shallow) if sobj.shallow else None}
         # select parses
         parses = self.parse.select('sid=?', (sobj.ID,))
         for p in parses:
@@ -230,7 +334,7 @@ class GrammarHub:
             self.cache = ISFCache(self.cache_path)
         else:
             self.cache = None
-        self.preps = {}
+        self.preps = PrepManager.from_json(self.cfg["preprocessors"])
 
     def read_config(self, cfg_path=CONFIG_FILE):
         logger.info("Reading grammars configuration from: {}".format(cfg_path))
@@ -271,13 +375,7 @@ class GrammarHub:
         if 'preps' not in gcfg:
             return None
         else:
-            preps = []
-            for prep in gcfg['preps']:
-                if prep not in self.preps:
-                    # create the prep
-                    self.preps['mecab'] = PrepMeCab()
-                preps.append(self.preps[prep])
-            return preps
+            return [self.preps[pname] for pname in gcfg['preps']]
 
     def parse_json(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
         # validation
@@ -293,7 +391,7 @@ class GrammarHub:
         sent = self.parse(txt, grm, pc, tagger, ignore_cache)
         # cache sent if possible
         if self.cache:
-            self.cache.save(sent, grm, pc, tagger)
+            self.cache.save(txt, grm, pc, tagger, sent)
         # make it JSON
         return sent2json(sent, txt, pc, tagger, grm)
 
@@ -311,19 +409,14 @@ class GrammarHub:
         return sent
 
 
-class PrepMeCab(object):
-
-    def process(self, text):
-        return wakati(text)
-
-
 class Grammar:
     def __init__(self, name, gram_file, cmdargs, ace_bin, cache_loc, preps=None):
         self.name = name
         self.gram_file = FileHelper.abspath(gram_file)
         self.cmdargs = cmdargs
         self.ace_bin = FileHelper.abspath(ace_bin)
-        logger.info("GRM Path: [{g}] - ACE: [{a}]".format(g=self.gram_file, a=self.ace_bin))
+        logger.info("Initializing grammar {n} | GRM Path: [{g}] - ACE: [{a}]".format(n=self.name, g=self.gram_file, a=self.ace_bin))
+        # init cache
         if cache_loc:
             self.cache_loc = FileHelper.abspath(cache_loc)
             self.cache = AceCache(self.cache_loc)
@@ -345,13 +438,10 @@ class Grammar:
             args += ['-n', str(parse_count)]
         with ace.AceParser(self.gram_file, executable=self.ace_bin, cmdargs=args) as parser:
             # preprocessor
-            input_text = text
             if self.preps:
                 for prep in self.preps:
-                    input_text = prep.process(input_text)
-            # update sentence text
-            s.text = input_text
-            result = parser.interact(input_text)
+                    input_text = prep.process(s)
+            result = parser.interact(s.text)
         if result and 'RESULTS' in result:
             top_res = result['RESULTS']
             for mrs in top_res:

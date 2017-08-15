@@ -53,7 +53,7 @@ from collections import defaultdict as dd
 from delphin.mrs.components import Pred
 
 # from chirptext import header, Counter, TextReport
-from chirptext.texttaglib import TagInfo
+from chirptext.texttaglib import TagInfo, Concept
 from yawlib import Synset
 
 
@@ -130,10 +130,11 @@ def filter_concepts(concepts):
     # 02655135-v: be
     # 02603699-v: be
     # 02664769-v: be
+    # 02620587-v: be
     # 77000091-n: what
     # 77000053-n: it
     # 00770437-v: have
-    return [c for c in concepts if c.tag not in ('02604760-v', '00024073-r', '02749904-v', '02655135-v', '02603699-v', '02664769-v', '77000091-n', '77000053-n', '00770437-v')]
+    return [c for c in concepts if c.tag not in ('02604760-v', '00024073-r', '02749904-v', '02655135-v', '02603699-v', '02664769-v', '02620587-v', '77000091-n', '77000053-n', '00770437-v')]
 
 
 def taggable_eps(eps):
@@ -198,5 +199,7 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
                 matched = True
                 break
         if not matched:
+            # tag concept not matched
+            c.flag = Concept.NOT_MATCHED
             not_matched.append(c)
     return matched_preds, not_matched

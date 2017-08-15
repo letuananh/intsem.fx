@@ -92,6 +92,10 @@ class TestMRSTagging(unittest.TestCase):
         doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
         self.assertEqual(len(doc), 599)
 
+    def test_goldtags_json(self):
+        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        print(doc[0].to_json())
+
     def test_get_eps(self):
         sents = read_gold_mrs()
         s = sents[0]
@@ -135,8 +139,20 @@ class TestMRSTagging(unittest.TestCase):
         sents[0].tag(method=TagInfo.MFS)
         self.assertTrue(sents[0].to_xml_str())
 
+    def test_flag_not_matched_concept(self):
+        ''' Lexsem should flag the not matched concepts '''
+        sid = '10322'
+        sents = read_gold_mrs()
+        smap = {str(s.sid): s for s in sents}
+        sent = smap[sid]
+        dmrs = sent[0].dmrs()
+        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        tagged = doc.sent_map[sid]
+        m, n = tag_gold(dmrs, tagged, sent.text)
+        print(tagged.to_json())
+
     def test_tag_one_sent(self):
-        sid = '10329'
+        sid = '10322'
         sents = read_gold_mrs()
         smap = {str(s.sid): s for s in sents}
         sent = smap[sid]

@@ -83,6 +83,7 @@ class Sentence(object):
     def __init__(self, text='', sid=-1):
         self.text = StringTool.strip(text)
         self.sid = sid
+        self.shallow = None
         self.parses = list()
 
     def add(self, mrs_str=None, dmrs_xml=None):
@@ -142,6 +143,10 @@ class Sentence(object):
                 mrs_node.text = etree.CDATA(parse.mrs().tostring())
             # store DMRS
             intp_node.append(parse.dmrs().xml())
+            # store shallow if needed
+            if self.shallow:
+                shallow_node = etree.SubElement(sent_node, 'shallow')
+                shallow_node.text = json.dumps(self.shallow.to_json())
         return sent_node
 
     def to_visko_xml_str(self, with_raw=True, pretty_print=True):

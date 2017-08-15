@@ -251,8 +251,8 @@ def read_gold_sents():
             print("WARNING: empty sentence #{}: {}".format(sent.sid, sent.text))
             continue
         dmrs = sent[0].dmrs()
-        tagged = tagdoc.sent_map[str(sent.sid)]
-        tag_gold(dmrs, tagged, sent.text)
+        sent.shallow = tagdoc.sent_map[str(sent.sid)]
+        tag_gold(dmrs, sent.shallow, sent.text)
         sent.tag(method=TagInfo.MFS)
         sent.tag_xml()
     return sentences

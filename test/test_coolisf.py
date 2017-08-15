@@ -106,7 +106,7 @@ class TestGrammarHub(unittest.TestCase):
         pc = 5
         tagger = "MFS"
         s = self.ghub.parse_json(txt, grm, pc, tagger)
-        print(self.ghub.cache.ds.path)
+        # print(self.ghub.cache.ds.path)
         s = self.ghub.cache.load(txt, grm, pc, tagger)
         self.assertIsNotNone(s)
         self.assertEqual(len(s['parses']), 5)
@@ -228,7 +228,7 @@ class TestMain(unittest.TestCase):
         self.assertTrue(d.tags)
         js = d.json_str()
         logger.debug("Tagged JSON (using LeLesk): {}".format(js))
-        print(js)
+        # print(js)
 
     def test_parse_no(self):
         text = "I saw a girl with a big telescope which is nice."
@@ -258,9 +258,9 @@ class TestMain(unittest.TestCase):
 '''
         sent = Sentence()
         sent.add(mrs)
-        print(sent.to_xml_str())
+        # print(sent.to_xml_str())
         sent.add(dmrs_xml=sent[0].dmrs().xml_str())
-        print(sent[1])
+        # print(sent[1])
 
     def text_isf_visko(self):
         sents = read_gold_mrs()
@@ -283,7 +283,7 @@ class TestMain(unittest.TestCase):
             x = infile.read()
             print(len(x))
             d = DMRS(x)
-            print(d.obj())
+            # print(d.obj())
 
     def test_preserve_xml_tag_in_json(self):
         sent = self.ERG.parse('I like hot dog.')
@@ -295,13 +295,15 @@ class TestMain(unittest.TestCase):
         ss, method = d.tags[10006][0]
         logger.debug("JSON str: {}".format(d.json_str()))
 
+    def test_preserve_shallow(self):
+        txt = "雨が降る。"
+        sent = self.ghub.parse_json(txt, "JACYDK")
+        # load cached
+        cached = self.ghub.cache.load(txt, "JACYDK", None, None)
+        self.assertEqual(cached["shallow"], sent["shallow"])
+
 
 ########################################################################
 
-
-def main():
-    unittest.main()
-
-
 if __name__ == "__main__":
-    main()
+    unittest.main()

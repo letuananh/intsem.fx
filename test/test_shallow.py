@@ -51,7 +51,7 @@ __credits__ = []
 
 import os
 import unittest
-
+from lelesk import LeLeskWSD, LeskCache
 from coolisf.shallow import Analyser, EnglishAnalyser, JapaneseAnalyser
 
 #-------------------------------------------------------------------------------
@@ -98,6 +98,21 @@ class TestMain(unittest.TestCase):
             self.assertEqual(tk.label, txt[tk.cfrom:tk.cto])
             self.assertEqual(tk.lemma, lm)
             self.assertEqual(tk.pos, tg[1])
+
+    def test_wsd_shallow(self):
+        txt = 'The dogs barked.'
+        a = EnglishAnalyser()
+        tsent = a.analyse(txt)
+        l = LeLeskWSD(dbcache=LeskCache())
+        context = [x.lemma for x in tsent]
+        cid = 0
+        for w in tsent:
+            scores = l.lelesk_wsd(w.lemma, tsent.text, context=context)
+            if scores:
+                # take the best one
+                tsent.add_concept(cid, w.lemma, scores[0].candidate.synset.sid, [w])
+                cid += 1
+        print(tsent.to_json())
 
     def test_jpn(self):
         a = JapaneseAnalyser()

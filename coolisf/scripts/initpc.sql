@@ -1,12 +1,14 @@
 /* Init parse cache DB */
 CREATE TABLE sent (
        ID INTEGER PRIMARY KEY AUTOINCREMENT,
-       text TEXT NOT NULL,
+       raw TEXT NOT NULL,
+       grm TEXT NOT NULL,
        pc INTEGER,
        tagger TEXT,
-       grm TEXT NOT NULL,
+       text TEXT NOT NULL,       
        xml TEXT,
-       latex TEXT
+       latex TEXT,
+       shallow TEXT
 );
 
 CREATE TABLE parse (

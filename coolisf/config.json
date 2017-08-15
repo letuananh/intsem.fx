@@ -5,6 +5,19 @@
       "name": "ERG",
       "args": ["-n", "5"]
     },
+    "ERG_NLTK": {
+      "path": "data/erg.dat",
+      "name": "ERG/NTLK",
+      "args": ["-n", "5"],
+      "preps": ["nltk"]
+    },
+
+    "JACYDK": {
+      "path": "data/jacy.dat",
+      "name": "JACY/Deko",
+      "args": ["-n", "5"],
+      "preps": ["deko"]
+    },
     "JACYMC": {
       "path": "data/jacy.dat",
       "name": "JACY/MeCab",
@@ -21,6 +34,11 @@
       "path": "data/virgo.dat",
       "args": ["-n", "5"]
     }
+  },
+  "preprocessors": {
+    "mecab": {"module": "coolisf.util", "class": "PrepMeCab"},
+    "deko": {"module": "coolisf.util", "class": "PrepDeko"},
+    "nltk": {"module": "coolisf.util", "class": "PrepNLTK"}
   },
   "cache": "data/isf_parses.db",
   "ace": "~/bin/ace",
