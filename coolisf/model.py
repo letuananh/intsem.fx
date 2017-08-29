@@ -84,6 +84,8 @@ class Sentence(object):
         self.text = StringTool.strip(text)
         self.sid = sid
         self.shallow = None
+        self.comment = None
+        self.flag = None
         self.parses = list()
 
     def add(self, mrs_str=None, dmrs_xml=None):
@@ -102,9 +104,17 @@ class Sentence(object):
 
     def to_xml_node(self, doc_node=None):
         sent_node = etree.Element('sentence', sid=str(self.sid))
+        # store flag
+        if self.flag is not None:
+            sent_node.set('flag', str(self.flag))
         if doc_node is not None:
             doc_node.append(sent_node)
-        etree.SubElement(sent_node, 'text', text=self.text)
+        text_node = etree.SubElement(sent_node, 'text')
+        text_node.text = self.text
+        # store comment
+        if self.comment is not None:
+            comment_node = etree.SubElement(sent_node, 'comment')
+            comment_node.text = self.comment
         dmrses_node = etree.SubElement(sent_node, 'dmrses')
         if len(self) > 0:
             for parse in self:
@@ -130,9 +140,16 @@ class Sentence(object):
         sent_node.set('id', str(self.sid))
         sent_node.set('version', '0.1')
         sent_node.set('lang', 'eng')
+        # store flag
+        if self.flag is not None:
+            sent_node.set('flag', str(self.flag))
         # Add license information
         text_node = etree.SubElement(sent_node, 'text')
         text_node.text = self.text
+        # store comment
+        if self.comment is not None:
+            comment_node = etree.SubElement(sent_node, 'comment')
+            comment_node.text = self.comment
         for id, parse in enumerate(self):
             intp_node = etree.SubElement(sent_node, 'reading')
             intp_node.set('id', str(id + 1))

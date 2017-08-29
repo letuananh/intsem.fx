@@ -223,6 +223,10 @@ def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N
                  'xml': xml_str,
                  'latex': sent.to_latex(),
                  'shallow': sent.shallow.to_json() if sent.shallow else {}}
+    if sent.flag is not None:
+        sent_json['flag'] = sent.flag
+    if sent.comment is not None:
+        sent_json['comment'] = sent.comment
     return sent_json
 
 
