@@ -114,7 +114,7 @@ class Sentence(object):
         # store comment
         if self.comment is not None:
             comment_node = etree.SubElement(sent_node, 'comment')
-            comment_node.text = self.comment
+            comment_node.text = etree.CDATA(self.comment)
         dmrses_node = etree.SubElement(sent_node, 'dmrses')
         if len(self) > 0:
             for parse in self:
@@ -149,7 +149,7 @@ class Sentence(object):
         # store comment
         if self.comment is not None:
             comment_node = etree.SubElement(sent_node, 'comment')
-            comment_node.text = self.comment
+            comment_node.text = etree.CDATA(self.comment)
         for id, parse in enumerate(self):
             intp_node = etree.SubElement(sent_node, 'reading')
             intp_node.set('id', str(id + 1))

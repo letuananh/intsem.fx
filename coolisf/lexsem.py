@@ -64,6 +64,9 @@ from yawlib import Synset
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 SPECIAL_CHARS = '''?!"'$-_&|.,;:'''
+# TODO: Move this to chirptext
+PREPS = ['aboard', 'about', 'above', 'across', 'after', 'against', 'along', 'amid', 'among', 'anti', 'around', 'as', 'at', 'before', 'behind', 'below', 'beneath', 'beside', 'besides', 'between', 'beyond', 'but', 'by', 'concerning', 'considering', 'despite', 'down', 'during', 'except', 'excepting', 'excluding', 'following', 'for', 'from', 'in', 'inside', 'into', 'like', 'minus', 'near', 'of', 'off', 'on', 'onto', 'opposite', 'outside', 'over', 'past', 'per', 'plus', 'regarding', 'round', 'save', 'since', 'than', 'through', 'to', 'toward', 'towards', 'under', 'underneath', 'unlike', 'until', 'up', 'upon', 'versus', 'via', 'with', 'within', 'without']
+PREPS_PLUS = PREPS + ['a']
 
 
 #-------------------------------------------------------------------------------
@@ -95,6 +98,9 @@ def match(concept, ep, sent_text):
     ''' Match concept (idv/MWE) with preds '''
     cfrom, cto, surface = fix_tokenization(ep, sent_text)
     if len(concept.words) == 1:
+        pred_bits = list(ep.pred.lemma.split('+'))
+        # if concept.tag == '01554230-n':
+        #     print(concept, ep.pred.lemma, pred_bits, cfrom, cto, surface)
         # ind concept
         w0 = concept.words[0]
         if w0.cfrom == cfrom or w0.cfrom == ep.cfrom:
@@ -102,7 +108,13 @@ def match(concept, ep, sent_text):
                 return True
             elif ep.pred.lemma == w0.label or surface == w0.label:
                 return True
+            elif len(pred_bits) == 2 and pred_bits[-1] in PREPS_PLUS and pred_bits[0] == w0.label:
+                return True
     elif len(concept.words) > 1:
+        tagged_words = tuple(w.label for w in concept.words)
+        pred_bits = list(ep.pred.lemma.split('+'))
+        # if concept.tag == '01554230-n':
+        #     print("MWE", concept, ep.pred.lemma, pred_bits, cfrom, cto, surface, tagged_words)
         # MWE
         # try to match using min-cfrom and max-cto first
         min_cfrom = concept.words[0].cfrom
@@ -115,7 +127,20 @@ def match(concept, ep, sent_text):
         # match by first word and lemma?
         if concept.words[0].cfrom == cfrom and concept.words[0].cto == cto and surface == concept.words[0].label:
             return True
-        pass
+        # match by pred.lemma and concept.words
+        tagged_words = list(w.label for w in concept.words)
+        pred_bits = list(ep.pred.lemma.split('+'))
+        if tagged_words == pred_bits:
+            return True
+        # ignore the last preposition
+        elif pred_bits[-1] in PREPS and tagged_words == pred_bits[:-1]:
+            return True
+        # match by ignoring the last part ...
+        elif tagged_words == pred_bits[:-1]:
+            print(tagged_words, pred_bits)
+            # TODO: mark this as ROBUST
+            return True
+        # no more to try ...
     else:
         raise Exception("Invalid (empty) concept")
     return False
