@@ -55,7 +55,6 @@ import importlib
 import threading
 from collections import namedtuple
 from delphin.interfaces import ace
-from delphin.mrs.components import Pred
 
 from chirptext import Counter, FileHelper
 from puchikarui import Schema
@@ -429,6 +428,22 @@ class Grammar:
             self.cache = None
         self.preps = preps
 
+    def generate(self, parse_obj):
+        ''' Generate text from coolisf.model.Parse object '''
+        with ace.AceGenerator(self.gram_file, executable=self.ace_bin) as generator:
+            response = generator.interact(str(parse_obj.mrs()))
+            sents = []
+            if response and 'RESULTS' in response:
+                for res in response['RESULTS']:
+                    text = res['SENT']
+                    mrs = res['MRS']
+                    # tree: res['tree']
+                    # deriv: res['DERIV']
+                    sent = Sentence(text)
+                    sent.add(mrs)
+                    sents.append(sent)
+            return sents
+
     def parse(self, text, parse_count=None, ignore_cache=False):
         if not ignore_cache and self.cache:
             # try to fetch from cache first
@@ -444,7 +459,7 @@ class Grammar:
             # preprocessor
             if self.preps:
                 for prep in self.preps:
-                    input_text = prep.process(s)
+                    prep.process(s)
             result = parser.interact(s.text)
         if result and 'RESULTS' in result:
             top_res = result['RESULTS']

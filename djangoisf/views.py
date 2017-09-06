@@ -53,7 +53,7 @@ from django.http import HttpResponse, Http404
 from chirptext.texttaglib import TagInfo
 import coolisf
 from coolisf.util import GrammarHub
-
+from coolisf.model import Parse
 
 # ---------------------------------------------------------------------
 # CONFIGURATION
@@ -94,6 +94,20 @@ def jsonp(func):
 
 def index(request):
     return HttpResponse('coolisf-REST is up and running - coolisf-{v}/Django-{dv}'.format(v=coolisf.__version__, dv=django.get_version()), 'text/html')
+
+
+@jsonp
+def generate(request):
+    grammar = request.POST.get('grammar', '')
+    # parse_count = request.GET['parse_count']
+    mrs = request.POST.get('mrs', '')
+    print("Grammar: {}".format(grammar))
+    print("MRS: {}".format(mrs))
+    if grammar not in ghub.names:
+        raise Http404('Unknown grammar')
+    sents = [s.text for s in ghub[grammar].generate(Parse(mrs))]
+    print("Generated: {}".format(sents))
+    return sents
 
 
 @jsonp

@@ -171,17 +171,18 @@ class TestMain(unittest.TestCase):
         tags = p.dmrs().tag()
         j = p.dmrs().json()
         nodes = j['nodes']
-        self.assertEqual(len(nodes), 8)
+        self.assertGreaterEqual(len(nodes), 8)
         self.assertEqual(len(tags), 4)
-        self.assertEqual(len(nodes[2]['senses']), 1)
-        self.assertEqual(len(nodes[4]['senses']), 1)
-        self.assertEqual(len(nodes[5]['senses']), 1)
-        self.assertEqual(len(nodes[7]['senses']), 1)
-        self.assertEqual(nodes[0]['type'], 'realpred')
-        self.assertEqual(nodes[1]['type'], 'gpred')
-        self.assertEqual(nodes[0]['pos'], 'q')
-        self.assertEqual(nodes[7]['pos'], 'n')
-        logging.debug("Tagged JSON (with MFS): {}".format(p.dmrs().json_str()))
+        for node in nodes:
+            nid = node['nodeid']
+            if nid in (10004, 10005, 10006, 10008):
+                self.assertEqual(len(node['senses']), 1)
+            if nid == 10001:
+                self.assertEqual(node['type'], 'realpred')
+            if nid == 10002:
+                self.assertEqual(node['type'], 'gpred')
+            if nid == 10008:
+                self.assertEqual(node['pos'], 'n')
 
     def test_mrs_formats(self):
         text = "Some dogs chase some cats."
@@ -240,6 +241,22 @@ class TestMain(unittest.TestCase):
         # increase parse count to 10
         a_sent = self.ERG.parse(text, parse_count=10)
         self.assertEqual(len(a_sent), 10)
+
+    def test_generation(self):
+        text = 'I did it.'
+        sent = self.ERG.parse(text)
+        g_sents = self.ERG.generate(sent[0])
+        texts = [g.text for g in g_sents]
+        self.assertIn('I did it.', texts)
+        self.assertIn('It was done by me.', texts)
+
+    def test_generation_jp(self):
+        text = '雨が降る。'
+        JACYDK = self.ghub.JACYDK
+        sent = JACYDK.parse(text)
+        g_sents = JACYDK.generate(sent[0])
+        texts = [g.text for g in g_sents]
+        self.assertIn('雨 が 降る', texts)
 
     def test_mrs_xml(self):
         mrs = '''[ TOP: h0
