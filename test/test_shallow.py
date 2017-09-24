@@ -20,23 +20,23 @@ References:
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
@@ -54,16 +54,16 @@ import unittest
 from lelesk import LeLeskWSD, LeskCache
 from coolisf.shallow import Analyser, EnglishAnalyser, JapaneseAnalyser
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 
-#-------------------------------------------------------------------------------
-# DATA STRUCTURES
-#-------------------------------------------------------------------------------
 
+# -------------------------------------------------------------------------------
+# TEST SCRIPTS
+# -------------------------------------------------------------------------------
 
 class TestMain(unittest.TestCase):
 
@@ -112,7 +112,8 @@ class TestMain(unittest.TestCase):
                 # take the best one
                 tsent.add_concept(cid, w.lemma, scores[0].candidate.synset.sid, [w])
                 cid += 1
-        print(tsent.to_json())
+        tags = {c.tag for c in tsent.concepts}
+        self.assertEqual(tags, {'07376731-n', '02084071-n'})
 
     def test_jpn(self):
         a = JapaneseAnalyser()
@@ -123,7 +124,6 @@ class TestMain(unittest.TestCase):
         tsent = a.analyse(txt)
         self.assertEqual(words, ['猫', 'が', '好き', 'です', '。'])
         self.assertEqual(lemmas, ['ねこ', 'が', 'すき', 'です', '。'])
-        print("Tags: ", tags)
         self.assertEqual(tags, [('猫', '名詞-一般'), ('が', '助詞-格助詞-一般'), ('好き', '名詞-形容動詞語幹'), ('です', '助動詞'), ('。', '記号-句点'), ('EOS', '')])
         twords = [t.label for t in tsent]
         self.assertEqual(twords, ['猫', 'が', '好き', 'です', '。'])

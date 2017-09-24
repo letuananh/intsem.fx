@@ -53,12 +53,14 @@ import os
 import argparse
 import collections
 import string
-
-from chirptext.leutile import TextReport
+from collections import defaultdict as dd
+from chirptext.leutile import header, TextReport, FileHelper, Counter
+from chirptext.io import CSV
+from puchikarui import Schema
 
 from coolisf.gold_extract import *
-from coolisf.model import Sentence
-from coolisf.util import Grammar
+from coolisf.model import Sentence, ChunkDB, LexItem, WordMRS, create_chunk_db
+from coolisf import GrammarHub
 
 ########################################################################
 
@@ -166,6 +168,228 @@ def find_compound(args):
     print("Done")
 
 
+ghub = GrammarHub()
+ERG = ghub.ERG
+
+
+def parse_words(words, root='root_wn', ctx=None):
+    words_iter = iter(words)
+    total = len(words)
+    word_lemmas = [word.lemma for word in words]
+    idx = 0
+    extra = []
+    if root:
+        extra.append('-r')
+        extra.append(root)
+    for parses in ERG.parse_many_iterative(word_lemmas, 20, extra):
+        word = next(words_iter)
+        print("Processing word {}/{}: {} (root = {})".format(idx + 1, total, word, root))
+        if parses is not None and len(parses) > 0:
+            word.flag = LexItem.PROCESSED
+            matched = None
+            for parse in parses:
+                dmrs = parse.dmrs()
+                if match(word, dmrs):
+                    mrs = parse.mrs()
+                    preds = dmrs.preds()
+                    word.flag = LexItem.GOLD
+                    ctx.parse.save(ParseMRS(raw=mrs.tostring(), wid=word.ID, preds=len(preds)))
+                    matched = parse
+            if matched is None:
+                # there is no gold => store all
+                # store parses
+                for parse in parses:
+                    mrs = parse.mrs()
+                    dmrs = parse.dmrs()
+                    preds = mrs.obj().eps()
+                    for p in preds:
+                        if p.pred.pos == 'u' and p.pred.sense == 'unknown':
+                            word.flag = LexItem.UNKNOWN
+                    ctx.parse.save(ParseMRS(raw=mrs.tostring(), wid=word.ID, preds=len(preds)))
+            # save word
+            ctx.word.save(word)
+        else:
+            # flag as error
+            word.flag = LexItem.ERROR
+            ctx.word.save(word)
+        idx += 1
+
+
+def parse_chunks(args):
+    dbloc = FileHelper.abspath(args.dbloc)
+    print("Chunk DB Path: {}".format(dbloc))
+    db = ChunkDB(dbloc)
+    # insert raw words if available
+    if args.src is not None and os.path.isfile(args.src):
+        create_chunk_db(args.src, db)
+    # generate chunks
+    if args.job == 'parse':
+        with db.ctx() as ctx:
+            # process all verbs first
+            words = ctx.word.select("flag is NULL and pos = ?", ('v',))
+            parse_words(words, root='root_frag', ctx=ctx)
+            print("Non verb words")
+            # and then the rest
+            words = ctx.word.select("flag is NULL")
+            parse_words(words, root='root_frag', ctx=ctx)
+
+    elif args.job == 'error':
+        # do something
+        print("List error words")
+        with db.ctx() as ctx:
+            words = ctx.word.select("flag == ?", (LexItem.ERROR,))
+            for idx, word in enumerate(words):
+                print("Word {}/{}: {}".format(idx + 1, len(words), word))
+        pass
+    elif args.job == 'analyse':
+        # do something
+        print("Analysing")
+        with db.ctx() as ctx:
+            words = db.get_words(flag=LexItem.PROCESSED, pos=args.pos, limit=args.top, deep_select=False, ctx=ctx)
+            for idx, word in enumerate(words):
+                word.parses = db.get_parses(word, ctx=ctx)
+                print("Word {}/{}: {}".format(idx + 1, len(words), word))
+                analyse_word(word, ctx=ctx)
+        pass
+    else:
+        print("What should I do (parse/error/analyse)? ")
+
+
+def analyse_word(w, ctx):
+    iw = w.to_isf()
+    for p in iw:
+        if match(w, p.dmrs()):
+            print("[MATCHED] Word #{} ({}) => parse #{}".format(w.ID, w.lemma, p.ID))
+            if p.ID:
+                # delete the rest
+                ctx.parse.delete("wid = ? AND ID != ?", (w.ID, p.ID))
+                # flag word as gold
+                if w.flag != LexItem.GOLD:
+                    w.flag = LexItem.GOLD
+                    ctx.word.save(w, columns=('flag',))
+                    break
+        if w.flag != LexItem.GOLD:
+            preds = [p for p in p.dmrs().preds() if p != 'unknown' and p != 'udef_q']
+            if len(preds) > 1 or 'compound' in preds:
+                print("FOUND A COMPOUND")
+                w.flag = LexItem.COMPOUND
+                ctx.word.save(w, columns=('flag',))
+                break
+
+
+comp_nn = {'n'}
+comp_an = {'a', 'n'}
+comp_ne = {'named'}
+nomv = {'nominalization', 'v'}
+
+
+def analyse_compound(db, ctx, limit=None):
+    constructions = dd(set)
+    c = Counter()
+    compounds = db.get_words(flag=LexItem.COMPOUND, pos=None, limit=limit, deep_select=False, ctx=ctx)
+    ec = len(compounds)  # entry count
+    for idx, word in enumerate(compounds):
+        header("Processing {}/{}: {}".format(idx + 1, ec, word))
+        db.get_parses(word, ctx)
+        iw = word.to_isf()
+        for parse in iw:
+            d = parse.dmrs().obj()
+            eps = [e for e in d.eps() if not is_ignorable(e.pred)]
+            total = set()
+            done = False
+            for ep in eps:
+                if ep.pred.pos and ep.pred.pos in 'nav':
+                    total.add(ep.pred.pos)
+                elif ep.pred.string != 'compound':
+                    total.add(ep.pred.lemma)
+                # compound > ignore
+            if total == comp_nn and len(eps) > 1:
+                print("Found COMP NN")
+                db.flag(word, LexItem.COMP_NN, ctx)
+                done = True
+                break
+            if total == comp_ne and len(eps) > 1:
+                print("Found COMP NE")
+                db.flag(word, LexItem.COMP_NE, ctx)
+                done = True
+                break
+            elif total == comp_an:
+                print("Found COMP AN")
+                db.flag(word, LexItem.COMP_AN, ctx)
+                done = True
+                break
+            elif total == nomv and len(eps) == 2:
+                print("Found venom")
+                db.flag(word, LexItem.NOM_VERB, ctx)
+                done = True
+                break
+            elif len(eps) == 1 and eps[0].pred.pos and eps[0].pred.pos != word.pos:
+                # mismatched
+                print("Mismatched")
+                word.flag = LexItem.MISMATCHED  # just note it,
+            else:
+                print("Dunno: constr={} | eps: {}".format(total, len(eps)))
+                k = tuple(sorted(total))
+                c.count(k)
+                constructions[k].add(word.lemma)
+                # print(parse.mrs())
+                pass
+        if done:
+            continue
+        elif word.flag == LexItem.MISMATCHED:
+            print("Confirm MISMATCHED")
+            db.flag(word, LexItem.MISMATCHED, ctx)
+    # summarise
+    print("All constructions")
+    for k, l in constructions.items():
+        header(str(k))
+        print(l)
+    for k, v in c.sorted_by_count():
+        print(k, v)
+    return True
+
+
+def match(word, dmrs):
+    eps = eps = [ep for ep in dmrs.obj().eps()]
+    p = None
+    if len(eps) == 1:
+        p = eps[0].pred
+    elif len(eps) == 2 and is_unk(eps[0]):
+        p = eps[1].pred
+    elif len(eps) == 3 and is_unk(eps[0]) and is_udef(eps[1]):
+        p = eps[2].pred
+    if p is not None:
+        if p.pos == word.pos:
+            if word.lemma == p.lemma:
+                # exact matched
+                return True
+            elif p.sense:
+                parts = p.sense.split('-')
+                candidates = [p.lemma + ' ' + part for part in parts]
+                candidates.append(p.lemma + '-' + '-'.join(parts))
+                candidates.append(p.lemma + ' ' + ' '.join(parts))
+                candidates.append(p.lemma + p.sense)  # daydream
+                candidates.append(p.lemma + '-' + p.sense)
+                candidates.append(p.lemma + ' ' + p.sense)  # look up
+                candidates.append(p.lemma.replace('+', ' '))
+                if word.lemma in candidates:
+                    return True
+            # not matched
+    return False
+
+
+def is_unk(ep):
+    return ep == 'unknown_rel'
+
+
+def is_udef(ep):
+    return ep == 'udef_q'
+
+
+def is_ignorable(ep):
+    return ep in ('unknown_rel', 'udef_q', 'proper_q')
+
+
 def validate_goldtags(args):
     r = TextReport('data/valgold.txt')
     from coolisf.gold_extract import read_gold_sentences
@@ -204,6 +428,14 @@ def main():
 
     mine_preds_task = task_parsers.add_parser('mine')
     mine_preds_task.set_defaults(func=mine_preds)
+
+    parse_chunk_task = task_parsers.add_parser('chunks')
+    parse_chunk_task.add_argument('--src', help="Source file")
+    parse_chunk_task.add_argument('-t', '--top', help="Only process top K results", type=int)
+    parse_chunk_task.add_argument('-p', '--pos', help="Filter words by POS")
+    parse_chunk_task.add_argument('dbloc', help="Chunk database location", nargs="?", default="data/chunks.db")
+    parse_chunk_task.add_argument('job', help='Job to be done')
+    parse_chunk_task.set_defaults(func=parse_chunks)
 
     find_compound_task = task_parsers.add_parser('fcomp')
     find_compound_task.add_argument('filepath')

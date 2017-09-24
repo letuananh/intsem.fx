@@ -51,7 +51,7 @@ __status__ = "Prototype"
 ########################################################################
 
 from .lexsem import Lexsem, tag_gold
-from .util import GrammarHub
+from .ghub import GrammarHub
 from .model import Sentence
 
 __all__ = ['Lexsem', 'tag_gold', 'GrammarHub', 'Sentence']

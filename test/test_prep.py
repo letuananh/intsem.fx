@@ -20,23 +20,23 @@ References:
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
@@ -53,35 +53,57 @@ import os
 import unittest
 import coolisf
 from chirptext.texttaglib import TaggedSentence
-from coolisf.util import PrepManager, GrammarHub
+from coolisf.model import Reading
+from coolisf import GrammarHub
+from coolisf.processors import ProcessorManager
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 
 
-#-------------------------------------------------------------------------------
-# DATA STRUCTURES
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# TEST SCRIPTS
+# -------------------------------------------------------------------------------
 
-class TestMainApp(unittest.TestCase):
+class TestPosts(unittest.TestCase):
 
     def test_preps(self):
-        man = PrepManager()
-        man.register("mecab", "coolisf.util", "PrepMeCab")
+        man = ProcessorManager()
+        man.register("isf", "coolisf.processors.basic", "PostISF")
+        prep = man["isf"]
+        self.assertIsInstance(prep, coolisf.processors.basic.PostISF)
+        self.assertEqual(prep.name, "isf")
+        p = Reading("""[ TOP: h0
+  INDEX: e2 [ e SF: prop-or-ques ]
+  RELS: < [ unknown<0:12> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg IND: + ] ARG0: e2 ]
+          [ udef_q<0:12> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ]
+          [ _big_a_1<0:3> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x4 ]
+          [ _bad_a_at<4:7> LBL: h8 ARG0: e10 [ e SF: prop ] ARG1: x4 ARG2: i11 ]
+          [ _wolf_n_1<8:12> LBL: h8 ARG0: x4 ] >
+  HCONS: < h0 qeq h1 h6 qeq h8 > ]""")
+        prep.process(p)
+        self.assertEqual(p.dmrs().preds(), ['unknown_rel', 'udef_q_rel', '_big+bad+wolf_n_1_rel'])
+
+
+class TestPreps(unittest.TestCase):
+
+    def test_preps(self):
+        man = ProcessorManager()
+        man.register("mecab", "coolisf.processors.jp_basic", "PrepMeCab")
         prep = man["mecab"]
-        self.assertIsInstance(prep, coolisf.util.PrepMeCab)
+        self.assertIsInstance(prep, coolisf.processors.jp_basic.PrepMeCab)
         self.assertEqual(prep.name, "mecab")
         actual = prep.process("猫が好きです。")
         expected = "猫 が 好き です 。 \n"
         self.assertEqual(actual, expected)
 
     def test_dekoprep(self):
-        man = PrepManager()
-        man.register("deko", "coolisf.util", "PrepDeko")
+        man = ProcessorManager()
+        man.register("deko", "coolisf.processors.jp_basic", "PrepDeko")
         prep = man["deko"]
         sent = prep.process("猫が好きです。")
         self.assertIsInstance(sent, coolisf.model.Sentence)
@@ -108,12 +130,13 @@ class TestMainApp(unittest.TestCase):
         ghub = GrammarHub()
         sent = ghub.ERG_NLTK.parse("It rains.")
         self.assertIsNotNone(sent.shallow)
-        print(sent.shallow.tokens)
+        words = [t.lemma for t in sent.shallow]
+        self.assertEqual(words, ['It', 'rain', '.'])
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # MAIN
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main()

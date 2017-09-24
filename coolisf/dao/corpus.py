@@ -1,0 +1,551 @@
+# -*- coding: utf-8 -*-
+
+'''
+Data access layer for VisualKopasu project.
+@author: Le Tuan Anh
+'''
+
+# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+########################################################################
+
+import os
+import os.path
+import logging
+
+from puchikarui import Schema
+from chirptext.texttaglib import TagInfo
+
+from coolisf.util import is_valid_name
+from coolisf.model import Corpus, Document, Sentence, Reading
+from coolisf.model import MRS, DMRS, DMRSLayout, Node, Sense, SortInfo, Link, Predicate
+from coolisf.model import GpredValue, Lemma
+from coolisf.model import Word, Concept, CWLink
+
+
+########################################################################
+
+__author__ = "Le Tuan Anh"
+__copyright__ = "Copyright 2017, intsem.fx"
+__credits__ = []
+__license__ = "GPL"
+__version__ = "0.2"
+__maintainer__ = "Le Tuan Anh"
+__email__ = "tuananh.ke@gmail.com"
+__status__ = "Prototype"
+
+# NOTE: This is used to be a parted of VisualKopasu, but relicensed
+# & migrated into coolISF
+
+# ----------------------------------------------------------------------
+# Configuration
+# ----------------------------------------------------------------------
+
+logger = logging.getLogger(__name__)
+MY_DIR = os.path.dirname(os.path.realpath(__file__))
+INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'init_corpus.sql')
+
+
+class RichKopasu(Schema):
+
+    def __init__(self, data_source):
+        Schema.__init__(self, data_source=data_source, setup_file=INIT_SCRIPT)
+        self.add_table('corpus', ['ID', 'name', 'title'], proto=Corpus).set_id('ID')
+        self.add_table('document', ['ID', 'name', 'corpusID', 'title',
+                                    'grammar', 'tagger', 'parse_count', 'lang'],
+                       proto=Document, alias='doc').set_id('ID')
+        self.add_table('sentence', ['ID', 'ident', 'text', 'docID', 'flag', 'comment'],
+                       proto=Sentence).set_id('ID')
+        self.add_table('reading', ['ID', 'ident', 'mode', 'sentID', 'comment'],
+                       proto=Reading).set_id('ID').field_map(ident='rid')
+        self.add_table('mrs', ['ID', 'ident', 'raw', 'readingID'],
+                       proto=MRS).set_id('ID')
+        self.add_table('dmrs', ['ID', 'ident', 'cfrom', 'cto', 'surface', 'raw', 'readingID'],
+                       proto=DMRS).set_id('ID')
+        # Node related tables
+        self.add_table('dmrs_node', ['ID', 'nodeid', 'cfrom', 'cto', 'surface', 'base',
+                                     'carg', 'dmrsID', 'rplemmaID', 'rppos', 'rpsense',
+                                     'gpred_valueID', 'synsetid', 'synset_score'],
+                       proto=Node, alias='node').set_id('ID')
+        self.add_table('dmrs_node_sortinfo', ['ID', 'cvarsort', 'num', 'pers', 'gend', 'sf',
+                                              'tense', 'mood', 'prontype', 'prog', 'perf',
+                                              'ind', 'dmrs_nodeID'],
+                       proto=SortInfo, alias='sortinfo').set_id('ID')
+        self.add_table('dmrs_node_gpred_value', ['ID', 'value'],
+                       proto=GpredValue, alias='gpval').set_id('ID')
+        self.add_table('dmrs_node_realpred_lemma', ['ID', 'lemma'],
+                       proto=Lemma, alias='rplemma').set_id('ID')
+        # Link related tables
+        self.add_table('dmrs_link', ['ID', 'fromNodeID', 'toNodeID', 'dmrsID', 'post', 'rargname'],
+                       proto=Link, alias='link').set_id('ID').field_map(fromNodeID="from_nodeid", toNodeID="to_nodeid")
+        # Human annotation related tables
+        self.add_table('word', ['ID', 'sid', 'widx', 'word', 'lemma', 'pos', 'cfrom', 'cto', 'comment'],
+                       proto=Word).set_id('ID')
+        self.add_table('concept', ['ID', 'sid', 'cidx', 'clemma', 'tag', 'flag', 'comment'],
+                       proto=Concept).set_id('ID')
+        self.add_table('cwl', ['cid', 'wid'],
+                       proto=CWLink)
+
+
+class CachedTable():
+    '''
+    ORM cache
+    @auto_fill: Auto select all objects to cache when the cache is created
+    '''
+    def __init__(self, table, cache_by_field="value", ctx=None, auto_fill=True):
+        self.cacheMap = {}
+        self.cacheMapByID = {}
+        self.table = table
+        self.cache_by_field = cache_by_field
+        if auto_fill:
+            instances = self.table.select(ctx=ctx)
+            if instances is not None:
+                for instance in instances:
+                    self.cache(instance)
+
+    def cache(self, instance):
+        if instance:
+            key = getattr(instance, self.cache_by_field)
+            if key not in self.cacheMap:
+                self.cacheMap[key] = instance
+            else:
+                logger.debug(("Cache error: key [%s] exists!" % key))
+
+            key = tuple(getattr(instance, c) for c in self.table.id_cols)
+            if key not in self.cacheMapByID:
+                self.cacheMapByID[key] = instance
+            else:
+                logger.debug(("Cache error: ID [%s] exists!" % key))
+
+    def by_value(self, value, new_object=None, ctx=None):
+        if value not in self.cacheMap:
+            # insert a new record
+            if new_object is None:
+                # try to select from database first
+                results = self.table.select_single("{f}=?".format(f=self.cache_by_field), (value,), ctx=ctx)
+                if not results:
+                    # create a new instance
+                    new_object = self.table.to_obj((value,), (self.cache_by_field,))
+                    self.table.save(new_object, ctx=ctx)
+                    # select the instance again
+                    new_object = self.table.select_single("{f}=?".format(f=self.cache_by_field), (value,), ctx=ctx)
+                else:
+                    new_object = results  # Use the object from DB
+            self.cache(new_object)
+        return self.cacheMap[value]
+
+    def by_id(self, *ID, ctx=None):
+        k = tuple(ID)
+        if k not in self.cacheMapByID:
+            # select from database
+            obj = self.table.by_id(*ID, ctx=ctx)
+            self.cache(obj)
+        return self.cacheMapByID[k]
+
+
+class CorpusDAOSQLite(RichKopasu):
+
+    def __init__(self, db_path, name, auto_fill=False):
+        super().__init__(db_path)
+        self.name = name
+        self.lemmaCache = CachedTable(self.rplemma, "lemma", auto_fill=auto_fill)
+        self.gpredCache = CachedTable(self.gpval, "value", auto_fill=auto_fill)
+
+    @property
+    def db_path(self):
+        return self.ds.path
+
+    def get_corpus(self, corpus_name, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_corpus(corpus_name=corpus_name, ctx=ctx)
+        # corpus name is unique
+        return ctx.corpus.select_single('name=?', (corpus_name,))
+
+    def create_corpus(self, corpus_name, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.create_corpus(corpus_name, ctx=ctx)
+        # ctx was ensured
+        if not is_valid_name(corpus_name):
+            raise Exception("Invalid corpus name (provided: {}) - Visko only accept names using alphanumeric characters".format(corpus_name))
+        corpus = Corpus(corpus_name)
+        corpus.ID = ctx.corpus.save(corpus)
+        return corpus
+
+    def save_doc(self, doc, *fields, ctx=None):
+        if not is_valid_name(doc.name):
+            raise ValueError("Invalid doc name (provided: {}) - Visko only accept names using alphanumeric characters".format(doc.name))
+        else:
+            doc.ID = self.doc.save(doc, *fields, ctx=ctx)
+        return doc
+
+    def get_docs(self, corpusID, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_docs(corpusID=corpusID, ctx=ctx)
+        return ctx.doc.select('corpusID=?', (corpusID,))
+
+    def get_doc(self, doc_name, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_doc(doc_name=doc_name, ctx=ctx)
+        # doc.name is unique
+        return ctx.doc.select_single('name=?', (doc_name,))
+
+    def get_sents(self, docID, flag=None, add_dummy_parses=True, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_sents(docID, flag, add_dummy_parses, ctx=ctx)
+        # ctx is not None
+        where = 'docID = ?'
+        params = [docID]
+        if flag:
+            where += ' AND flag = ?'
+            params.append(flag)
+        if add_dummy_parses:
+            query = '''
+            SELECT sentence.*, count(reading.ID) AS 'parse_count'
+            FROM sentence LEFT JOIN reading
+            ON sentence.ID = reading.sentID
+            WHERE {where}
+            GROUP BY sentID ORDER BY sentence.ID;
+            '''.format(where=where)
+            rows = ctx.execute(query, params)
+            sents = []
+            for row in rows:
+                sent = self.sentence.to_obj(row)
+                sent.readings = [None] * row['parse_count']
+                sents.append(sent)
+            return sents
+        else:
+            return ctx.Sentence.select(where, params)
+
+    def query(self, query_obj):
+        return self.ds.select(query_obj.query, query_obj.params)
+
+    def note_sentence(self, sent_id, comment, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.note_sentence(sent_id, comment, ctx=ctx)
+        # save comments
+        return ctx.sentence.update((comment,), 'ID=?', (sent_id,), ['comment'])
+
+    def read_note_sentence(self, sent_id, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.read_note_sentence(sent_id, ctx=ctx)
+        return ctx.sentence.by_id(sent_id, columns=['comment']).comment
+
+    def save_sent(self, a_sentence, ctx=None):
+        """
+        Save sentence object (with all DMRSes, raws & shallow readings inside)
+        """
+        # validations
+        if a_sentence is None:
+            raise ValueError("Sentence object cannot be None")
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.save_sent(a_sentence, ctx=ctx)
+        # ctx is not None now
+        if not a_sentence.ID:
+            # choose a new ident
+            if a_sentence.ident is None or a_sentence.ident in (-1, '-1', ''):
+                # create a new ident (it must be a string)
+                a_sentence.ident = str(ctx.select_scalar('SELECT IFNULL(max(rowid), 0)+1 FROM sentence'))
+            if a_sentence.ident is None:
+                a_sentence.ident = "1"
+            # save sentence
+            a_sentence.ID = ctx.sentence.save(a_sentence)
+            # save shallow
+            if a_sentence.shallow is not None:
+                self.save_annotations(a_sentence, ctx=ctx)
+            # save readings
+            for idx, reading in enumerate(a_sentence.readings):
+                if reading.rid is None:
+                    reading.rid = idx
+                # Update sentID
+                reading.sentID = a_sentence.ID
+                self.save_reading(reading, ctx=ctx)
+        else:
+            # update sentence
+            pass
+        # Select sentence
+        return a_sentence
+
+    def save_reading(self, reading, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.save_reading(reading, ctx=ctx)
+        # ctx is not None now
+        reading.ID = ctx.reading.save(reading)
+        # Save DMRS
+        dmrs = reading.dmrs()
+        # store raw if needed
+        if dmrs.raw is None:
+            dmrs.raw = dmrs.xml_str(pretty_print=False)
+        dmrs.readingID = reading.ID
+        if dmrs.ident is None:
+            dmrs.ident = reading.rid
+        dmrs.ID = ctx.dmrs.save(dmrs)
+        # nodes and links are in layout
+        # save nodes
+        for node in dmrs.layout.nodes:
+            node.dmrsID = dmrs.ID
+            # save realpred
+            node.pred = node.predstr
+            if node.rplemma:
+                # Escape lemma
+                lemma = self.lemmaCache.by_value(node.rplemma, ctx=ctx)
+                node.rplemmaID = lemma.ID
+            # save gpred
+            if node.gpred:
+                gpred_value = self.gpredCache.by_value(node.gpred, ctx=ctx)
+                node.gpred_valueID = gpred_value.ID
+            # save sense
+            if node.sense:
+                node.synsetid = node.sense.synsetid
+                node.synset_score = node.sense.score
+            elif node.nodeid in dmrs.tags:
+                tags = dmrs.tags[node.nodeid]
+                tag = tags[0]
+                for t in tags[1:]:
+                    if t.method == TagInfo.GOLD:
+                        tag = t
+                        break
+                node.synsetid = tag.synset.sid.to_canonical()
+                node.synset_score = tag.synset.tagcount
+            node.ID = ctx.node.save(node)
+            # save sortinfo
+            node.sortinfo.dmrs_nodeID = node.ID
+            ctx.sortinfo.save(node.sortinfo)
+        # save links
+        for link in dmrs.layout.links:
+            link.dmrsID = dmrs.ID
+            if link.rargname is None:
+                link.rargname = ''
+            ctx.link.save(link)
+
+    def get_reading(self, a_reading, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_reading(a_reading, ctx=ctx)
+        # retrieve all DMRSes
+        # right now, only 1 DMRS per reading
+        a_dmrs = ctx.dmrs.select_single('readingID=?', (a_reading.ID,))
+        a_reading._dmrs = a_dmrs
+        a_dmrs.reading = a_reading
+        a_dmrs._layout = DMRSLayout(source=a_dmrs)
+        # retrieve all nodes
+        nodes = ctx.node.select('dmrsID=?', (a_dmrs.ID,))
+        for a_node in nodes:
+            # retrieve sortinfo
+            sortinfo = ctx.sortinfo.select_single('dmrs_nodeID=?', (a_node.ID,))
+            if sortinfo is not None:
+                a_node.sortinfo = sortinfo
+            if a_node.rplemmaID is not None:
+                # is a realpred
+                a_node.rplemma = self.lemmaCache.by_id(int(a_node.rplemmaID), ctx=ctx).lemma
+                a_node.pred = Predicate(Predicate.REALPRED, a_node.rplemma, a_node.rppos, a_node.rpsense)
+            if a_node.gpred_valueID:
+                # is a gpred
+                a_node.pred = self.gpredCache.by_id(int(a_node.gpred_valueID), ctx=ctx).value
+                # a_node.pred = Predicate.from_string(a_node.gpred)
+            # create sense object
+            if a_node.synsetid:
+                sense = Sense()
+                sense.synsetid = a_node.synsetid
+                sense.score = a_node.synset_score
+                sense.lemma = a_node.rplemma if a_node.rplemma else ''  # this also?
+                sense.pos = a_node.synsetid[-1]  # Do we really need this?
+                a_node.sense = sense
+                a_dmrs.tag_node(a_node.nodeid, sense.synsetid, sense.lemma, TagInfo.DEFAULT, sense.score)
+            a_dmrs.layout.add_node(a_node)
+            # next node ...
+        # retrieve all links
+        links = ctx.link.select('dmrsID=?', (a_dmrs.ID,))
+        for link in links:
+            a_dmrs.layout.add_link(link)
+        return a_reading
+
+    def delete_reading(self, readingID):
+        # delete all DMRS link, node
+        self.dmrs_link.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (readingID,))
+        self.dmrs_node_sortinfo.delete('dmrs_nodeID IN (SELECT ID FROM dmrs_node WHERE dmrsID IN (SELECT ID from dmrs WHERE readingID=?))', (readingID,))
+
+        self.dmrs_node.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (readingID,))
+        # delete all DMRS
+        self.dmrs.delete("readingID=?", (readingID,))
+        # delete readings
+        self.reading.delete("ID=?", (readingID,))
+
+    def update_reading(self, reading):
+        raise NotImplementedError
+
+    def build_search_result(self, rows, no_more_query=False):
+        if rows:
+            logger.debug(("Found: %s presentation(s)" % len(rows)))
+        else:
+            logger.debug("None was found!")
+            return []
+        sentences = []
+        sentences_by_id = {}
+        for row in rows:
+            readingID = row['readingID']
+            sentID = row['sentID']
+            sentence_ident = row['sentence_ident']
+            corpus = row['corpus']
+            text = row['text']
+            docID = row['docID']
+            if sentID in sentences_by_id:
+                # update reading
+                a_reading = Reading(ID=readingID)
+                # self.get_reading(a_reading)
+                sentences_by_id[sentID].readings.append(a_reading)
+            else:
+                if no_more_query:
+                    a_sentence = Sentence(ident=sentence_ident, text=text, docID=docID)
+                    a_sentence.corpus = corpus
+                    a_sentence.ID = sentID
+                else:
+                    a_sentence = self.get_sent(sentID, readingIDs=[], skip_details=True)
+                a_sentence.readings = []
+                a_reading = Reading(ID=readingID)
+                a_sentence.readings.append(a_reading)
+                sentences.append(a_sentence)
+                sentences_by_id[sentID] = a_sentence
+            # sentences.append(a_sentence)
+        logger.debug(("Sentence count: %s" % len(sentences)))
+        return sentences
+
+    def get_sent(self, sentID, mode=None, readingIDs=None, skip_details=False, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_sent(sentID, mode, readingIDs, skip_details, ctx=ctx)
+        # ctx was ensured
+        a_sentence = ctx.sentence.by_id(sentID)
+        if a_sentence is not None:
+            self.get_annotations(sentID, a_sentence, ctx=ctx)
+            # retrieve all readings
+            conditions = 'sentID=?'
+            params = [a_sentence.ID]
+            if mode:
+                conditions += ' AND mode=?'
+                params.append(mode)
+            if readingIDs and len(readingIDs) > 0:
+                conditions += ' AND ID IN ({params_holder})'.format(params_holder=",".join((["?"] * len(readingIDs))))
+                params.extend(readingIDs)
+            readings = ctx.reading.select(conditions, params)
+            for r in readings:
+                r.sent = a_sentence
+                a_sentence.readings.append(r)
+            for a_reading in a_sentence.readings:
+                if not skip_details:
+                    self.get_reading(a_reading, ctx=ctx)
+        else:
+            logging.debug("No sentence with ID={} was found".format(sentID))
+        # Return
+        return a_sentence
+
+    def delete_sent(self, sentID):
+        # delete all reading
+        sent = self.get_sent(sentID, skip_details=True)
+        # delete readings
+        if sent is not None:
+            for i in sent:
+                self.delete_reading(i.ID)
+        # delete words, concepts, cwl
+        self.word.delete('sid=?', (sentID,))
+        self.cwl.delete('cid IN (SELECT cid FROM concept WHERE sid=?)', (sentID,))
+        self.concept.delete('sid=?', (sentID,))
+        # delete sentence obj
+        self.sentence.delete("ID=?", (sentID,))
+
+    def get_annotations(self, sentID, sent_obj=None, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_annotations(sentID, sent_obj, ctx=ctx)
+        # ctx is not None now
+        if sent_obj is None:
+            sent_obj = self.get_sent(sentID, skip_details=True, ctx=ctx)
+        # select words
+        # select concepts
+        sent_obj.words = ctx.word.select("sid=?", (sentID,))
+        wmap = {w.ID: w for w in sent_obj.words}
+        sent_obj.concepts = ctx.concept.select("sid=?", (sentID,))
+        cmap = {c.ID: c for c in sent_obj.concepts}
+        # link concept-word
+        links = ctx.cwl.select("cid IN (SELECT ID from concept WHERE sid=?)", (sentID,))
+        for lnk in links:
+            cmap[lnk.cid].words.append(wmap[lnk.wid])
+        return sent_obj
+
+    def save_annotations(self, sent_obj, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.save_annotations(sent_obj, ctx=ctx)
+        # ctx is not None now ...
+        for word in sent_obj.words:
+            word.sid = sent_obj.ID
+            word.ID = ctx.word.save(word)
+        for concept in sent_obj.concepts:
+            concept.sid = sent_obj.ID
+            concept.ID = ctx.concept.save(concept)
+            for word in concept.words:
+                # save links
+                logger.debug("Saving", CWLink(wid=word.ID, cid=concept.ID))
+                ctx.cwl.save(CWLink(wid=word.ID, cid=concept.ID))
+                pass
+
+    def flag_sent(self, sid, flag, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.flag_sent(sid, flag, ctx=ctx)
+        # update flag
+        return ctx.sentence.update(new_values=(flag,), where='ID=?', where_values=(sid,), columns=('flag',))
+
+    def next_sentid(self, sid, flag=None, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.next_sentid(sid, flag, ctx=ctx)
+        sent_obj = ctx.sentence.by_id(sid, columns=('ID', 'docID'))
+        docid = sent_obj.docID
+        where = 'ID > ? AND docID == ?'
+        params = [sid, docid]
+        if flag is not None:
+            where += " AND flag = ?"
+            params.append(flag)
+        next_sent = ctx.sentence.select_single(where=where, values=params, orderby="docID, ID", limit=1)
+        return next_sent.ID if next_sent is not None else None
+
+    def prev_sentid(self, sid, flag=None, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.prev_sentid(sid, flag, ctx=ctx)
+        sent_obj = ctx.sentence.by_id(sid, columns=('ID', 'docID'))
+        docid = sent_obj.docID
+        where = 'ID < ? AND docID == ?'
+        params = [sid, docid]
+        if flag is not None:
+            where += " AND flag = ?"
+            params.append(flag)
+        prev_sent = ctx.sentence.select_single(where=where, values=params, orderby="docID DESC, ID DESC", limit=1)
+        return prev_sent.ID if prev_sent is not None else None

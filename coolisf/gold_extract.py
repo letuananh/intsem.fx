@@ -66,7 +66,7 @@ from chirptext.leutile import Counter
 from chirptext.texttaglib import TaggedDoc, TagInfo
 
 from yawlib.models import SynsetID
-from coolisf.model import Sentence
+from coolisf.model import Document, Sentence
 from coolisf.util import read_ace_output
 
 from .lexsem import tag_gold
@@ -157,6 +157,7 @@ def extract_tsdb_gold():
             if len(parts) != 4:
                 print("WARNING: INVALID LINE")
     print("All done!")
+    return True
 
 
 def read_data(file_path):
@@ -226,50 +227,47 @@ def build_root_node():
 
 def read_gold_mrs():
     # Read gold profile from ITSDB (ERG-TRUNK)
-    sentences = []
     # Generate INPUT_MRS file (gold.out.txt) if needed
     if not os.path.isfile(GOLD_MRS_FILE):
         extract_tsdb_gold()
+    doc = Document(name="speckled", title="The Adventure of the Speckled Band")
     with open(GOLD_MRS_FILE) as input_mrs:
         lines = input_mrs.readlines()
         for line in lines:
             (ntuid, tsdbid, text, mrs) = line.split('\t')
-            sent = Sentence(text=text, sid=int(ntuid))
+            sent = doc.new(text=text, ident=int(ntuid))
             if mrs and len(mrs.strip()) > 0:
                 sent.add(mrs_str=mrs)
-            sentences.append(sent)
-    return sentences
+    return doc
 
 
-def read_gold_sents():
+def read_gold_sents(perform_wsd=False):
     tagdoc.read()
     filter_wrong_senses(tagdoc)
-    sentences = read_gold_mrs()
+    doc = read_gold_mrs()
     # sense tagging
-    for sent in sentences:
+    for sent in doc:
         if len(sent) == 0:
-            print("WARNING: empty sentence #{}: {}".format(sent.sid, sent.text))
+            print("WARNING: empty sentence #{}: {}".format(sent.ident, sent.text))
             continue
         dmrs = sent[0].dmrs()
-        sent.shallow = tagdoc.sent_map[str(sent.sid)]
+        print("Processing sentence #{}".format(sent))
+        sent.shallow = tagdoc.sent_map[str(sent.ident)]
         tag_gold(dmrs, sent.shallow, sent.text)
-        sent.tag(method=TagInfo.MFS)
+        if perform_wsd:
+            sent.tag(method=TagInfo.MFS)
         sent.tag_xml()
-    return sentences
+    return doc
 
 
 def generate_gold_profile():
-    sentences = read_gold_sents()
+    doc = read_gold_sents()
     # Process data
     print("Creating XML file ...")
     # build root XML node for data file
     isf_node = build_root_node()
     # Add document nodes
-    doc_node = etree.SubElement(isf_node, 'document')
-    doc_node.set('name', 'speckled band')
-    # export to XML
-    for sent in sentences:
-        sent.to_xml_node(doc_node)
+    doc.to_xml_node(isf_node)
     # write to file
     with open(OUTPUT_ISF, 'wb') as output_isf:
         print("Making it beautiful ...")
@@ -307,9 +305,9 @@ def export_to_visko(sents, doc_path, pretty_print=True):
     print("Exporting %s sentences to Visko" % (len(sents),))
     print("Visko doc path: {}".format(doc_path))
     for sent in sents:
-        sentpath = os.path.join(doc_path, str(sent.sid) + '.xml.gz')
+        sentpath = os.path.join(doc_path, str(sent.ident) + '.xml.gz')
         with gzip.open(sentpath, 'w') as f:
-            f.write(etree.tostring(sent.to_visko_xml(), encoding='utf-8', pretty_print=pretty_print))
+            f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
     print("Done!")
 
 

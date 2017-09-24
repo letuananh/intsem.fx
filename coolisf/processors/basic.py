@@ -1,24 +1,22 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
-Test script for coolisf/virgo
+Basic Japanese processors
+
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-    Python unittest documentation:
-        https://docs.python.org/3/library/unittest.html
     Python documentation:
         https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 0257 - Python Docstring Conventions:
+    ACE:
+        http://moin.delph-in.net/AceOptions
+    PEP 257 - Python Docstring Conventions:
         https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
 
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -38,47 +36,57 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, intsem.fx"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
+__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
+__copyright__ = "Copyright 2015, intsem.fx"
 __credits__ = []
+__license__ = "MIT"
+__version__ = "0.1"
+__maintainer__ = "Le Tuan Anh"
+__email__ = "<tuananh.ke@gmail.com>"
+__status__ = "Prototype"
 
 ########################################################################
 
-import os
-import unittest
+import logging
 
-from coolisf import GrammarHub
 
-# -------------------------------------------------------------------------------
+from coolisf.shallow import EnglishAnalyser
+from coolisf.model import Sentence
+from coolisf.morph import Transformer
+from .base import Processor
+
+
+##########################################
 # CONFIGURATION
-# -------------------------------------------------------------------------------
+##########################################
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-
-# -------------------------------------------------------------------------------
-# TEST SCRIPTS
-# -------------------------------------------------------------------------------
-
-class TestVirgo(unittest.TestCase):
-
-    ghub = GrammarHub()
-
-    def test_virgo(self):
-        s = self.ghub.VRG.parse("chim bay.")
-        actual = [n.predstr for n in s.edit(0).nodes]
-        expected = ['_chim_n', 'exist_q', '_bay_v']
-        self.assertEqual(actual, expected)
+########################################################################
 
 
-# -------------------------------------------------------------------------------
-# MAIN
-# -------------------------------------------------------------------------------
+class PostISF(Processor):
 
-if __name__ == "__main__":
-    unittest.main()
+    def __init__(self, info, name="isf"):
+        super().__init__(info, name)
+        self.transformer = Transformer()
+
+    def process(self, parse):
+        self.transformer.apply(parse)
+        return parse
+
+
+class PrepNLTK(Processor):
+
+    def __init__(self, info, name="nltk"):
+        super().__init__(info, name)
+        self.parser = EnglishAnalyser()
+
+    def process(self, sent):
+        if isinstance(sent, Sentence):
+            sent.shallow = self.parser.analyse(sent.text)
+            sent.text = ' '.join(t.label for t in sent.shallow.tokens)
+            return sent
+        else:
+            return self.process(Sentence(sent))

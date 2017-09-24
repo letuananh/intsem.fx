@@ -219,7 +219,7 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
             m = match(c, ep, sent_text)
             if m:
                 matched_preds.append((c, ep.nodeid, ep.pred))
-                dmrs.tags[ep.nodeid].append((Synset(c.tag, lemma=c.clemma), TagInfo.GOLD))
+                dmrs.tag_node(ep.nodeid, c.tag, c.clemma, TagInfo.GOLD)
                 eps.remove(ep)
                 matched = True
                 break

@@ -52,8 +52,8 @@ from django.http import HttpResponse, Http404
 
 from chirptext.texttaglib import TagInfo
 import coolisf
-from coolisf.util import GrammarHub
-from coolisf.model import Parse
+from coolisf import GrammarHub
+from coolisf.model import Reading
 
 # ---------------------------------------------------------------------
 # CONFIGURATION
@@ -105,7 +105,7 @@ def generate(request):
     print("MRS: {}".format(mrs))
     if grammar not in ghub.names:
         raise Http404('Unknown grammar')
-    sents = [s.text for s in ghub[grammar].generate(Parse(mrs))]
+    sents = [s.text for s in ghub[grammar].generate(Reading(mrs))]
     print("Generated: {}".format(sents))
     return sents
 

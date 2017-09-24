@@ -2,6 +2,7 @@
 *_flymake.py
 # intsem.fx
 *.*#
+data/*.db
 data/speckled*
 data/erg*
 data/mwe*

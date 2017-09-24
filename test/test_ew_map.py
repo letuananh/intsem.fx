@@ -56,10 +56,11 @@ import logging
 
 from coolisf.ergex import read_erg_lex, find_mwe
 from coolisf.model import PredSense
-from coolisf.util import GrammarHub
+from coolisf import GrammarHub
 
-########################################################################
-
+# ------------------------------------------------------------------------------
+# CONFIGURATION
+# ------------------------------------------------------------------------------
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
@@ -70,39 +71,47 @@ TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 
 
+# ------------------------------------------------------------------------------
+# TEST SCRIPTS
+# ------------------------------------------------------------------------------
+
 class TestMain(unittest.TestCase):
 
     lexdb = read_erg_lex()
     ERG = GrammarHub().ERG
 
     def test_find_mwe(self):
-        mwe_list = find_mwe()
-        print(list(mwe_list)[:5])
+        mwe_list = list(find_mwe())[:5]
+        self.assertEqual(len(mwe_list), 5)
 
     def test_read_erg(self):
         # get non empty rels
         nonempty = [x for x in self.lexdb if x.keyrel != '\\N']
-        print(nonempty[50:100])
+        self.assertGreater(len(nonempty), 30000)
 
     def test_erg2wn(self):
         d = PredSense.search_pred_string('_test_v_1')
         self.assertEqual([str(x.synsetid) for x in d], ['02531625-v', '02533109-v', '00786458-v', '02745713-v', '01112584-v', '00920778-v', '00669970-v'])
         pass
 
-    def test_extract_mwe(self):
-        # extract_mwe()
-        pass
+    def test_known_concepts(self):
+        preds = PredSense.search_pred_string('_bark_v_1')
+        for p in preds:
+            self.assertEqual((p.sid.pos, p.lemma), ('v', 'bark'))
+        preds = PredSense.search_pred_string('_bark_n_1')
+        for p in preds:
+            self.assertEqual((p.sid.pos, p.lemma), ('n', 'bark'))
+        d = PredSense.search_pred_string('_dog_v_1')
+        self.assertTrue(d)
+        d = PredSense.search_pred_string('_look_v_up')
+        self.assertTrue(d)
 
-    def test_extract_rel(self):
-        # extract_all_rel()
-        pass
+    def test_known_mwe(self):
+        d = PredSense.search_pred_string('_green+tea_n_1')
+        self.assertEqual(d[0].synsetid, '07935152-n')
+
 
 ########################################################################
 
-
-def main():
-    unittest.main()
-
-
 if __name__ == "__main__":
-    main()
+    unittest.main()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Test script for coolisf/jacy
+Test script for ghub
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
@@ -53,42 +53,58 @@ import os
 import unittest
 
 from coolisf import GrammarHub
+from coolisf.dao import CorpusDAOSQLite
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-txt = '雨 が 降る 。'
-txt2 = '猫が好きです。'
-
-#-------------------------------------------------------------------------------
-# DATA STRUCTURES
-#-------------------------------------------------------------------------------
 
 
-class TestJacy(unittest.TestCase):
+# -------------------------------------------------------------------------------
+# TEST SCRIPTS
+# -------------------------------------------------------------------------------
 
+class TestVirgo(unittest.TestCase):
+
+    db = CorpusDAOSQLite(":memory:", "memdb")
     ghub = GrammarHub()
 
-    def test_jacy(self):
-        # without mecab
-        s = self.ghub.JACY.parse(txt)
-        self.assertTrue(s)
-        s = self.ghub.JACY.parse(txt2)
-        self.assertFalse(s)
-        # with mecab
-        s = self.ghub.JACYMC.parse(txt)
-        self.assertTrue(s)
-        s = self.ghub.JACYMC.parse(txt2)
-        self.assertTrue(s)
-        self.assertEqual(s.text, '猫 が 好き です 。 \n')
-        print(s.text)
+    def test_erg(self):
+        db = self.db
+        with self.db.ctx() as ctx:
+            # create sample sentence
+            corpus = db.create_corpus('test', ctx=ctx)
+            doc = corpus.new('testdoc')
+            db.save_doc(doc, ctx=ctx)
+            s = self.ghub.ERG.parse("It works.", parse_count=1)
+            j1 = s[0].dmrs().json()
+            s.docID = doc.ID
+            db.save_sent(s, ctx=ctx)
+            # select back
+            sent = db.get_sent(s.ID, ctx=ctx)
+            j2 = sent[0].dmrs().json()
+            self.assertEqual(j1, j2)
+
+    def test_ghub_to_corpus(self):
+        db = self.db
+        with self.db.ctx() as ctx:
+            # create sample sentence
+            corpus = db.create_corpus('test', ctx=ctx)
+            doc = corpus.new('testdoc')
+            db.save_doc(doc, ctx=ctx)
+            s = self.ghub.parse("Abraham's dog barked.", "ERG", pc=1)
+            s.docID = doc.ID
+            db.save_sent(s, ctx=ctx)
+            # select back
+            sent = db.get_sent(s.ID, ctx=ctx)
+            print(sent[0])
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # MAIN
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main()

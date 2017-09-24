@@ -1,46 +1,54 @@
 {
-  "grammars": {
-    "ERG": {
-      "path": "data/erg.dat",
-      "name": "ERG",
-      "args": ["-n", "5"]
+    "grammars": {
+        "ERG": {
+            "path": "data/erg.dat",
+            "name": "ERG",
+            "args": ["-n", "5"]
+        },
+        "ERG_ISF": {
+            "path": "data/erg.dat",
+            "name": "ERG/ISF",
+            "args": ["-n", "5"],
+            "posts": ["isf"]
+        },
+        "ERG_NLTK": {
+            "path": "data/erg.dat",
+            "name": "ERG/NTLK",
+            "args": ["-n", "5"],
+            "preps": ["nltk"]
+        },
+        "JACYDK": {
+            "path": "data/jacy.dat",
+            "name": "JACY/Deko",
+            "args": ["-n", "5"],
+            "preps": ["deko"]
+        },
+        "JACYMC": {
+            "path": "data/jacy.dat",
+            "name": "JACY/MeCab",
+            "args": ["-n", "5"],
+            "preps": ["mecab"]
+        },
+        "JACY": {
+            "name": "JACY",
+            "path": "data/jacy.dat",
+            "args": ["-n", "5"]
+        },
+        "VRG": {
+            "name": "Virgo",
+            "path": "data/virgo.dat",
+            "args": ["-n", "5"]
+        }
     },
-    "ERG_NLTK": {
-      "path": "data/erg.dat",
-      "name": "ERG/NTLK",
-      "args": ["-n", "5"],
-      "preps": ["nltk"]
+    "preprocessors": {
+        "mecab": {"module": "coolisf.processors.jp_basic", "class": "PrepMeCab"},
+        "deko": {"module": "coolisf.processors.jp_basic", "class": "PrepDeko"},
+        "nltk": {"module": "coolisf.processors.basic", "class": "PrepNLTK"}
     },
-
-    "JACYDK": {
-      "path": "data/jacy.dat",
-      "name": "JACY/Deko",
-      "args": ["-n", "5"],
-      "preps": ["deko"]
+    "postprocessors": {
+        "isf": {"module": "coolisf.processors.basic", "class": "PostISF"}
     },
-    "JACYMC": {
-      "path": "data/jacy.dat",
-      "name": "JACY/MeCab",
-      "args": ["-n", "5"],
-      "preps": ["mecab"]
-    },
-    "JACY": {
-      "name": "JACY",
-      "path": "data/jacy.dat",
-      "args": ["-n", "5"]
-    },
-    "VRG": {
-      "name": "Virgo",
-      "path": "data/virgo.dat",
-      "args": ["-n", "5"]
-    }
-  },
-  "preprocessors": {
-    "mecab": {"module": "coolisf.util", "class": "PrepMeCab"},
-    "deko": {"module": "coolisf.util", "class": "PrepDeko"},
-    "nltk": {"module": "coolisf.util", "class": "PrepNLTK"}
-  },
-  "cache": "data/isf_parses.db",
-  "ace": "~/bin/ace",
-  "acecache": "data/isf_ace.db"
+    "cache": "data/isf_parses.db",
+    "ace": "~/bin/ace",
+    "acecache": "data/isf_ace.db"
 }

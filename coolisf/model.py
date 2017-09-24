@@ -18,23 +18,23 @@ References:
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, intsem.fx"
@@ -49,13 +49,14 @@ __status__ = "Prototype"
 
 
 import io
+import copy
 import json
 import logging
+# import threading
 from collections import defaultdict as dd
-
+from collections import namedtuple
 from lxml import etree
-
-
+# delphin
 from delphin.extra.latex import dmrs_tikz_dependency
 from delphin.mrs import simplemrs
 from delphin.mrs import simpledmrs
@@ -64,62 +65,223 @@ from delphin.mrs import Mrs
 from delphin.mrs import Dmrs
 from delphin.mrs.components import Pred
 from delphin.mrs.components import normalize_pred_string
-from chirptext.leutile import StringTool
-from chirptext.texttaglib import TagInfo
+
+from chirptext.anhxa import update_data
+from chirptext.leutile import StringTool, header
+from chirptext.texttaglib import TagInfo, TaggedSentence, Token
+from chirptext.io import CSV
 from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
-from .mwemap import MWE_ERG_PRED_LEMMA
+from puchikarui import Schema
+
+from coolisf.parsers import parse_dmrs_str
+from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
 
 
 ########################################################################
-
+# Configuration
+########################################################################
 
 logger = logging.getLogger()
 
 
-class Sentence(object):
+########################################################################
+# Models
+########################################################################
 
-    def __init__(self, text='', sid=-1):
-        self.text = StringTool.strip(text)
-        self.sid = sid
-        self.shallow = None
-        self.comment = None
-        self.flag = None
-        self.parses = list()
+class Corpus(object):
+    '''
+    A corpus wrapper
+    '''
+    def __init__(self, name='', title=''):
+        self.ID = None
+        self.name = name
+        self.title = title
+        self.documents = []
+        pass
 
-    def add(self, mrs_str=None, dmrs_xml=None):
-        p = Parse(mrs_str, dmrs_xml, self)
-        self.parses.append(p)
-        return p
+    def new(self, name):
+        ''' Create a new document and add it to this corpus '''
+        doc = Document(name=name)
+        doc.corpusID = self.ID
+        self.documents.append(doc)
+        return doc
 
-    def __getitem__(self, key):
-        return self.parses[key]
 
-    def __len__(self):
-        return len(self.parses)
+class Document(object):
+
+    def __init__(self, name='', corpusID=None, title='', grammar=None, tagger=None, parse_count=None, lang=None):
+        self.ID = None
+        self.name = name
+        self.corpusID = corpusID
+        self.title = title if title else name
+        self.grammar = grammar
+        self.tagger = tagger
+        self.parse_count = parse_count
+        self.lang = lang
+        self.corpus = None
+        self.sentences = []
+        pass
+
+    def add(self, sent):
+        ''' Add a sentence '''
+        sent.docID = self.ID
+        sent.doc = self
+        self.sentences.append(sent)
+
+    def new(self, text='', ident=None):
+        sent = Sentence(text=text, ident=ident)
+        self.add(sent)
+        return sent
 
     def __str__(self):
+        return "Doc#{id}".format(id=self.ID)
+
+    def __len__(self):
+        return len(self.sentences)
+
+    def __getitem__(self, idx):
+        return self.sentences[idx]
+
+    def __iter__(self):
+        return iter(self.sentences)
+
+    def to_xml_node(self, corpus_node=None, with_raw=True):
+        doc_node = etree.Element('document')
+        if corpus_node is not None:
+            corpus_node.append(doc_node)
+        doc_node.set('id', self.ID if self.ID else '')
+        doc_node.set('name', self.name if self.name else '')
+        doc_node.set('title', self.title if self.title else '')
+        for sent in self.sentences:
+            sent.to_xml_node(doc_node=doc_node, with_raw=with_raw)
+
+
+class Sentence(object):
+
+    NONE = 0
+    GOLD = 1
+    ERROR = 2
+    WARNING = 3
+
+    def __init__(self, text='', ID=None, ident=None, docID=None, doc=None):
+        # corpus management
+        self.ID = ID
+        self.ident = ident
+        self.filename = None
+        self.docID = docID
+        self.doc = doc
+        self.corpus = None
+        self.collection = None
+        # sentence information
+        self.text = StringTool.strip(text)
+        self.readings = []
+        # human annotation layer
+        self.flag = None
+        self._shallow = None
+        self.comment = None
+        self.words = []
+        self.concepts = []
+        self.cmap = {}
+        self.wmap = {}
+
+    @property
+    def shallow(self):
+        if not self.words:
+            return None
+        else:
+            tsent = TaggedSentence(self.text)
+            for word in self.words:
+                tk = tsent.add_token(word.word, word.cfrom, word.cto)
+                if word.lemma:
+                    tk.tag(word.lemma, tagtype=Token.LEMMA)
+                if word.pos:
+                    tk.tag(word.pos, tagtype=Token.POS)
+                if word.comment:
+                    tk.tag(word.comment, tagtype=Token.COMMENT)
+            for concept in self.concepts:
+                wids = [self.words.index(w) for w in concept.words]
+                c = tsent.tag(concept.clemma, concept.tag, *wids)
+                if concept.flag:
+                    c.flag = concept.flag
+                if concept.comment:
+                    c.comment = concept.comment
+                pass
+            return tsent
+        pass
+
+    @shallow.setter
+    def shallow(self, tagged_sent):
+        ''' Import a chirptext.texttaglib.TaggedSentence as human annotations '''
+        self._shallow = tagged_sent
+        # add words
+        word_map = {}
+        for idx, w in enumerate(tagged_sent):
+            wobj = Word(widx=idx, word=w.label, lemma=w.lemma, pos=w.pos, cfrom=w.cfrom, cto=w.cto, sent=self)
+            if w.comment:
+                wobj.comment = w.comment
+            word_map[w] = wobj
+            self.words.append(wobj)
+        # add concepts
+        for idx, c in enumerate(tagged_sent.concepts):
+            cobj = Concept(cidx=idx, clemma=c.clemma, tag=c.tag, sent=self)
+            cobj.comment = c.comment if c.comment else ''
+            cobj.flag = c.flag if c.flag else ''
+            self.concepts.append(cobj)
+            # add cwlinks
+            for w in c.words:
+                wobj = word_map[w]
+                cobj.words.append(wobj)
+
+    def is_gold(self):
+        return self.flag == Sentence.GOLD
+
+    def is_tagged(self):
+        return self.flag in (Sentence.GOLD, Sentence.ERROR, Sentence.WARNING)
+
+    def is_error(self):
+        return self.flag == Sentence.ERROR
+
+    def is_warning(self):
+        return self.flag == Sentence.WARNING
+
+    def add(self, mrs_str=None, dmrs_xml=None, dmrs_str=None):
+        ''' Add a new reading to this sentence '''
+        r = Reading(mrs_str, dmrs_xml, self)
+        if dmrs_str is not None:
+            j = parse_dmrs_str(dmrs_str)
+            if r.dmrs() is None:
+                r._dmrs = DMRS(reading=r)
+            r.dmrs().from_json(j)
+        self.readings.append(r)
+        return r
+
+    def __getitem__(self, key):
+        ''' Get a reading by index '''
+        return self.readings[key]
+
+    def __len__(self):
+        ''' Total readings '''
+        return len(self.readings)
+
+    def __iter__(self):
+        return iter(self.readings)
+
+    def __repr__(self):
         return "%s (%s mrs(es))" % (self.text, len(self))
 
-    def to_xml_node(self, doc_node=None):
-        sent_node = etree.Element('sentence', sid=str(self.sid))
-        # store flag
-        if self.flag is not None:
-            sent_node.set('flag', str(self.flag))
-        if doc_node is not None:
-            doc_node.append(sent_node)
-        text_node = etree.SubElement(sent_node, 'text')
-        text_node.text = self.text
-        # store comment
-        if self.comment is not None:
-            comment_node = etree.SubElement(sent_node, 'comment')
-            comment_node.text = etree.CDATA(self.comment)
-        dmrses_node = etree.SubElement(sent_node, 'dmrses')
-        if len(self) > 0:
-            for parse in self:
-                dmrses_node.append(parse.dmrs().xml())
-        return sent_node
+    def __str__(self):
+        col = self.collection.name if self.collection else ''
+        cor = self.corpus.name if self.corpus else ''
+        did = self.docID if self.docID else self.doc.name if self.doc else ''
+        sid = "#{}".format(self.ID) if self.ID else ''
+        ident = "({})".format(self.ident) if self.ident else ''
+        path = "/".join(str(c) for c in (col, cor, did, sid) if c)
+        return "{p}{ident}:`{t}`".format(p=path, ident=ident, t=self.text)
+
+    def edit(self, key):
+        return self[key].edit()
 
     def tag(self, method=None):
         for parse in self:
@@ -131,15 +293,14 @@ class Sentence(object):
             parse.dmrs().tag_xml(method=method, update_back=update_back)
         return self
 
-    def to_xml_str(self, doc_node=None, pretty_print=True):
-        xml_node = self.to_xml_node(doc_node)
-        return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
-
-    def to_visko_xml(self, with_raw=True):
+    def to_xml_node(self, doc_node=None, with_raw=True, with_shallow=True):
         sent_node = etree.Element('sentence')
-        sent_node.set('id', str(self.sid))
+        sent_node.set('id', str(self.ident) if self.ident else '')
         sent_node.set('version', '0.1')
         sent_node.set('lang', 'eng')
+        # add to doc_node if available
+        if doc_node is not None:
+            doc_node.append(sent_node)
         # store flag
         if self.flag is not None:
             sent_node.set('flag', str(self.flag))
@@ -150,50 +311,61 @@ class Sentence(object):
         if self.comment is not None:
             comment_node = etree.SubElement(sent_node, 'comment')
             comment_node.text = etree.CDATA(self.comment)
-        for id, parse in enumerate(self):
+        for idx, reading in enumerate(self):
             intp_node = etree.SubElement(sent_node, 'reading')
-            intp_node.set('id', str(id + 1))
-            intp_node.set('mode', 'active' if id == 0 else 'inactive')
+            intp_node.set('id', str(idx + 1))
+            intp_node.set('mode', 'active' if idx == 0 else 'inactive')
             # store MRS raw
-            if parse.mrs():
+            if reading.mrs():
                 mrs_node = etree.SubElement(intp_node, 'mrs')
-                mrs_node.text = etree.CDATA(parse.mrs().tostring())
+                mrs_node.text = etree.CDATA(reading.mrs().tostring())
             # store DMRS
-            intp_node.append(parse.dmrs().xml())
+            intp_node.append(reading.dmrs().xml())
             # store shallow if needed
-            if self.shallow:
+            if with_shallow and self.shallow is not None:
                 shallow_node = etree.SubElement(sent_node, 'shallow')
                 shallow_node.text = json.dumps(self.shallow.to_json())
         return sent_node
 
-    def to_visko_xml_str(self, with_raw=True, pretty_print=True):
-        xml_node = self.to_visko_xml(with_raw)
+    def to_xml_str(self, doc_node=None, with_raw=True, with_shallow=True, pretty_print=True):
+        xml_node = self.to_xml_node(doc_node, with_raw, with_shallow)
         return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
 
     def to_latex(self):
         return dmrs_tikz_dependency([p.dmrs().obj() for p in self])
 
 
-class Parse(object):
+class Reading(object):
+
+    INACTIVE = 0
+    ACTIVE = 1
 
     def __init__(self, mrs_raw=None, dmrs_raw=None, sent=None):
+        # corpus management
+        self.ID = None
+        self.rid = None  # ident?
+        self.mode = None  # INACTIVE/ACTIVE
+        self.sentID = None
+        self.sent = sent
+        # reading information
         self._mrs = None  # These should never be accessed directly
-        self._dmrs = None
         if mrs_raw is not None and len(mrs_raw) > 0:
             self.mrs(mrs_raw)
+        self._dmrs = None
         if dmrs_raw is not None and len(dmrs_raw) > 0:
             self.dmrs(dmrs_raw)
-        self.sent = sent
-        self.ID = None  # Visko integration
-        self.ident = None  # Visko integration
+        # annotation
+        self.comment = None
 
     def update_mrs(self):
+        # Generate MRS from DMRS
         if self._dmrs is not None:
             self._mrs = self.dmrs().to_mrs()
 
-    def update_dmrs(self, with_raw=True):
+    def update_dmrs(self, with_raw=False):
+        # Generate DMRS from MRS
         if self._mrs:
-            self._dmrs = self.mrs().to_dmrs(with_raw=True)
+            self._dmrs = self.mrs().to_dmrs(with_raw=with_raw)
 
     def mrs(self, mrs_raw=None):
         if mrs_raw is not None:
@@ -209,16 +381,31 @@ class Parse(object):
             self.update_dmrs()
         return self._dmrs
 
+    def edit(self):
+        return self.dmrs().edit()
+
+    def __repr__(self):
+        return "Reading(ID={rid}, mode={mode})".format(rid=self.rid, mode=self.mode)
+
+    def __str__(self):
+        return str(self.mrs().tostring(False))
+
 
 class MRS(object):
 
-    def __init__(self, mrs_raw, parse=None):
+    def __init__(self, mrs_raw, reading=None):
+        # corpus management
+        self.ID = None
+        self.ident = None
+        self.readingID = reading.ID if reading is not None else None
+        # data
         self._raw = mrs_raw
         self._obj = None
-        self.parse = parse
+        self.reading = reading
 
-    def __str__(self):
-        return self.tostring()
+    @property
+    def raw(self):
+        return self._raw
 
     def obj(self):
         ''' Get pydelphin MRS object
@@ -227,6 +414,9 @@ class MRS(object):
             self._obj = simplemrs.loads_one(self._raw)
         return self._obj
 
+    # ---------------------
+    # Interchange formats
+    # ---------------------
     def json(self):
         return Mrs.to_dict(self.obj(), properties=True)
 
@@ -234,11 +424,7 @@ class MRS(object):
         '''MRS data in JSON format'''
         return json.dumps(self.json())
 
-    def tostring(self, pretty_print=True):
-        '''prettified MRS string'''
-        return simplemrs.dumps_one(self.obj(), pretty_print=pretty_print)
-
-    def to_dmrs(self, with_raw=True):
+    def to_dmrs(self, with_raw=False):
         xml_str = dmrx.serialize([self.obj()])
         dmrs_node = etree.XML(xml_str)[0]
         # insert RAW to dmrs_xml
@@ -246,53 +432,114 @@ class MRS(object):
             raw_node = etree.Element('raw')
             raw_node.text = etree.CDATA(self.tostring())
             dmrs_node.insert(0, raw_node)
-        return DMRS(etree.tostring(dmrs_node).decode('utf-8'), parse=self.parse)
+        return DMRS(etree.tostring(dmrs_node).decode('utf-8'), reading=self.reading)
+
+    def tostring(self, pretty_print=True):
+        '''prettified MRS string'''
+        return simplemrs.dumps_one(self.obj(), pretty_print=pretty_print)
+
+    def __str__(self):
+        return self.tostring()
+
+
+SenseTag = namedtuple("SenseTag", ("synset", "method"))
 
 
 class DMRS(object):
-    def __init__(self, dmrs_xml=None, parse=None, tags=None):
-        self.parse = parse
-        # Internal properties, should NOT be accessed directly
-        self._raw = dmrs_xml  # only support DMRS XML format for now
-        self._obj = None  # pydelphin object
-        self._node = None  # xml_node
-        self.tags = tags if tags else dd(list)
-        # Visko integration
+
+    def __init__(self, dmrs_xml=None, reading=None, tags=None):
+        # Corpus management
         self.ID = None
         self.ident = None
+        self.readingID = reading.ID if reading is not None else None
+        self.reading = reading
+        # DMRS information
+        self.cfrom = -1
+        self.cto = -1
+        self.surface = None
+        # Internal properties, should NOT be accessed directly
+        self._raw = dmrs_xml  # only support DMRS XML format for now
+        self._layout = None  # editable DMRS
+        self._obj = None  # pydelphin object
+        self._node = None  # xml_node cache
+        self.tags = dd(list)  # sense tagging
+        if tags:
+            self.tags.update(tags)
         # find tags in XML if available
-        self.find_tags()
+        if self._raw is not None:
+            self.find_tags()
 
-    def update(self, xml_node):
+    @property
+    def raw(self):
+        return self._raw
+
+    @raw.setter
+    def raw(self, value):
+        self.reset(raw=value)
+
+    @property
+    def layout(self):
+        if self._layout is None:
+            self._layout = self.edit()
+        return self._layout
+
+    def reset(self, raw=None, layout=None, obj=None, node=None, tags=None):
+        # This should ONLY be used in case of changing internal layout
+        self._raw = raw
+        self._layout = layout
+        self._obj = obj
+        self._node = node
+        self.tags.clear()
+        if tags is not None:
+            self.tags.update(tags)
+
+    def from_xml_node(self, xml_node):
+        self.reset(node=xml_node)
         self._node = xml_node
         self._raw = etree.tostring(xml_node).decode('utf-8')
+        if self.parse:
+            self.parse.update_mrs()
 
-    def obj(self):
-        ''' Get pydelphin DMRS object
-        '''
-        if self._obj is None:
-            mrses = list(dmrx.deserialize(io.StringIO(self._raw)))
-            if len(mrses) == 1:
-                self._obj = mrses[0]
-                # store available tags
-                self.find_tags()
-            else:
-                raise Exception("Invalid DMRS XML")
-        return self._obj
+    def from_json(self, j):
+        self.reset(obj=Dmrs.from_dict(j))
+        if self.reading is not None:
+            self.reading.update_mrs()
+        return self
 
-    def to_mrs(self):
-        mrs_str = simplemrs.dumps_one(self.obj())
-        return MRS(mrs_str, self.parse)
+    def surface(self, node):
+        if node is None or self.parse is None or self.parse.sent is None:
+            return None
+        else:
+            return self.parse.sent.text[int(node.cfrom):int(node.cto)]
 
-    #----------------------------
+    def preds(self):
+        ''' Get all pred strings '''
+        return [normalize_pred_string(x.pred.string) for x in self.obj().eps()]
+
+    def clear(self):
+        self._obj = None
+        self._node = None
+
+    # ----------------------------
     # Support different formats
-    #----------------------------
+    # ----------------------------
 
     def xml(self):
         if self._node is None:
             # reparse DMRS node
             # should tag be re-inserted here?
-            self._node = etree.XML(self._raw)
+            if self._raw is not None:
+                # from raw XML string?
+                self._node = etree.XML(self._raw)
+            else:
+                if self._obj is None:
+                    if self.layout:
+                        self.layout.save()
+                    else:
+                        raise Exception("Broken DMRS object")
+                # from pyDelphin object?
+                self._raw = dmrx.etree_tostring(dmrx._encode_dmrs(self._obj))
+                self._node = etree.XML(self._raw)
         return self._node
 
     def xml_str(self, pretty_print=False):
@@ -319,8 +566,8 @@ class DMRS(object):
                     node['senses'].append({'synsetid': str(tag.synsetid), 'lemma': tag.lemma, 'type': tagtype})
         # These are for visko
         # add sentence text if it's available
-        if self.parse is not None and self.parse.sent is not None:
-            j['text'] = self.parse.sent.text
+        if self.reading is not None and self.reading.sent is not None:
+            j['text'] = self.reading.sent.text
         # Add pred type and pos
         for node, ep in zip(j['nodes'], self.obj().eps()):
             node['type'] = 'gpred' if (ep.pred.type == Pred.GRAMMARPRED) else 'realpred'
@@ -339,26 +586,31 @@ class DMRS(object):
         except:
             return None
 
+    def obj(self):
+        ''' Get pydelphin DMRS object
+        '''
+        if self._obj is None:
+            xml_str = self.xml_str()
+            mrses = []
+            mrses.extend(dmrx.deserialize(io.StringIO(xml_str)))
+            if len(mrses) == 1:
+                self._obj = mrses[0]
+                # store available tags
+                self.find_tags()
+            else:
+                raise Exception("Could not deserialize DMRS object")
+        return self._obj
+
+    def to_mrs(self):
+        mrs_str = simplemrs.dumps_one(self.obj())
+        return MRS(mrs_str, reading=self.reading)
+
     def tostring(self, pretty_print=True):
         '''prettified DMRS string'''
         return simpledmrs.dumps_one(self.obj(), pretty_print=pretty_print)
 
     def __str__(self):
         return self.tostring()
-
-    def surface(self, node):
-        if node is None or self.parse is None or self.parse.sent is None:
-            return None
-        else:
-            return self.parse.sent.text[int(node.cfrom):int(node.cto)]
-
-    def preds(self):
-        ''' Get all pred strings '''
-        return [normalize_pred_string(x.pred.string) for x in self.obj().eps()]
-
-    def clear(self):
-        self._obj = None
-        self._node = None
 
     #-------------------------------
     # Read & write tags from/to XML
@@ -385,17 +637,14 @@ class DMRS(object):
                     lemma = s.attrib['lemma']
                     score = s.attrib['score'] if 'score' in s.attrib else None
                     method = s.attrib['method'] if 'method' in s.attrib else TagInfo.ISF
-                    sinfo = Synset(sid, lemma=lemma)
-                    if score is not None:
-                        sinfo.tagcount = score
-                    tags[nodeid].append((sinfo, method))
+                    self.tag_node(nodeid, sid, lemma, method, score=score)
             # end for
             # tag list is stored esp for JSON
             if tags:
                 self.tags.update(tags)
         return self.tags
 
-    def tag_xml(self, with_raw=True, method=TagInfo.MFS, update_back=False):
+    def tag_xml(self, method=TagInfo.MFS, update_back=False):
         ''' Generate an XML object with available tags
         (perform provided sense-tagging method if required) '''
         # Sense-tagging only if required
@@ -410,58 +659,782 @@ class DMRS(object):
                         gold_node.set('synsetid', str(tag.synsetid))
                         gold_node.set('lemma', tag.lemma)
                         gold_node.set('type', tagtype)
-                    elif tagtype in (TagInfo.MFS, TagInfo.LELESK):
-                        realpred = node.find('realpred')
-                        if realpred is not None:
-                            candidate_node = etree.SubElement(node, 'sense')
-                            # candidate_node.set('pos', str(tag.synsetid.pos))
-                            candidate_node.set('synsetid', str(tag.synsetid))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
-                            candidate_node.set('lemma', str(tag.lemma))
-                            candidate_node.set('score', str(tag.tagcount))
-                            candidate_node.set('type', tagtype)
+                    elif tagtype:
+                        candidate_node = etree.SubElement(node, 'sense')
+                        candidate_node.set('synsetid', str(tag.synsetid))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                        candidate_node.set('lemma', str(tag.lemma))
+                        candidate_node.set('score', str(tag.tagcount))
+                        candidate_node.set('type', tagtype)
                     else:
                         # DEFAULT? etc.
                         # Do nothing for now
                         pass
         # update self.xml?
         if update_back:
-            self.update(root)
+            self.reset(node=root, tags=tags)
         return root
 
     #-------------------------------
     # Sense-tagging
     #-------------------------------
 
+    def tag_node(self, nodeid, synsetid, lemma, method, score=None):
+        synset = Synset(synsetid, lemma=lemma)
+        if score:
+            synset.tagcount = score
+        self.tags[nodeid].append(SenseTag(synset, method))
+
     def tag(self, method=TagInfo.MFS):
         ''' Sense tag this DMRS using a WSD method (by default is most-frequent sense)
         and then return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
         '''
-        if method is None or method == TagInfo.DEFAULT:
+        if method not in (TagInfo.LELESK, TagInfo.MFS):
             return {}  # no tag
-        tags = self.tags if self.tags else dd(list)
         eps = self.obj().eps()
         wsd = LeLeskWSD(dbcache=LeskCache())
         context = [p.pred.lemma for p in eps]
         for ep in eps:
-            if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED):
+            if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or ep.pred == "named":
                 # taggable eps
+                # TODO: Use POS for better sense-tagging?
+                logger.debug("Performing WSD using {} on {}/{}".format(method, ep.pred.lemma, context))
+                candidates = PredSense.search_pred_string(ep.pred.string) if ep.pred != "named" else None
+                lemma = ep.carg if (ep.pred == "named") else ep.pred.lemma
                 if method == TagInfo.LELESK:
-                    # TODO: Use POS for better sense-tagging?
-                    logger.debug("Performing WSD using {} on {}/{}".format(method, ep.pred.lemma, context))
-                    scores = wsd.lelesk_wsd(ep.pred.lemma, '', lemmatizing=False, context=context)
-                    if scores:
-                        # insert the top one
-                        best = scores[0].candidate.synset
-                        tags[ep.nodeid].append((Synset(best.sid, lemma=ep.pred.lemma), 'lelesk'))
+                    scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
                 elif method == TagInfo.MFS:
-                    candidates = PredSense.search_pred_string(ep.pred.string, False)
-                    if candidates:
-                        tags[ep.nodeid].append((candidates[0], TagInfo.MFS))
+                    scores = wsd.mfs_wsd(lemma, '', lemmatizing=False, synsets=candidates)
+                if scores:
+                    # insert the top one
+                    best = scores[0].candidate.synset
+                    self.tag_node(ep.nodeid, best.sid, ep.pred.lemma, method)
                 else:
                     # What should be done here? no tagging at all?
                     pass
-        self.tags = tags
-        return tags
+        return self.tags
+
+    def edit(self):
+        return DMRSLayout(self.json(), self)
+
+
+def get_attr(a_dict, key, default):
+    return a_dict[key] if key in a_dict else default
+
+
+class Predicate(object):
+
+    GRAMMARPRED = Pred.GRAMMARPRED
+    REALPRED = Pred.REALPRED
+    STRINGPRED = Pred.STRINGPRED
+    VALID_TYPES = {GRAMMARPRED, REALPRED, STRINGPRED}
+
+    def __init__(self, ptype, lemma, pos=None, sense=None):
+        """
+
+        """
+        if ptype not in Predicate.VALID_TYPES:
+            raise Exception("Invalid pred type")
+        self._ptype = ptype
+        self._lemma = lemma
+        self._pos = pos
+        self._sense = sense
+        self._predstr = None
+
+    @staticmethod
+    def from_string(predstr):
+        if predstr:
+            p = Pred.string_or_grammar_pred(predstr)
+            return Predicate(p.type, p.lemma, p.pos, p.sense)
+        else:
+            return None
+
+    @property
+    def ptype(self):
+        return self._ptype
+
+    @ptype.setter
+    def ptype(self, value):
+        self._predstr = None
+        self._ptype = value
+
+    @property
+    def lemma(self):
+        return self._lemma
+
+    @lemma.setter
+    def lemma(self, value):
+        self._predstr = None
+        self._lemma = value
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        self._predstr = None
+        self._pos = value
+
+    @property
+    def sense(self):
+        return self._sense
+
+    @sense.setter
+    def sense(self, value):
+        self._predstr = None
+        self._sense = value
+
+    @property
+    def predstr(self):
+        if self._predstr is None:
+            if self.ptype == self.REALPRED or self.ptype == self.STRINGPRED:
+                self._predstr = '_'.join([x for x in ('', self.lemma, self.pos, self.sense) if x is not None])
+            else:
+                self._predstr = '_'.join([x for x in (self.lemma, self.pos, self.sense) if x is not None])
+        return self._predstr
+
+    def to_pred(self):
+        return Pred.string_or_grammar_pred(self.predstr)
+
+    def __str__(self):
+        return self.to_pred().short_form()
+
+
+Triplet = namedtuple("Triplet", ("name", "in_links", "out_links"))
+
+
+class Node(object):
+
+    def __init__(self, nodeid=None, predstr=None, cfrom=-1, cto=-1, sortinfo=None, pos=None, surface=None, base=None, carg=None, predtype=None, dmrs=None):
+        # corpus management
+        self.ID = None
+        self.dmrsID = None
+        # node information
+        self.nodeid = int(nodeid) if nodeid is not None else None
+        self._pred = None
+        self.cfrom = int(cfrom) if cfrom is not None else -1
+        self.cto = int(cto) if cto is not None else -1
+        self.sortinfo = sortinfo if sortinfo else SortInfo()
+        if sortinfo is not None:
+            sortinfo.nodeID = self.ID
+        self.surface = surface
+        self.base = base
+        self.carg = carg
+        self.links = LinkMap()
+        self.dmrs = dmrs
+        # gpred
+        self.gpred_valueID = None
+        # realpred
+        self.rplemmaID = None
+        # annotation
+        self.sense = None
+        self.synsetid = None
+        self.synset_score = None
+        # init pred string
+        if predstr is not None:
+            self.pred = predstr
+
+    @property
+    def predtype(self):
+        if self.pred is None:
+            return ''
+        elif self.pred.ptype == Predicate.GRAMMARPRED:
+            return 'gpred'
+        else:
+            return 'realpred'
+
+    @property
+    def pred(self):
+        return self._pred
+
+    @pred.setter
+    def pred(self, value):
+        if isinstance(value, Predicate):
+            self._pred = value
+        else:
+            self._pred = Predicate.from_string(value)
+
+    @property
+    def predstr(self):
+        return str(self.pred)
+
+    @property
+    def rplemma(self):
+        if self.pred is None or self.pred.ptype == Predicate.GRAMMARPRED:
+            return None
+        else:
+            return self.pred.lemma
+
+    @rplemma.setter
+    def rplemma(self, value):
+        if self._pred is None:
+            self._pred = Predicate(Predicate.REALPRED, value)
+        else:
+            self.pred.lemma = value
+
+    @property
+    def rppos(self):
+        if self.pred is None or self.pred.ptype == Predicate.GRAMMARPRED:
+            return None
+        else:
+            return self.pred.pos
+
+    @rppos.setter
+    def rppos(self, value):
+        if self._pred is None:
+            self._pred = Predicate(Predicate.REALPRED, '', pos=value)
+        else:
+            self.pred.pos = value
+
+    @property
+    def rpsense(self):
+        if self.pred is None or self.pred.ptype == Predicate.GRAMMARPRED:
+            return None
+        else:
+            return self.pred.sense
+
+    @rpsense.setter
+    def rpsense(self, value):
+        if self._pred is None:
+            self._pred = Predicate(Predicate.REALPRED, '', sense=value)
+        else:
+            self.pred.sense = value
+
+    @property
+    def gpred(self):
+        if self.pred is not None and self.pred.ptype == Predicate.GRAMMARPRED:
+            return self.predstr
+        else:
+            return None
+
+    @property
+    def out_links(self):
+        return self.links.out_links
+
+    @property
+    def in_links(self):
+        return self.links.in_links
+
+    def arg(self, name):
+        return self.links.out_map[name] if name in self.links.out_map else None
+
+    def __getitem__(self, name):
+        return self.arg(name)
+
+    def to_graph(self, top=None, visited=None):
+        if top is None:
+            top = self
+        if visited is None:
+            visited = set()
+        visited.add(self)
+        in_links = frozenset((l.label, l.from_node.to_graph(top, visited)) for l in self.in_links if l.from_node is not None and l.from_node not in visited)
+        out_links = frozenset((l.label, l.to_node.to_graph(top, visited)) for l in self.out_links if l.to_node is not None and l.to_node not in visited) if self != top else None
+        return Triplet(self.predstr if self.predstr != "named" else 'named("{}")'.format(self.carg), in_links, out_links)
+
+    def rstr(self):
+        return [l.from_node for l in self.in_links if l.rargname == 'RSTR' and l.post == 'H']
+
+    def to_json(self):
+        a_dict = {'nodeid': int(self.nodeid),
+                  'predicate': str(self.pred),
+                  'lnk': {'from': int(self.cfrom), 'to': int(self.cto)},
+                  'sortinfo': self.sortinfo.to_json()}
+        if self.surface:
+            a_dict['surface'] = self.surface
+        if self.base:
+            a_dict['base'] = self.base
+        if self.carg:
+            a_dict['carg'] = self.carg
+        return a_dict
+
+    @staticmethod
+    def from_json(j):
+        return Node(j['nodeid'],
+                    j['predicate'],
+                    j['lnk']['from'],
+                    j['lnk']['to'],
+                    SortInfo.from_json(get_attr(j, 'sortinfo', {})),
+                    get_attr(j, 'pos', None),
+                    get_attr(j, 'surface', None),
+                    get_attr(j, 'base', None),
+                    get_attr(j, 'carg', None),
+                    get_attr(j, 'predtype', None))
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "{} [{}<{}:{}>]".format(self.nodeid, self.pred, self.cfrom, self.cto)
+
+    def is_unk(self):
+        return self.predstr == 'unknown'
+
+    def is_comp(self):
+        return self.predstr == 'compound'
+
+    def to_string(self):
+        ''' node to parsable string format '''
+        if self.gpred:
+            pred = self.gpred
+        else:
+            pred = Pred.realpred(self.rplemma, self.rppos, self.rpsense if self.rpsense else None).short_form()
+        sensetag = ''
+        if self.sense:
+            sensetag = ' synsetid={} synset_lemma={} synset_score={}'.format(self.sense.synsetid, self.sense.lemma.replace(' ', '+'), self.sense.score)
+        carg = '("{}")'.format(self.carg) if self.carg else ''
+        return "{nodeid} [{pred}<{cfrom}:{cto}>{carg} {sortinfo}{sensetag}]".format(nodeid=self.nodeid, cfrom=self.cfrom, cto=self.cto, sortinfo=self.sortinfo.to_string(), sensetag=sensetag, pred=pred, carg=carg)
+
+
+class GpredValue(object):
+    """
+    Gpred (grammar predicate) value
+    """
+    def __init__(self, value=None):
+        self.ID = None
+        self.value = value
+
+    def __str__(self):
+        return "#{}({})".format(self.ID, self.value)
+
+
+class Sense(object):
+    def __init__(self, lemma='', pos='', synsetid='', score=0):
+        self.lemma = lemma
+        self.pos = pos
+        self.synsetid = synsetid
+        self.score = score
+
+
+class Lemma(object):
+    """
+    Lemma of Real pred
+    """
+    def __init__(self, lemma=None):
+        self.ID = None
+        self.lemma = lemma
+
+    def __str__(self):
+        return "#{}({})".format(self.ID, self.lemma)
+
+
+class Link(object):
+
+    def __init__(self, from_node=0, to_node=0, rargname=None, post=None, dmrs=None):
+        # corpus management
+        self.ID = None
+        self.dmrsID = None
+        # link information
+        self.from_nodeid = int(from_node)
+        self.to_nodeid = int(to_node)
+        self.rargname = rargname
+        self.post = post
+        self.dmrs = dmrs
+
+    def to_json(self):
+        return {
+            'from': self.from_nodeid,
+            'to': self.to_nodeid,
+            'rargname': self.rargname,
+            'post': self.post
+        }
+
+    @property
+    def from_node(self):
+        return self.dmrs[self.from_nodeid] if self.dmrs else None
+
+    @property
+    def to_node(self):
+        return self.dmrs[self.to_nodeid] if self.dmrs else None
+
+    @property
+    def label(self):
+        return "{}/{}".format(self.rargname if self.rargname else '', self.post if self.post else '')
+
+    def is_rstr(self):
+        return self.rargname == 'RSTR' and self.post == 'H'
+
+    @staticmethod
+    def from_json(json):
+        return Link(from_node=json['from'],
+                    to_node=json['to'],
+                    rargname=json['rargname'],
+                    post=json['post'])
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.to_string()
+
+    def to_string(self):
+        return "{}:{}/{} -> {}".format(self.from_nodeid, self.rargname, self.post, self.to_nodeid)
+
+
+class LinkMap(object):
+
+    def __init__(self):
+        self.in_links = list()
+        self.out_links = list()
+        self.out_map = {}
+
+    def link_in(self, lnk):
+        self.in_links.append(lnk)
+
+    def unlink_in(self, lnk):
+        self.in_links.remove(lnk)
+
+    def link_out(self, lnk):
+        self.out_links.append(lnk)
+        self.out_map[lnk.rargname] = lnk.to_node
+
+    def unlink_out(self, lnk):
+        self.out_links.remove(lnk)
+        self.pop(lnk.rargname)
+
+
+class DMRSLayout(object):
+
+    def __init__(self, data=None, source=None):
+        # corpus management
+        self.ID = None
+        self.ident = None
+        self.readingID = None
+        # information
+        self.cfrom = None
+        self.cto = None
+        self.surface = None
+        self._nodes = []
+        self._links = []
+        self._node_map = {}
+        self._top = None  # point to a Node object or None
+        self._tags = dd(list)  # map nodeid => a list of (SynsetID(sid, lemma), method)
+        if data is not None:  # JSON data
+            for node in data['nodes']:
+                nobj = Node.from_json(node)
+                self.add_node(nobj)
+                if 'sense' in node:
+                    sense = node['sense']
+                    synset = Synset(sense['synsetid'], lemma=sense['lemma'])
+                    self._tags[nobj.nodeid].append((synset, TagInfo.OTHER))
+                    # TODO: proper tagging method and score?
+            for link in data['links']:
+                self.add_link(Link.from_json(link))
+        self.source = source  # DMRS object
+
+    @property
+    def top(self):
+        return self._top
+
+    @property
+    def to_string(self):
+        ''' To parsable string format (human friendly)'''
+        nodes = [n.to_string() for n in self.nodes if str(n.nodeid) != '0']
+        links = [l.to_string() for l in self.links]
+        return "dmrs {{\n{nl}\n}} ".format(ident=self.ident, cfrom=self.cfrom, to=self.cto, surface=self.surface, nl=';\n'.join(nodes + links))
+
+    @top.setter
+    def top(self, value):
+        if value in self:
+            self._top = self[value]
+        elif value in self._nodes:
+            self._top = value
+        else:
+            print(value, value in self)
+            raise Exception("Invalid node object invaded ({}({}) was provided)".format(repr(value), type(value)))
+
+    def __getitem__(self, nodeid):
+        return self._node_map[nodeid] if nodeid in self._node_map else None
+
+    def __contains__(self, nodeid):
+        return nodeid in self._node_map
+
+    def add_node(self, node):
+        node.dmrs = self
+        self._nodes.append(node)
+        self._node_map[node.nodeid] = node
+
+    def add_link(self, link):
+        link.dmrs = self
+        self._links.append(link)
+        if link.from_nodeid == 0:
+            # FOUND TOP
+            self.top = link.to_nodeid
+        else:
+            self[link.from_nodeid].links.link_out(link)
+        self[link.to_nodeid].links.link_in(link)
+
+    def delete_link(self, link):
+        if link.from_nodeid in self:
+            self[link.from_nodeid].links.out_links.remove(link)
+        if link.to_nodeid in self:
+            self[link.to_nodeid].links.in_links.remove(link)
+        if link in self._links:
+            self._links.remove(link)
+
+    def delete_node(self, nodeid):
+        node = self[nodeid]
+        if node is None:
+            return
+        # delete all links
+        for l in node.out_links:
+            self.delete_link(l)
+        for l in node.in_links:
+            self.delete_link(l)
+        # delete node
+        self._nodes.remove(node)
+        self._node_map.pop(node.nodeid)
+
+    def delete(self, *items):
+        for item in items:
+            if isinstance(item, Node):
+                # Delete a node
+                self.delete_node(item.nodeid)
+            elif isinstance(item, Link):
+                # Delete a link
+                self.delete_link(item)
+            elif isinstance(item, DMRSLayout):
+                # delete a subgraph
+                self.delete_sub(item)
+            else:
+                # delete a node by id
+                self.delete_node(item)
+        return self
+
+    def delete_sub(self, sub):
+        ''' Delete a subgraph except its head'''
+        sub_head = self[sub.top.nodeid]
+        sub_nodes = [n for n in sub.nodes if sub_head and n.nodeid != sub_head.nodeid]
+        self.delete(*sub_nodes)
+
+    def adjacent_nodes(self):
+        ''' Generate a set of preds that are adjacent '''
+        adj_list = dd(list)
+        for n in self.nodes:
+            # ignore RSTR
+            if n.is_unk() or (not n.in_links and len(n.out_links) == 1 and n.out_links[0].is_rstr()):
+                continue
+            adj_list[n.cfrom].append(n)
+            adj_list[n.cto + 1].append(n)
+        return {frozenset(n.predstr for n in v) for k, v in adj_list.items() if len(v) > 1}
+
+    def subgraph(self, headid, constraints=None, ignore_rstr=True):
+        if isinstance(headid, Node):
+            headid = headid.nodeid
+        if isinstance(constraints, DMRSLayout):
+            constraints = [n.predstr for n in constraints.nodes]
+        head = self[headid]
+        head_rstr = [r.nodeid for r in head.rstr()]
+        nodeids = set()
+        sub = DMRSLayout()
+        candidates = [l.from_nodeid for l in head.in_links]
+        links = set(l for l in head.in_links)
+        while candidates:
+            c = candidates.pop()
+            if ignore_rstr and c in head_rstr:
+                continue
+            if c != headid and c not in nodeids and c in self:
+                if constraints is not None:
+                    if self[c].predstr not in constraints:
+                        continue
+                nodeids.add(c)
+                candidates.extend(l.from_nodeid for l in self[c].in_links)
+                candidates.extend(l.to_nodeid for l in self[c].out_links)
+                links.update(self[c].in_links)
+                links.update(self[c].out_links)
+        # Add nodes and links to subgraph
+        nodeids.add(headid)
+        for nodeid in sorted(nodeids):
+            new_node = copy.copy(self[nodeid])
+            new_node.pred = self[nodeid].predstr
+            new_node.links = LinkMap()
+            sub.add_node(new_node)
+        for link in links:
+            if link.from_nodeid in nodeids and link.to_nodeid in nodeids:
+                new_link = copy.copy(link)
+                sub.add_link(new_link)
+        sub.top = sub[headid]
+        return sub
+
+    def match(self, other):
+        if self.top is None:
+            raise Exception("I am not headed")
+        else:
+            if other.top is None:
+                return False
+        return False
+
+    @property
+    def nodes(self):
+        return self._nodes
+
+    @property
+    def links(self):
+        return self._links
+
+    def to_json(self):
+        return {'nodes': [n.to_json() for n in self.nodes],
+                'links': [l.to_json() for l in self.links],
+                'tags': dict(self._tags)}
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.to_json())
+
+    def save(self):
+        if self.source is not None:
+            self.source.from_json(self.to_json())
+        return self
+
+    def to_dmrs(self):
+        return DMRS().from_json(self.to_json())
+
+    @staticmethod
+    def from_xml_str(xml_content):
+        root = etree.XML(xml_content)
+        if root.tag == "reading":
+            root = root.findall("dmrs")[0]
+        return DMRSLayout.from_xml(root)
+
+    @staticmethod
+    def from_xml(dmrs_tag):
+        ''' Get DMRS from XML node
+        '''
+        dmrs = DMRSLayout()
+        dmrs.ident = dmrs_tag.attrib['ident'] if 'ident' in dmrs_tag.attrib else ''
+        dmrs.cfrom = dmrs_tag.attrib['cfrom'] if 'cfrom' in dmrs_tag.attrib else ''
+        dmrs.cto = dmrs_tag.attrib['cto'] if 'cto' in dmrs_tag.attrib else ''
+        dmrs.surface = dmrs_tag.attrib['surface'] if 'surface' in dmrs_tag.attrib else ''
+
+        # parse all nodes inside
+        for node_tag in dmrs_tag.findall('node'):
+            nid = int(node_tag.attrib['nodeid'])
+            cfrom = int(node_tag.attrib['cfrom'])
+            cto = int(node_tag.attrib['cto'])
+            surface = get_attr(node_tag.attrib, 'surface', '')
+            base = get_attr(node_tag.attrib, 'base', '')
+            carg = get_attr(node_tag.attrib, 'carg', '')
+            # TODO: parse sort info
+            sortinfo_tag = node_tag.find("sortinfo")
+            sortinfo = SortInfo().update(sortinfo_tag.attrib) if sortinfo_tag is not None else None
+            pred = None
+            gpred_tag = node_tag.find("gpred")
+            if gpred_tag is not None:
+                pred = gpred_tag.text
+            else:
+                realpred_tag = node_tag.find("realpred")
+                if realpred_tag is not None:
+                    lemma = get_attr(realpred_tag.attrib, 'lemma', '')
+                    pos = get_attr(realpred_tag.attrib, 'pos', '')
+                    sense = get_attr(realpred_tag.attrib, 'sense', '')
+                    pred = Predicate(Predicate.REALPRED, lemma, pos, sense)
+            temp_node = Node(nid, pred, cfrom=cfrom, cto=cto, sortinfo=sortinfo, surface=surface, base=base, carg=carg)
+
+            # Parse sense info
+            sensegold_tag = node_tag.find('sensegold')
+            if sensegold_tag is not None:
+                # if we have sensegold, use it instead
+                sense_info = Sense()
+                sense_info.lemma = sensegold_tag.attrib['lemma']
+                sense_info.synsetid = sensegold_tag.attrib['synsetid']
+                sense_info.pos = sense_info.synsetid[-1]
+                sense_info.score = '999'
+                temp_node.sense = sense_info
+                logger.debug("Using gold => %s" % (sense_info.synsetid))
+                pass
+            else:
+                sense_tag = node_tag.find('sense')
+                if sense_tag is not None:
+                    sense_info = Sense()
+                    update_data(sense_tag.attrib, sense_info)
+                    temp_node.sense = sense_info
+
+            # Completed parsing, add the node_tag to DMRS object
+            dmrs.nodes.append(temp_node)
+            # end for nodes
+
+        # parse all links inside
+        for link_tag in dmrs_tag.findall('link'):
+            fromNodeID = int(link_tag.attrib['from'])
+            toNodeID = int(link_tag.attrib['to'])
+            # TODO: parse post
+            post_tag = link_tag.find("post")
+            post = post_tag.text if post_tag is not None else ''
+            rargname_tag = link_tag.find("rargname")
+            rargname = rargname_tag.text if rargname_tag is not None else ''
+            dmrs.links.append(Link(fromNodeID, toNodeID, rargname, post))
+        # finished, add dmrs object to reading
+        return dmrs
+
+
+class SortInfo(object):
+
+    KNOWN_FIELDS = {'cvarsort', 'num', 'pers', 'gend', 'sf', 'tense',
+                    'mood', 'prontype', 'prog', 'perf', 'ind'}
+    ORDER = ['num', 'pers', 'gend', 'sf', 'tense', 'mood', 'prontype', 'prog', 'perf', 'ind']
+    PRIVATE = ['ID', 'dmrs_nodeID', 'data']
+
+    """
+    sortinfo of a Node
+    """
+    def __init__(self, cvarsort='', num='', pers='', gend='', sf='', tense='', mood='', prontype='', prog='', perf='', ind='', dmrs_nodeID=None):
+        # corpus management
+        object.__setattr__(self, "ID", None)
+        object.__setattr__(self, "dmrs_nodeID", None)
+        object.__setattr__(self, "data", {})
+        # known fields
+        self.cvarsort = cvarsort
+        self.num = num
+        self.pers = pers
+        self.gend = gend
+        self.sf = sf
+        self.tense = tense
+        self.mood = mood
+        self.prontype = prontype
+        self.prog = prog
+        self.perf = perf
+        self.ind = ind
+
+    def __str__(self):
+        return self.to_string()
+
+    def __setattr__(self, name, value):
+
+        if name in SortInfo.PRIVATE:
+            object.__setattr__(self, name, value)
+        else:
+            self.data[name] = value
+
+    def __getattr__(self, name):
+        if name in SortInfo.PRIVATE:
+            return self.__dict__[name]
+        if name in self.data:
+            return self.data[name]
+        else:
+            return None
+
+    def update(self, data):
+        self.data.update(data)
+        return self
+
+    @staticmethod
+    def from_json(j):
+        si = SortInfo().update(j)
+        return si
+
+    def to_json(self):
+        j = {k: v for k, v in self.data.items() if v}
+        return j
+
+    def to_string(self):
+        valdict = [(k, self.data[k]) for k in SortInfo.ORDER if self.data[k]]
+        extra = [(k, self.data[k]) for k in sorted(self.data.keys()) if k not in SortInfo.ORDER and k not in SortInfo.PRIVATE and self.data[k]]
+        valdict.extend(extra)
+        if self.cvarsort:
+            return self.cvarsort + ' ' + ' '.join(('{}={}'.format(k.upper(), str(v)) for (k, v) in valdict))
+        else:
+            return ' '.join(('{}={}'.format(k.upper(), str(v)) for (k, v) in valdict))
 
 
 class PredSense(object):
@@ -621,6 +1594,245 @@ class PredSense(object):
 
         # Done
         return sorted(ss, key=lambda x: x.tagcount, reverse=True)
+
+
+SETUP_SCRIPT = '''
+CREATE TABLE word (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  lemma TEXT,
+  pos TEXT,
+  flag INTEGER
+);
+
+CREATE TABLE parse (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  raw TEXT,
+  wid INTEGER NOT NULL,
+  preds INTEGER,
+  FOREIGN KEY (wid) REFERENCES word(ID) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "flag" (
+    "ID" INTEGER PRIMARY KEY NOT NULL,
+    "text" TEXT,
+    "desc" TEXT
+);
+
+CREATE INDEX word_lemma ON word(lemma);
+CREATE INDEX word_flag ON word(flag);
+
+INSERT INTO "flag" (ID, text, desc)
+VALUES
+    (1, 'PROCESSED', ''),
+    (2, 'ERROR', 'couldn''t parse'),
+    (3, 'GOLD', ''),
+    (4, 'COMPOUND', 'to be further processed, but most likely are compound'),
+    (5, 'MWE', 'compound that were confirmed are multi-word expressions'),
+    (6, 'MISMATCHED', 'wrong POS'),
+    (7, 'UNKNOWN', ''),
+    (8, 'NOM_VERB', 'norminalized'),
+    (9, 'COMP_NN', 'Noun-noun compound'),
+    (10, 'COMP_AN', 'Adj-noun compound'),
+    (11, 'COMP_NE', 'named-entity');
+'''
+SETUP_FILE = None
+
+
+class ChunkDB(Schema):
+
+    def __init__(self, data_source=':memory:', setup_script=SETUP_SCRIPT, setup_file=SETUP_FILE):
+        Schema.__init__(self, data_source=data_source, setup_script=setup_script, setup_file=setup_file)
+        self.add_table('word', ['ID', 'lemma', 'pos', 'flag'], proto=LexItem, id_cols=('ID',))
+        self.add_table('parse').add_fields('ID', 'raw', 'wid', 'preds').set_id('ID')
+
+    def get_parses(self, word, ctx):
+        parses = ctx.parse.select('wid = ?', (word.ID,))
+        if parses:
+            word.parses = parses
+        return parses
+
+    def flag(self, word, flag, ctx):
+        word.flag = flag
+        self.word.save(word, columns=('flag',))
+
+    def get_words(self, lemma=None, pos=None, flag=None, limit=None, deep_select=True, ctx=None):
+        if ctx is None:
+            with self.ctx() as ctx:
+                return self.get_words(lemma, pos, flag, limit, deep_select, ctx=ctx)
+        # ctx is not None
+        query = []
+        params = []
+        if lemma:
+            query.append("lemma = ?")
+            params.append(lemma)
+        if pos:
+            query.append("pos = ?")
+            params.append(pos)
+        if flag:
+            query.append("flag = ?")
+            params.append(flag)
+        words = ctx.word.select(" AND ".join(query), params, limit=limit)
+        if deep_select:
+            for word in words:
+                self.get_parses(word, ctx=ctx)
+        return words
+
+
+class LexItem(object):
+
+    PROCESSED = 1
+    ERROR = 2  # couldn't parse
+    GOLD = 3
+    COMPOUND = 4  # to be further processed, but most likely are compounds
+    MWE = 5  # compound that were confirmed are multi-word expressions
+    MISMATCHED = 6  # wrong POS
+    UNKNOWN = 7
+    NOM_VERB = 8
+    COMP_NN = 9  # Noun-noun compound
+    COMP_AN = 10  # Adj-noun compound
+    COMP_NE = 11  # named-entity
+
+    FLAGS = {
+        PROCESSED: "LexItem.PROCESSED",
+        ERROR: "LexItem.ERROR",
+        GOLD: "LexItem.GOLD",
+        COMPOUND: "LexItem.COMPOUND",
+        MWE: "LexItem.MWE",
+        MISMATCHED: "LexItem.MISMATCHED",
+        UNKNOWN: "LexItem.UNKNOWN",
+        NOM_VERB: "LexItem.NOM_VERB",
+        COMP_NN: "LexItem.COMP_NN",
+        COMP_AN: "LexItem.COMP_AN",
+        COMP_NE: "LexItem.COMP_NE"
+    }
+
+    def __init__(self, ID=None, lemma=None, pos=None, flag=None):
+        self.ID = None
+        self.lemma = lemma
+        self.pos = pos
+        self.flag = flag
+        self.parses = []
+
+    def __repr__(self):
+        return str(self)
+
+    def __len__(self):
+        return len(self.parses)
+
+    def __getitem__(self, idx):
+        return self.parses[idx]
+
+    def __str__(self):
+        return "Word({}, {}, {}, {})".format(self.ID, repr(self.lemma), repr(self.pos), LexItem.FLAGS[self.flag] if self.flag else None)
+
+    def to_isf(self):
+        sent = Sentence(self.lemma)
+        for parse in self.parses:
+            p = sent.add(parse.raw)
+            if parse.ID:
+                p.ID = parse.ID
+        return sent
+
+    def dump(self):
+        iw = self.to_isf()
+        header(iw)
+        for idx, p in enumerate(iw):
+            print("#{}. {}".format(idx + 1, p.mrs()))
+        return iw
+
+
+class WordMRS(object):
+
+    def __init__(self, ID=None, raw=None, wid=None, preds=None):
+        self.ID = ID
+        self.raw = raw
+        self.wid = wid
+        self.preds = preds
+
+
+def create_chunk_db(txt_file, db):
+    ''' Create chunks database '''
+    print("Source file: {}".format(txt_file))
+    words = CSV.read(txt_file)
+    print(words[:5], "...")
+    print("Found entries: {}".format(len(words)))
+    with db.ctx() as ctx:
+        for word in words:
+            ctx.word.insert(word[0], word[1], None)
+    inserted = db.ds.select_scalar("SELECT COUNT(*) FROM word;")
+    print("Inserted: {}".format(inserted))
+
+
+# ----------------
+# Human annotation
+# ----------------
+
+class Word(object):
+    """
+    Human annotator layer: Words
+    """
+    def __init__(self, widx=-1, word='', lemma='', pos='', cfrom=-1, cto=-1, sent=None):
+        self.ID = None
+        if sent:
+            self.sid = sent.ID
+            self.sent = sent
+        else:
+            self.sid = -1
+            self.sent = None
+        self.widx = widx
+        self.word = word
+        self.pos = pos
+        self.lemma = lemma
+        self.cfrom = cfrom
+        self.cto = cto
+        self.comment = ''
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "`{w}`<{cf}:{ct}>".format(w=self.word, cf=self.cfrom, ct=self.cto)
+
+
+class Concept(object):
+    """
+    Human annotator layer: Concepts
+    """
+    def __init__(self, cidx=-1, clemma=None, tag=None, sent=None):
+        self.ID = None
+        if sent:
+            self.sid = sent.ID
+            self.sent = sent
+        else:
+            self.sid = -1
+            self.sent = None
+        self.cidx = cidx
+        self.clemma = clemma
+        self.tag = tag
+        self.flag = None
+        self.comment = ''
+        self.words = []
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "`{lemma}`:{tag}".format(lemma=self.clemma, tag=self.tag)
+
+
+class CWLink(object):
+    """
+    Human annotator layer: Word-Concept Links
+    """
+    def __init__(self, wid=-1, cid=-1):
+        self.wid = wid
+        self.cid = cid
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "c#{}->w#{}".format(self.cid, self.wid)
 
 
 ##############################################################################
