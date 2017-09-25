@@ -59,9 +59,16 @@ from chirptext.texttaglib import TagInfo
 
 from .ghub import GrammarHub
 from .gold_extract import generate_gold_profile
-from .gold_extract import read_ace_output
+from .util import read_ace_output
 from .gold_extract import export_to_visko
 from .gold_extract import read_gold_sents
+
+########################################################################
+
+OUTPUT_DMRS = 'dmrs'
+OUTPUT_MRS = 'mrs'
+OUTPUT_XML = 'xml'
+OUTPUT_FORMATS = [OUTPUT_DMRS, OUTPUT_MRS, OUTPUT_XML]
 
 
 ########################################################################
@@ -111,6 +118,25 @@ def parse_isf(args):
         report.writeline("\n\n")
 
 
+def parse_text(args):
+    ghub = GrammarHub()
+    text = args.input
+    result = ghub.parse(text, args.grammar, args.n, args.wsd, args.nocache)
+    if result is not None and len(result) > 0:
+        report = TextReport(args.output)
+        if args.format == OUTPUT_DMRS:
+            report.header(result)
+            for reading in result:
+                report.writeline(reading.dmrs().tostring())
+        elif args.format == OUTPUT_XML:
+            result.tag_xml()
+            report.writeline(result.to_xml_str())
+        elif args.format == OUTPUT_MRS:
+            report.header(result)
+            for reading in result:
+                report.writeline(reading.mrs().tostring())
+
+
 def main():
     parser = argparse.ArgumentParser(description="CoolISF Main Application")
 
@@ -123,6 +149,16 @@ def main():
     parse_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     parse_task.add_argument('--tagger', help='Word Sense Tagger', default=TagInfo.LELESK)
     parse_task.set_defaults(func=parse_isf)
+
+    text_task = tasks.add_parser('text', help='Analyse a text')
+    text_task.add_argument('input', help='Any text')
+    text_task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
+    text_task.add_argument('-n', help="Only show top n parses", default=None)
+    text_task.add_argument('--wsd', help="Word-Sense Disambiguation engine", default=TagInfo.LELESK)
+    text_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    text_task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
+    text_task.add_argument('-o', '--output', help="Write output to path")
+    text_task.set_defaults(func=parse_text)
 
     gold_task = tasks.add_parser('gold', help='Extract gold profile')
     gold_task.set_defaults(func=lambda arsg: generate_gold_profile())

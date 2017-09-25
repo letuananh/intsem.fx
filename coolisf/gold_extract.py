@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
-Extract data from a TSDB profile and write to a text file
+Generate gold profile
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
@@ -48,10 +47,7 @@ __status__ = "Prototype"
 ########################################################################
 
 import os
-import sys
 import datetime
-import argparse
-from collections import defaultdict as dd
 import gzip
 from lxml import etree
 
@@ -60,20 +56,17 @@ from delphin import itsdb
 from fuzzywuzzy import fuzz
 
 from chirptext.leutile import FileHelper
-from chirptext.leutile import Timer
 from chirptext.leutile import StringTool
 from chirptext.leutile import Counter
 from chirptext.texttaglib import TaggedDoc, TagInfo
 
-from yawlib.models import SynsetID
 from coolisf.model import Document, Sentence
-from coolisf.util import read_ace_output
 
 from .lexsem import tag_gold
 
-##########################################
+# -----------------------------------------------------------------------
 # CONFIGURATION
-##########################################
+# -----------------------------------------------------------------------
 
 DATA_DIR = FileHelper.abspath('./data')
 GOLD_PROFILE = os.path.join(DATA_DIR, 'gold')
@@ -86,7 +79,7 @@ LICENSE_TEMPLATE_LOC = os.path.join(MY_DIR, 'CCBY30_template.txt')
 LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
 
-#-----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 class TSDBSentence:
     def __init__(self, sid, text, mrs=''):
@@ -96,7 +89,7 @@ class TSDBSentence:
         self.mrs = mrs
 
 
-#-----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 def extract_tsdb_gold():
     # read NTU-MC
@@ -314,37 +307,3 @@ def export_to_visko(sents, doc_path, pretty_print=True):
         with gzip.open(sentpath, 'w') as f:
             f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
     print("Done!")
-
-
-#-----------------------------------------------------------------------
-
-
-def main():
-    parser = argparse.ArgumentParser(description="ISF Gold Extractor")
-
-    parser.add_argument('-g', '--gold', help='Extract gold profile', action='store_true')
-    parser.add_argument('--visko', help='Export to VISKO', action='store_true')
-    parser.add_argument('-d', '--dev', help='Dev mode', action='store_true')
-    parser.add_argument('-x', '--extract', help='Extract TSDB gold', action='store_true')
-
-    if len(sys.argv) == 1:
-        # User didn't pass any value in, show help
-        parser.print_help()
-    else:
-        # Parse input arguments
-        args = parser.parse_args()
-        if args.extract:
-            extract_tsdb_gold()
-        elif args.visko:
-            sents = read_ace_output('data/wndefs.nokey.mrs.txt')
-            export_to_visko(sents[:200], os.path.expanduser('~/wk/vk/data/biblioteche/test/wn/wndef/'))
-        elif args.gold:
-            # print("Step 2: Generating gold profile as XML")
-            generate_gold_profile()
-        else:
-            parser.print_help()
-    pass
-
-
-if __name__ == "__main__":
-    main()
