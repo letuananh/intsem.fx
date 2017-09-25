@@ -245,6 +245,7 @@ def read_gold_sents(perform_wsd=False):
     tagdoc.read()
     filter_wrong_senses(tagdoc)
     doc = read_gold_mrs()
+    not_matched = []
     # sense tagging
     for sent in doc:
         if len(sent) == 0:
@@ -253,10 +254,14 @@ def read_gold_sents(perform_wsd=False):
         dmrs = sent[0].dmrs()
         print("Processing sentence #{}".format(sent))
         sent.shallow = tagdoc.sent_map[str(sent.ident)]
-        tag_gold(dmrs, sent.shallow, sent.text)
+        m, n = tag_gold(dmrs, sent.shallow, sent.text)
+        if n:
+            not_matched.append(sent.ident)
+            sent.flag = Sentence.ERROR
         if perform_wsd:
             sent.tag(method=TagInfo.MFS)
         sent.tag_xml()
+    print("Not matched:", not_matched)
     return doc
 
 

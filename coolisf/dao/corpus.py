@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Data access layer for VisualKopasu project.
+Corpus DAO
 @author: Le Tuan Anh
 '''
 
@@ -31,7 +31,7 @@ import os
 import os.path
 import logging
 
-from puchikarui import Schema
+from puchikarui import Schema, with_ctx
 from chirptext.texttaglib import TagInfo
 
 from coolisf.util import is_valid_name
@@ -173,18 +173,12 @@ class CorpusDAOSQLite(RichKopasu):
     def db_path(self):
         return self.ds.path
 
+    @with_ctx
     def get_corpus(self, corpus_name, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_corpus(corpus_name=corpus_name, ctx=ctx)
-        # corpus name is unique
         return ctx.corpus.select_single('name=?', (corpus_name,))
 
+    @with_ctx
     def create_corpus(self, corpus_name, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.create_corpus(corpus_name, ctx=ctx)
-        # ctx was ensured
         if not is_valid_name(corpus_name):
             raise Exception("Invalid corpus name (provided: {}) - Visko only accept names using alphanumeric characters".format(corpus_name))
         corpus = Corpus(corpus_name)
@@ -198,24 +192,17 @@ class CorpusDAOSQLite(RichKopasu):
             doc.ID = self.doc.save(doc, *fields, ctx=ctx)
         return doc
 
+    @with_ctx
     def get_docs(self, corpusID, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_docs(corpusID=corpusID, ctx=ctx)
         return ctx.doc.select('corpusID=?', (corpusID,))
 
+    @with_ctx
     def get_doc(self, doc_name, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_doc(doc_name=doc_name, ctx=ctx)
         # doc.name is unique
         return ctx.doc.select_single('name=?', (doc_name,))
 
+    @with_ctx
     def get_sents(self, docID, flag=None, add_dummy_parses=True, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_sents(docID, flag, add_dummy_parses, ctx=ctx)
-        # ctx is not None
         where = 'docID = ?'
         params = [docID]
         if flag:
@@ -242,19 +229,16 @@ class CorpusDAOSQLite(RichKopasu):
     def query(self, query_obj):
         return self.ds.select(query_obj.query, query_obj.params)
 
+    @with_ctx
     def note_sentence(self, sent_id, comment, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.note_sentence(sent_id, comment, ctx=ctx)
         # save comments
         return ctx.sentence.update((comment,), 'ID=?', (sent_id,), ['comment'])
 
+    @with_ctx
     def read_note_sentence(self, sent_id, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.read_note_sentence(sent_id, ctx=ctx)
         return ctx.sentence.by_id(sent_id, columns=['comment']).comment
 
+    @with_ctx
     def save_sent(self, a_sentence, ctx=None):
         """
         Save sentence object (with all DMRSes, raws & shallow readings inside)
@@ -262,9 +246,6 @@ class CorpusDAOSQLite(RichKopasu):
         # validations
         if a_sentence is None:
             raise ValueError("Sentence object cannot be None")
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.save_sent(a_sentence, ctx=ctx)
         # ctx is not None now
         if not a_sentence.ID:
             # choose a new ident
@@ -291,10 +272,8 @@ class CorpusDAOSQLite(RichKopasu):
         # Select sentence
         return a_sentence
 
+    @with_ctx
     def save_reading(self, reading, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.save_reading(reading, ctx=ctx)
         # ctx is not None now
         reading.ID = ctx.reading.save(reading)
         # Save DMRS
@@ -344,10 +323,8 @@ class CorpusDAOSQLite(RichKopasu):
                 link.rargname = ''
             ctx.link.save(link)
 
+    @with_ctx
     def get_reading(self, a_reading, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_reading(a_reading, ctx=ctx)
         # retrieve all DMRSes
         # right now, only 1 DMRS per reading
         a_dmrs = ctx.dmrs.select_single('readingID=?', (a_reading.ID,))
@@ -386,16 +363,17 @@ class CorpusDAOSQLite(RichKopasu):
             a_dmrs.layout.add_link(link)
         return a_reading
 
-    def delete_reading(self, readingID):
+    @with_ctx
+    def delete_reading(self, readingID, ctx=None):
         # delete all DMRS link, node
-        self.dmrs_link.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (readingID,))
-        self.dmrs_node_sortinfo.delete('dmrs_nodeID IN (SELECT ID FROM dmrs_node WHERE dmrsID IN (SELECT ID from dmrs WHERE readingID=?))', (readingID,))
+        ctx.dmrs_link.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (readingID,))
+        ctx.dmrs_node_sortinfo.delete('dmrs_nodeID IN (SELECT ID FROM dmrs_node WHERE dmrsID IN (SELECT ID from dmrs WHERE readingID=?))', (readingID,))
 
-        self.dmrs_node.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (readingID,))
+        ctx.dmrs_node.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (readingID,))
         # delete all DMRS
-        self.dmrs.delete("readingID=?", (readingID,))
+        ctx.dmrs.delete("readingID=?", (readingID,))
         # delete readings
-        self.reading.delete("ID=?", (readingID,))
+        ctx.reading.delete("ID=?", (readingID,))
 
     def update_reading(self, reading):
         raise NotImplementedError
@@ -412,7 +390,6 @@ class CorpusDAOSQLite(RichKopasu):
             readingID = row['readingID']
             sentID = row['sentID']
             sentence_ident = row['sentence_ident']
-            corpus = row['corpus']
             text = row['text']
             docID = row['docID']
             if sentID in sentences_by_id:
@@ -423,7 +400,7 @@ class CorpusDAOSQLite(RichKopasu):
             else:
                 if no_more_query:
                     a_sentence = Sentence(ident=sentence_ident, text=text, docID=docID)
-                    a_sentence.corpus = corpus
+                    a_sentence.corpus = Corpus(name=row['corpus_name'], ID=row['corpusID'])
                     a_sentence.ID = sentID
                 else:
                     a_sentence = self.get_sent(sentID, readingIDs=[], skip_details=True)
@@ -436,11 +413,8 @@ class CorpusDAOSQLite(RichKopasu):
         logger.debug(("Sentence count: %s" % len(sentences)))
         return sentences
 
+    @with_ctx
     def get_sent(self, sentID, mode=None, readingIDs=None, skip_details=False, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_sent(sentID, mode, readingIDs, skip_details, ctx=ctx)
-        # ctx was ensured
         a_sentence = ctx.sentence.by_id(sentID)
         if a_sentence is not None:
             self.get_annotations(sentID, a_sentence, ctx=ctx)
@@ -465,25 +439,23 @@ class CorpusDAOSQLite(RichKopasu):
         # Return
         return a_sentence
 
-    def delete_sent(self, sentID):
+    @with_ctx
+    def delete_sent(self, sentID, ctx=None):
         # delete all reading
-        sent = self.get_sent(sentID, skip_details=True)
+        sent = self.get_sent(sentID, skip_details=True, ctx=ctx)
         # delete readings
         if sent is not None:
             for i in sent:
-                self.delete_reading(i.ID)
+                self.delete_reading(i.ID, ctx=ctx)
         # delete words, concepts, cwl
-        self.word.delete('sid=?', (sentID,))
-        self.cwl.delete('cid IN (SELECT cid FROM concept WHERE sid=?)', (sentID,))
-        self.concept.delete('sid=?', (sentID,))
+        ctx.word.delete('sid=?', (sentID,))
+        ctx.cwl.delete('cid IN (SELECT cid FROM concept WHERE sid=?)', (sentID,))
+        ctx.concept.delete('sid=?', (sentID,))
         # delete sentence obj
-        self.sentence.delete("ID=?", (sentID,))
+        ctx.sentence.delete("ID=?", (sentID,))
 
+    @with_ctx
     def get_annotations(self, sentID, sent_obj=None, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_annotations(sentID, sent_obj, ctx=ctx)
-        # ctx is not None now
         if sent_obj is None:
             sent_obj = self.get_sent(sentID, skip_details=True, ctx=ctx)
         # select words
@@ -498,11 +470,8 @@ class CorpusDAOSQLite(RichKopasu):
             cmap[lnk.cid].words.append(wmap[lnk.wid])
         return sent_obj
 
+    @with_ctx
     def save_annotations(self, sent_obj, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.save_annotations(sent_obj, ctx=ctx)
-        # ctx is not None now ...
         for word in sent_obj.words:
             word.sid = sent_obj.ID
             word.ID = ctx.word.save(word)
@@ -515,17 +484,13 @@ class CorpusDAOSQLite(RichKopasu):
                 ctx.cwl.save(CWLink(wid=word.ID, cid=concept.ID))
                 pass
 
+    @with_ctx
     def flag_sent(self, sid, flag, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.flag_sent(sid, flag, ctx=ctx)
         # update flag
         return ctx.sentence.update(new_values=(flag,), where='ID=?', where_values=(sid,), columns=('flag',))
 
+    @with_ctx
     def next_sentid(self, sid, flag=None, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.next_sentid(sid, flag, ctx=ctx)
         sent_obj = ctx.sentence.by_id(sid, columns=('ID', 'docID'))
         docid = sent_obj.docID
         where = 'ID > ? AND docID == ?'
@@ -536,10 +501,8 @@ class CorpusDAOSQLite(RichKopasu):
         next_sent = ctx.sentence.select_single(where=where, values=params, orderby="docID, ID", limit=1)
         return next_sent.ID if next_sent is not None else None
 
+    @with_ctx
     def prev_sentid(self, sid, flag=None, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.prev_sentid(sid, flag, ctx=ctx)
         sent_obj = ctx.sentence.by_id(sid, columns=('ID', 'docID'))
         docid = sent_obj.docID
         where = 'ID < ? AND docID == ?'

@@ -166,23 +166,23 @@ class TestGoldData(unittest.TestCase):
 
     def test_tag_one_sent(self):
         print("Test tagging one sentence")
-        sid = '10581'
+        sid = '10081'
         sents = read_gold_mrs()
         smap = {str(s.ident): s for s in sents}
         sent = smap[sid]
         doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
-        tagged = doc.sent_map[sid]
-        if sent.text != tagged.text:
+        sent.shallow = doc.sent_map[sid]
+        if sent.text != sent.shallow.text:
             print("WARNING: Inconsistent")
             print(sent.text)
-            print(tagged.text)
+            print(sent.shallow.text)
         dmrs = sent[0].dmrs()
         # print(sent.to_xml_str())
-        m, n = tag_gold(dmrs, tagged, sent.text)
+        m, n = tag_gold(dmrs, sent.shallow, sent.text)
         header("#{}: {}".format(sid, sent.text), 'h0')
         print(sent[0].dmrs())
-        header('Concepts')
-        for c in tagged.concepts:
+        header('Available concepts')
+        for c in sent.shallow.concepts:
             print(c, c.words)
         header('Matched')
         for con, nid, pred in m:
@@ -198,6 +198,7 @@ class TestGoldData(unittest.TestCase):
         self.assertTrue(xml_str)
         self.assertIn("<sensegold", xml_str)
         self.assertIn("<sense", xml_str)
+        print(sent.to_xml_str())
 
     def test_gen_gold(self):
         sents = read_gold_mrs()

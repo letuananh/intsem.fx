@@ -1,3 +1,5 @@
+build/*
+release/*
 *~
 *_flymake.py
 # intsem.fx

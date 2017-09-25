@@ -50,8 +50,11 @@ import os
 import logging
 from collections import defaultdict as dd
 
+from puchikarui import with_ctx
+
+from coolisf.dao.ruledb import ChunkDB
 from coolisf.mappings.optimus import rules as optimus_rules
-from coolisf.model import Sentence, Reading, DMRS, ChunkDB
+from coolisf.model import Sentence, Reading, DMRS
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION
@@ -228,14 +231,12 @@ class RuleDB(ChunkDB):
         rules = [NounNounCompound(p.edit(), lemma) for p in iword]
         return rules
 
+    @with_ctx
     def get_rule(self, wid, pid, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_rule(wid, pid, ctx=ctx)
         word = ctx.word.by_id(wid)
         parse = ctx.parse.by_id(pid)
         if word is not None and parse is not None:
-            word.parses.append()
+            word.parses.append(parse)
         else:
             logger.warning("Rule {}/{} could not be loaded. Make sure that rule db file exists.".format(wid, pid))
             return None
@@ -286,7 +287,7 @@ class Transformer(object):
                 elif node.predstr in self.rule_signs:
                     # print(node.predstr, "Found rule: ", self.rule_signs[node.predstr])
                     for wid, pid in self.rule_signs[node.predstr]:
-                        rule = self.rdb.get_rule(wid, pid, ctx)
+                        rule = self.rdb.get_rule(wid, pid, ctx=ctx)
                         if rule is not None:
                             self.add_rule(rule)
                             applicable_rules.append(rule)

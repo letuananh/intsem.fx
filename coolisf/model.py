@@ -94,8 +94,8 @@ class Corpus(object):
     '''
     A corpus wrapper
     '''
-    def __init__(self, name='', title=''):
-        self.ID = None
+    def __init__(self, name='', title='', ID=None):
+        self.ID = ID
         self.name = name
         self.title = title
         self.documents = []
@@ -188,7 +188,9 @@ class Sentence(object):
 
     @property
     def shallow(self):
-        if not self.words:
+        if self._shallow:
+            return self._shallow
+        elif not self.words:
             return None
         else:
             tsent = TaggedSentence(self.text)
@@ -340,9 +342,9 @@ class Reading(object):
     INACTIVE = 0
     ACTIVE = 1
 
-    def __init__(self, mrs_raw=None, dmrs_raw=None, sent=None):
+    def __init__(self, mrs_raw=None, dmrs_raw=None, sent=None, ID=None):
         # corpus management
-        self.ID = None
+        self.ID = ID
         self.rid = None  # ident?
         self.mode = None  # INACTIVE/ACTIVE
         self.sentID = None
@@ -1596,88 +1598,6 @@ class PredSense(object):
         return sorted(ss, key=lambda x: x.tagcount, reverse=True)
 
 
-SETUP_SCRIPT = '''
-CREATE TABLE word (
-  ID INTEGER PRIMARY KEY AUTOINCREMENT,
-  lemma TEXT,
-  pos TEXT,
-  flag INTEGER
-);
-
-CREATE TABLE parse (
-  ID INTEGER PRIMARY KEY AUTOINCREMENT,
-  raw TEXT,
-  wid INTEGER NOT NULL,
-  preds INTEGER,
-  FOREIGN KEY (wid) REFERENCES word(ID) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE TABLE "flag" (
-    "ID" INTEGER PRIMARY KEY NOT NULL,
-    "text" TEXT,
-    "desc" TEXT
-);
-
-CREATE INDEX word_lemma ON word(lemma);
-CREATE INDEX word_flag ON word(flag);
-
-INSERT INTO "flag" (ID, text, desc)
-VALUES
-    (1, 'PROCESSED', ''),
-    (2, 'ERROR', 'couldn''t parse'),
-    (3, 'GOLD', ''),
-    (4, 'COMPOUND', 'to be further processed, but most likely are compound'),
-    (5, 'MWE', 'compound that were confirmed are multi-word expressions'),
-    (6, 'MISMATCHED', 'wrong POS'),
-    (7, 'UNKNOWN', ''),
-    (8, 'NOM_VERB', 'norminalized'),
-    (9, 'COMP_NN', 'Noun-noun compound'),
-    (10, 'COMP_AN', 'Adj-noun compound'),
-    (11, 'COMP_NE', 'named-entity');
-'''
-SETUP_FILE = None
-
-
-class ChunkDB(Schema):
-
-    def __init__(self, data_source=':memory:', setup_script=SETUP_SCRIPT, setup_file=SETUP_FILE):
-        Schema.__init__(self, data_source=data_source, setup_script=setup_script, setup_file=setup_file)
-        self.add_table('word', ['ID', 'lemma', 'pos', 'flag'], proto=LexItem, id_cols=('ID',))
-        self.add_table('parse').add_fields('ID', 'raw', 'wid', 'preds').set_id('ID')
-
-    def get_parses(self, word, ctx):
-        parses = ctx.parse.select('wid = ?', (word.ID,))
-        if parses:
-            word.parses = parses
-        return parses
-
-    def flag(self, word, flag, ctx):
-        word.flag = flag
-        self.word.save(word, columns=('flag',))
-
-    def get_words(self, lemma=None, pos=None, flag=None, limit=None, deep_select=True, ctx=None):
-        if ctx is None:
-            with self.ctx() as ctx:
-                return self.get_words(lemma, pos, flag, limit, deep_select, ctx=ctx)
-        # ctx is not None
-        query = []
-        params = []
-        if lemma:
-            query.append("lemma = ?")
-            params.append(lemma)
-        if pos:
-            query.append("pos = ?")
-            params.append(pos)
-        if flag:
-            query.append("flag = ?")
-            params.append(flag)
-        words = ctx.word.select(" AND ".join(query), params, limit=limit)
-        if deep_select:
-            for word in words:
-                self.get_parses(word, ctx=ctx)
-        return words
-
-
 class LexItem(object):
 
     PROCESSED = 1
@@ -1739,15 +1659,6 @@ class LexItem(object):
         for idx, p in enumerate(iw):
             print("#{}. {}".format(idx + 1, p.mrs()))
         return iw
-
-
-class WordMRS(object):
-
-    def __init__(self, ID=None, raw=None, wid=None, preds=None):
-        self.ID = ID
-        self.raw = raw
-        self.wid = wid
-        self.preds = preds
 
 
 def create_chunk_db(txt_file, db):

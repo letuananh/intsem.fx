@@ -55,11 +55,10 @@ import collections
 import string
 from collections import defaultdict as dd
 from chirptext.leutile import header, TextReport, FileHelper, Counter
-from chirptext.io import CSV
-from puchikarui import Schema
 
 from coolisf.gold_extract import *
-from coolisf.model import Sentence, ChunkDB, LexItem, WordMRS, create_chunk_db
+from coolisf.dao.ruledb import ChunkDB
+from coolisf.model import LexItem, create_chunk_db
 from coolisf import GrammarHub
 
 ########################################################################

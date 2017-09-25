@@ -175,10 +175,10 @@ CREATE TABLE IF NOT EXISTS "cwl" (
 
 
 
-CREATE INDEX IF NOT EXISTS "sentence_|_documentID" ON "sentence" ("documentID" ASC);
+CREATE INDEX IF NOT EXISTS "sentence_|_docID" ON "sentence" ("docID" ASC);
 CREATE INDEX IF NOT EXISTS "document_|_grammar" ON "document" ("grammar");
 CREATE INDEX IF NOT EXISTS "document_|_lang" ON "document" ("lang");
-CREATE INDEX IF NOT EXISTS "reading_|_sentenceID" ON "reading" ("sentenceID" ASC);
+CREATE INDEX IF NOT EXISTS "reading_|_sentID" ON "reading" ("sentID" ASC);
 CREATE INDEX IF NOT EXISTS "dmrs_|_readingID" ON "dmrs" ("readingID" DESC);
 CREATE INDEX IF NOT EXISTS "dmrs_node_|_dmrsID" ON "dmrs_node" ("dmrsID" ASC);
 

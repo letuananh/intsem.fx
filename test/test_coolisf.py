@@ -254,7 +254,7 @@ class TestRuleGenerator(unittest.TestCase):
         wid, pid = (21811, 80632)
         rdb = RuleDB(CHUNKDB)  # rule DB
         with rdb.ctx() as ctx:
-            rule = rdb.get_rule(wid, pid, ctx)
+            rule = rdb.get_rule(wid, pid, ctx=ctx)
             self.assertIsInstance(rule, NounNounCompound)
             self.assertIsNotNone(rule.dmrs())
 

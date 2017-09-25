@@ -1,3 +1,16 @@
 #!/bin/bash
 
+DEFAULT_HOME=~/local/isf
+
+if [ -z "${ISF_HOME}" ]; then
+    echo "WARNING: ISF_HOME could not be located ..."
+    if [ -d ${DEFAULT_HOME} ]; then
+        echo "Defaulting to ${DEFAULT_HOME}"
+        export ISF_HOME=${DEFAULT_HOME}
+    fi
+fi
+
+if [ ! -z "${ISF_HOME}" ]; then
+    export PYTHONPATH=${ISF_HOME}
+fi
 python3 -m coolisf.main $@

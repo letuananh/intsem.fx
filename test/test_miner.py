@@ -56,8 +56,7 @@ from chirptext import FileHelper, header
 
 from miner import analyse_compound
 from coolisf import GrammarHub
-from coolisf.model import ChunkDB
-
+from coolisf.dao.ruledb import ChunkDB
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION

@@ -58,7 +58,7 @@ from chirptext import header
 from chirptext.texttaglib import TagInfo
 
 from coolisf import GrammarHub
-from coolisf.util import is_valid_name
+from coolisf.util import is_valid_name, sent2json
 from coolisf.model import Corpus, Document, Sentence, Reading
 from coolisf.model import DMRSLayout, Node, Link
 
@@ -136,6 +136,15 @@ class TestGrammarHub(unittest.TestCase):
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
   HCONS: < h0 qeq h1 > ]''').dmrs()
         print(dmrs.latex())
+
+    def test_sent2json(self):
+        sent = Sentence('It rains.')
+        sent.add('''[ TOP: h0
+  INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+  RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
+  HCONS: < h0 qeq h1 > ]''')
+        j = sent2json(sent)
+        print(j)
 
 
 class TestDMRSModel(unittest.TestCase):
