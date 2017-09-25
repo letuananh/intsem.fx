@@ -1,4 +1,4 @@
-Integrated semantic framework (intsem.fx)
+Integrated Semantic Framework (intsem.fx)
 =========
 
 1 - Prerequisite
