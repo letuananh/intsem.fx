@@ -11,18 +11,24 @@ Integrated Semantic Framework (intsem.fx)
 
 # Installation
 
+* Download and install ACE >= 0.9.26 from: http://sweaglesw.org/linguistics/ace/
+* Download ERG trunk from SVN `svn checkout http://svn.delph-in.net/erg/trunk`
+* Build erg.dat `ace -g ace/config.tdl -G erg.dat`
 * Download the latest release from: https://github.com/letuananh/lelesk/releases, unzip it to a folder and run the `isf` command
+
+Tips:
+`pip` is recommended for installing required packages
+```
+python -m pip install -r requirements.txt
+```
+
+
+# Using ISF
 
 ```
 cd ~/workspace/intsem.fx
 ./isf parse data/sample.txt data/sample.out
 ```
-Tips: `pip` is recommended for installing required packages
-```
-cd ~/workspace/intsem.fx
-pip install -r requirements.txt
-```
-
 
 # Development
 
@@ -49,4 +55,17 @@ To use ISF, please try
 ```
 cd ~/workspace/intsem.fx
 ./isf --help
+```
+
+Notes:
+
+Use virtualenv to install required packages
+```
+python3 -m venv ~/isf_py3
+. ~/isf_py3/bin/activate
+```
+
+Install these packages if you are using Fedora Linux:
+```
+sudo dnf install -y redhat-rpm-config gcc-c++
 ```
