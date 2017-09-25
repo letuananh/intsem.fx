@@ -14,29 +14,41 @@ function create_dir {
 # Find current branch
 CURRENT=`git branch | grep '\*' | awk ' {print $2}'`
 
+create_dir ${BUILD_DIR}
+create_dir ${RELEASE_DIR}
+
 # Export current branch to build directory
 
-rm -rf ${BUILD_DIR}
-rm -rf ${RELEASE_DIR}
-create_dir ${BUILD_DIR}
-git archive ${CURRENT} | tar -x -C ${BUILD_DIR}
+export ISF_BUILD=${BUILD_DIR}/isf
+export ISF_RELEASE=${RELEASE_DIR}/isf
 
+# clean old builds
+rm -rf ${ISF_BUILD}
+rm -rf ${ISF_RELEASE}
+
+# release ISF
+create_dir ${ISF_BUILD}
+git archive ${CURRENT} | tar -x -C ${ISF_BUILD}
+# release submodules
 git submodule update
-git submodule foreach --recursive 'git archive --verbose HEAD | tar -x -C ${BUILD_DIR}/$path'
-
+git submodule foreach --recursive 'git archive --verbose HEAD | tar -x -C ${ISF_BUILD}/$path'
 
 # Copy required files to release directory
-create_dir ${RELEASE_DIR}
-cp -rfv ${BUILD_DIR}/modules/chirptext/chirptext ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/modules/lelesk/lelesk ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/modules/puchikarui/puchikarui ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/modules/yawlib/yawlib ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/data ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/coolisf ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/isf ${RELEASE_DIR}/
+create_dir ${ISF_RELEASE}
+cp -rfv ${ISF_BUILD}/modules/chirptext/chirptext ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/modules/lelesk/lelesk ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/modules/puchikarui/puchikarui ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/modules/yawlib/yawlib ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/data ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/coolisf ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/isf ${ISF_RELEASE}/
 
-cp -rfv ${BUILD_DIR}/setup.py ${RELEASE_DIR}/
+cp -rfv ${ISF_BUILD}/setup.py ${ISF_RELEASE}/
 
-cp -rfv ${BUILD_DIR}/LICENSE ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/requirements.txt ${RELEASE_DIR}/
-cp -rfv ${BUILD_DIR}/README.md ${RELEASE_DIR}/
+cp -rfv ${ISF_BUILD}/LICENSE ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/requirements.txt ${ISF_RELEASE}/
+cp -rfv ${ISF_BUILD}/README.md ${ISF_RELEASE}/
+
+cd ${RELEASE_DIR}
+tar -zcvf isf.tar.gz isf
+ls -l ${RELEASE_DIR}
