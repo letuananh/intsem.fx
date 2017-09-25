@@ -15,6 +15,12 @@ Integrated Semantic Framework (intsem.fx)
 * Download ERG trunk from SVN `svn checkout http://svn.delph-in.net/erg/trunk`
 * Build erg.dat `ace -g ace/config.tdl -G erg.dat`
 * Download the latest release from: https://github.com/letuananh/lelesk/releases, unzip it to a folder and run the `isf` command
+* Download NLTK data
+```
+import nltk
+nltk.download("book")
+```
+
 
 Tips:
 `pip` is recommended for installing required packages
