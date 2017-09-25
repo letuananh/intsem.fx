@@ -1,7 +1,7 @@
 Integrated Semantic Framework (intsem.fx)
 =========
 
-1 - Prerequisite
+# Prerequisite
 
 * Python >= 3.5
 * Required packages (see requirements.txt)
