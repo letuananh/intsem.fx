@@ -54,6 +54,10 @@ import os
 import sys
 import argparse
 
+from chirptext import header, confirm, TextReport, FileHelper
+from chirptext.texttaglib import TagInfo
+
+from .ghub import GrammarHub
 from .gold_extract import generate_gold_profile
 from .gold_extract import read_ace_output
 from .gold_extract import export_to_visko
@@ -88,10 +92,37 @@ def to_visko(args):
     export_to_visko(sents, export_path)
 
 
+def parse_isf(args):
+    # verification
+    if not os.path.isfile(args.infile):
+        print("Error. File does not exist. (provided: {})".format(args.infile))
+    if args.outfile and os.path.exists(args.outfile):
+        if not confirm("Output file exists. Do you want to continue (Y/N)? "):
+            print("Program aborted.")
+            return
+    # process
+    header("Processing file: {}".format(args.infile))
+    report = TextReport(args.outfile)
+    ghub = GrammarHub()
+    lines = FileHelper.read(args.infile).splitlines()
+    for sent in ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.count, ignore_cache=args.nocache):
+        sent.tag_xml(method=args.tagger)
+        report.writeline(sent.to_xml_str())
+        report.writeline("\n\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="CoolISF Main Application")
 
     tasks = parser.add_subparsers(help='Task to be done')
+
+    parse_task = tasks.add_parser('parse', help='Process raw text file')
+    parse_task.add_argument('infile', help='Path to input text file')
+    parse_task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
+    parse_task.add_argument('-c', '--count', help='Maximum parse count', default=None)
+    parse_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    parse_task.add_argument('--tagger', help='Word Sense Tagger', default=TagInfo.LELESK)
+    parse_task.set_defaults(func=parse_isf)
 
     gold_task = tasks.add_parser('gold', help='Extract gold profile')
     gold_task.set_defaults(func=lambda arsg: generate_gold_profile())

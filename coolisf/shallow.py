@@ -53,7 +53,10 @@ import nltk
 from nltk.stem import WordNetLemmatizer
 
 from chirptext.texttaglib import TaggedSentence, TagInfo, Token
-from chirptext.deko import txt2mecab
+try:
+    from chirptext.deko import txt2mecab
+except:
+    logging.warning("Deko cannot be imported. JapaneseAnalyser will not function properly")
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION

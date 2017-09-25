@@ -233,7 +233,12 @@ class RuleDB(ChunkDB):
             with self.ctx() as ctx:
                 return self.get_rule(wid, pid, ctx=ctx)
         word = ctx.word.by_id(wid)
-        word.parses.append(ctx.parse.by_id(pid))
+        parse = ctx.parse.by_id(pid)
+        if word is not None and parse is not None:
+            word.parses.append()
+        else:
+            logger.warning("Rule {}/{} could not be loaded. Make sure that rule db file exists.".format(wid, pid))
+            return None
         try:
             r = self.get_rules(word)
             return r[0]
@@ -250,8 +255,13 @@ class Transformer(object):
                       self.get_green_tea(),
                       self.get_big_bad_wolf()]
         self.rule_map = dd(list)
-        self.rdb = RuleDB(CHUNKDB)
-        self.rule_signs = optimus_rules
+        if os.path.isfile(CHUNKDB):
+            self.rdb = RuleDB(CHUNKDB)
+            self.rule_signs = optimus_rules
+        else:
+            logger.warning("Rule DB could not be found. Only manual rules will be available.")
+            self.rdb = None
+            self.rule_signs = {}
         # sample rules
         self.add_rule(self.get_guard_dog())
         self.add_rule(self.get_green_tea())
@@ -263,6 +273,12 @@ class Transformer(object):
 
     def find_rules(self, nodes):
         applicable_rules = []
+        # use manual rules
+        # [TODO] Fix this
+        if self.rdb is None:
+            for node in nodes:
+                applicable_rules.extend(self.rule_map[node.predstr])
+            return applicable_rules
         with self.rdb.ctx() as ctx:
             for node in nodes:
                 if node.predstr in self.rule_map:
@@ -271,8 +287,9 @@ class Transformer(object):
                     # print(node.predstr, "Found rule: ", self.rule_signs[node.predstr])
                     for wid, pid in self.rule_signs[node.predstr]:
                         rule = self.rdb.get_rule(wid, pid, ctx)
-                        self.add_rule(rule)
-                        applicable_rules.append(rule)
+                        if rule is not None:
+                            self.add_rule(rule)
+                            applicable_rules.append(rule)
                 else:
                     # something else
                     continue
