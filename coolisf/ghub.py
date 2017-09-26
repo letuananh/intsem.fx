@@ -215,21 +215,28 @@ class Grammar:
                         continue
                 # not in cache then ...
                 s = Sentence(text)
-                # preprocessor
-                if self.preps:
-                    for prep in self.preps:
-                        prep.process(s)
-                result = parser.interact(s.text)
-                if result and 'RESULTS' in result:
-                    top_res = result['RESULTS']
-                    for mrs in top_res:
-                        parse = s.add(mrs['MRS'])
-                        if self.posts:
-                            for p in self.posts:
-                                p.process(parse)
-                # cache it
-                if self.cache:
-                    self.cache.save(s, self.name, parse_count, exargs_str, ctx=ctx)
+                try:
+                    # preprocessors
+                    if self.preps:
+                        for prep in self.preps:
+                            prep.process(s)
+                    # interact with grammar
+                    result = parser.interact(s.text)
+                    # postprocessors
+                    if result and 'RESULTS' in result:
+                        top_res = result['RESULTS']
+                        for mrs in top_res:
+                            parse = s.add(mrs['MRS'])
+                            if self.posts:
+                                for p in self.posts:
+                                    p.process(parse)
+                    # cache it
+                    if self.cache:
+                        self.cache.save(s, self.name, parse_count, exargs_str, ctx=ctx)
+                except Exception as e:
+                    s.flag = Sentence.ERROR
+                    s.comment = "This sentence is not fully processed"
+                    logger.exception("Error happened while processing sentence: {}".format(text))
                 yield s
 
     def parse_many(self, texts, parse_count=None, extra_args=None, ignore_cache=False):
