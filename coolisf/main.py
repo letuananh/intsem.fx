@@ -112,9 +112,9 @@ def parse_isf(args):
     report = TextReport(args.outfile)
     ghub = GrammarHub()
     lines = FileHelper.read(args.infile).splitlines()
-    for sent in ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.count, ignore_cache=args.nocache):
+    for sent in ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.n, ignore_cache=args.nocache):
         sent.tag_xml(method=args.tagger)
-        report.writeline(sent.to_xml_str())
+        report.writeline(sent.to_xml_str(pretty_print=not args.compact))
         report.writeline("\n\n")
 
 
@@ -127,14 +127,14 @@ def parse_text(args):
         if args.format == OUTPUT_DMRS:
             report.header(result)
             for reading in result:
-                report.writeline(reading.dmrs().tostring())
+                report.writeline(reading.dmrs().tostring(pretty_print=not args.compact))
         elif args.format == OUTPUT_XML:
             result.tag_xml()
-            report.writeline(result.to_xml_str())
+            report.writeline(result.to_xml_str(pretty_print=not args.compact))
         elif args.format == OUTPUT_MRS:
             report.header(result)
             for reading in result:
-                report.writeline(reading.mrs().tostring())
+                report.writeline(reading.mrs().tostring(pretty_print=not args.compact))
 
 
 def main():
@@ -145,9 +145,10 @@ def main():
     parse_task = tasks.add_parser('parse', help='Process raw text file')
     parse_task.add_argument('infile', help='Path to input text file')
     parse_task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
-    parse_task.add_argument('-c', '--count', help='Maximum parse count', default=None)
+    parse_task.add_argument('-n', help='Maximum parse count', default=None)
     parse_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     parse_task.add_argument('--tagger', help='Word Sense Tagger', default=TagInfo.LELESK)
+    parse_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     parse_task.set_defaults(func=parse_isf)
 
     text_task = tasks.add_parser('text', help='Analyse a text')
@@ -158,6 +159,7 @@ def main():
     text_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     text_task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
     text_task.add_argument('-o', '--output', help="Write output to path")
+    text_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     text_task.set_defaults(func=parse_text)
 
     gold_task = tasks.add_parser('gold', help='Extract gold profile')
