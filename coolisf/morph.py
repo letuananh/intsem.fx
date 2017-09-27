@@ -156,10 +156,7 @@ class Compound(object):
         self.sign = self.head().predstr
 
     def head(self):
-        if self.construction.top.predstr == "unknown":
-            return self.construction.top["ARG"]
-        else:
-            return self.construction.top
+        return self.construction.head()
 
     @property
     def graph(self):
