@@ -210,6 +210,49 @@ class TestDMRSSQLite(TestDAOBase):
             self.assertEqual(d1.tags[10002][0].synset.lemma, d2.tags[10002][0].synset.lemma)
 
 
+class TestCorpusManagement(TestDAOBase):
+
+    def test_moving_sentences(self):
+        with self.db.ctx() as ctx:
+            corpus = self.db.create_corpus("test", ctx=ctx)
+            doc_unk = corpus.new("default")
+            doc_rain = corpus.new("rain")
+            doc_dog = corpus.new("dog")
+            for doc in corpus:
+                self.db.save_doc(doc, ctx=ctx)
+            docs = ctx.doc.select()
+            # add sentences to default
+            doc_unk.new("It rains.").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
+            doc_unk.new("It rained.").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:10> LBL: h1 ARG0: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
+            doc_unk.new("Some dog barks.").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:15> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+            doc_unk.new("Some dog barked.").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:16> LBL: h3 ARG0: e5 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+            doc_unk.new("Some dog has been barking.").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<18:26> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: + PERF: + ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+            for sent in doc_unk:
+                self.db.save_sent(sent, ctx=ctx)
+            unk_sents = self.db.get_sents(docID=doc_unk.ID, ctx=ctx)
+            rain_sents = self.db.get_sents(docID=doc_rain.ID, ctx=ctx)
+            dog_sents = self.db.get_sents(docID=doc_dog.ID, ctx=ctx)
+            self.assertEqual(len(docs), 3)
+            self.assertEqual(len(unk_sents), 5)
+            self.assertEqual(len(rain_sents), 0)
+            self.assertEqual(len(dog_sents), 0)
+            sents = [self.db.get_sent(s.ID, ctx=ctx) for s in ctx.sentence.select()]
+            for s in sents:
+                if s[0].dmrs().layout.top.rplemma == 'rain':
+                    s.docID = doc_rain.ID
+                elif s[0].dmrs().layout.top.rplemma == 'bark':
+                    s.docID = doc_dog.ID
+                ctx.sentence.save(s, columns=('docID',))
+            unk_sents = self.db.get_sents(docID=doc_unk.ID, ctx=ctx)
+            rain_sents = self.db.get_sents(docID=doc_rain.ID, ctx=ctx)
+            dog_sents = self.db.get_sents(docID=doc_dog.ID, ctx=ctx)
+            self.assertEqual(len(unk_sents), 0)
+            self.assertEqual(len(rain_sents), 2)
+            self.assertEqual(len(dog_sents), 3)
+            # move sentences around
+        pass
+
+
 SENT_TEXT = "ロボットの子は猫が好きです。"
 SENT_TAGS = {'tokens': [{'label': 'ロボット', 'cto': 4, 'cfrom': 0}, {'label': 'の', 'cto': 6, 'cfrom': 5}, {'label': '子', 'cto': 8, 'cfrom': 7}, {'label': 'は', 'cto': 10, 'cfrom': 9}, {'label': '猫', 'cto': 12, 'cfrom': 11}, {'label': 'が', 'cto': 14, 'cfrom': 13}, {'label': '好き', 'cto': 17, 'cfrom': 15}, {'label': 'です', 'cto': 20, 'cfrom': 18}, {'label': '。', 'cto': 22, 'cfrom': 21}], 'concepts': [{'clemma': 'ロボット', 'words': [0], 'tag': '02761392-n'}, {'clemma': '猫', 'words': [4], 'tag': '02121620-n'}, {'clemma': '好き', 'words': [6], 'tag': '01292683-a'}, {'clemma': 'ロボットの子', 'words': [0, 1, 2], 'tag': '10285313-n', 'flag': 'E'}], 'text': 'ロボット の 子 は 猫 が 好き です 。 \n'}
 
