@@ -108,6 +108,18 @@ class Corpus(object):
         self.documents.append(doc)
         return doc
 
+    def __getitem__(self, idx):
+        return self.documents[idx]
+
+    def __len__(self):
+        return len(self.documents)
+
+    def __iter__(self):
+        return iter(self.documents)
+
+    def __repr__(self):
+        return "Corpus(name={})".format(repr(self.name))
+
 
 class Document(object):
 
@@ -132,11 +144,15 @@ class Document(object):
 
     def new(self, text='', ident=None):
         sent = Sentence(text=text, ident=ident)
+        sent.docID = self.ID
         self.add(sent)
         return sent
 
+    def __repr__(self):
+        return "Document(name={})".format(repr(self.name))
+
     def __str__(self):
-        return "Doc#{id}".format(id=self.ID)
+        return repr(self)
 
     def __len__(self):
         return len(self.sentences)
@@ -1126,6 +1142,14 @@ class DMRSLayout(object):
     @property
     def top(self):
         return self._top
+
+    def head(self):
+        if self.top is None:
+            return None
+        elif self.top.predstr == "unknown" and self.top['ARG'] is not None:
+            return self.top["ARG"]
+        else:
+            return self.top
 
     @property
     def to_string(self):
