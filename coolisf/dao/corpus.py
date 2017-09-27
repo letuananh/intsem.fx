@@ -185,6 +185,7 @@ class CorpusDAOSQLite(RichKopasu):
         corpus.ID = ctx.corpus.save(corpus)
         return corpus
 
+    @with_ctx
     def save_doc(self, doc, *fields, ctx=None):
         if not is_valid_name(doc.name):
             raise ValueError("Invalid doc name (provided: {}) - Visko only accept names using alphanumeric characters".format(doc.name))
@@ -225,9 +226,6 @@ class CorpusDAOSQLite(RichKopasu):
             return sents
         else:
             return ctx.Sentence.select(where, params)
-
-    def query(self, query_obj):
-        return self.ds.select(query_obj.query, query_obj.params)
 
     @with_ctx
     def note_sentence(self, sent_id, comment, ctx=None):
