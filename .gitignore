@@ -1,3 +1,7 @@
+data/chunks*
+data/*.dat
+data/*.db
+data/*.out
 build/*
 release/*
 *~
