@@ -52,11 +52,13 @@ __status__ = "Prototype"
 
 import os
 import sys
+import gzip
 import argparse
 
 from chirptext import header, confirm, TextReport, FileHelper
 from chirptext.texttaglib import TagInfo
 
+from .dao import read_tsdb
 from .ghub import GrammarHub
 from .gold_extract import generate_gold_profile
 from .util import read_ace_output
@@ -118,6 +120,25 @@ def parse_isf(args):
         report.writeline("\n\n")
 
 
+def extract_tsdb(args):
+    ''' Read parsed sentences from a TSDB profile '''
+    if not os.path.isdir(args.path):
+        print("TSDB profile does not exist (path: {})".format(args.path))
+    else:
+        doc = read_tsdb(args.path)
+        print("Found sentences: {}".format(len(doc)))
+        doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
+        if args.output:
+            if args.output.endswith('.gz'):
+                with gzip.open(args.output, 'wt') as outfile:
+                    outfile.write(doc_xml_str)
+            else:
+                with open(args.output, 'wt') as outfile:
+                    outfile.write(doc_xml_str)
+        else:
+            print(doc_xml_str)
+
+
 def parse_text(args):
     ghub = GrammarHub()
     text = args.input
@@ -162,8 +183,17 @@ def main():
     text_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     text_task.set_defaults(func=parse_text)
 
+    # Create ISF gold profile
     gold_task = tasks.add_parser('gold', help='Extract gold profile')
     gold_task.set_defaults(func=lambda arsg: generate_gold_profile())
+
+    # Extract sentences from TSDB profile
+    tsdb_task = tasks.add_parser('tsdb', help='Read TSDB profile')
+    tsdb_task.add_argument('path', help='Path to TSDB profile folder')
+    tsdb_task.add_argument('output', help='Save extracted sentences to a file', nargs="?", default=None)
+    tsdb_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
+    tsdb_task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
+    tsdb_task.set_defaults(func=extract_tsdb)
 
     export_task = tasks.add_parser('export', help='Export MRS to VISKO')
     export_task.add_argument('-f', '--file', help='MRS file')

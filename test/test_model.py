@@ -77,7 +77,7 @@ TEST_DATA = os.path.join(TEST_DIR, 'data')
 # TEST SCRIPTS
 # -------------------------------------------------------------------------------
 
-class TestGrammarHub(unittest.TestCase):
+class TestSentenceModel(unittest.TestCase):
 
     ghub = GrammarHub()
     EI = ghub.ERG_ISF
@@ -146,6 +146,21 @@ class TestGrammarHub(unittest.TestCase):
         j = sent2json(sent)
         print(j)
 
+    def test_xml_encoding(self):
+        print("Test XML to and from Sentence")
+        sent = Sentence('It rains.')
+        sent.add('''[ TOP: h0
+  INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+  RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
+  HCONS: < h0 qeq h1 > ]''').dmrs()
+        sent.tag_xml(method=TagInfo.MFS)
+        full_xml = sent.to_xml_str()
+        compact_xml = sent.to_xml_str(pretty_print=False, with_dmrs=False)
+        full_sent = Sentence.from_xml_str(full_xml)
+        compact_sent = Sentence.from_xml_str(compact_xml)
+        self.assertEqual(full_sent[0].dmrs().layout.to_json(), sent[0].dmrs().layout.to_json())
+        self.assertEqual(compact_sent[0].dmrs().layout.to_json(), sent[0].dmrs().layout.to_json())
+
 
 class TestDMRSModel(unittest.TestCase):
 
@@ -155,6 +170,23 @@ class TestDMRSModel(unittest.TestCase):
         n.rppos = "n"
         n.rpsense = "1"
         print(n)
+
+    def test_doc_xml(self):
+        doc = Document("test")
+        doc.new("It rains.", ident="1000").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
+        doc.new("It rained.", ident="1010").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:10> LBL: h1 ARG0: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
+        doc.new("Some dog barks.", ident="1020").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:15> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+        doc.new("Some dog barked.", ident="1030").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:16> LBL: h3 ARG0: e5 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+        doc.new("Some dog has been barking.", ident="1040").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<18:26> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: + PERF: + ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+        idents = [s.ident for s in doc]
+        dstr = doc.to_xml_str(pretty_print=False, with_dmrs=False)
+        # convert XML string into a new document object
+        doc2 = Document.from_xml_str(dstr)
+        self.assertEqual(len(doc2), 5)
+        idents2 = [s.ident for s in doc2]
+        for s in doc2:
+            self.assertIsNotNone(s[0].mrs())
+        self.assertEqual(idents, idents2)
 
 
 class TestName(unittest.TestCase):

@@ -49,25 +49,28 @@ __status__ = "Prototype"
 import os
 import datetime
 import gzip
+import logging
 from lxml import etree
-
-from delphin import itsdb
 
 from fuzzywuzzy import fuzz
 
 from chirptext.leutile import FileHelper
-from chirptext.leutile import StringTool
+from chirptext.leutile import header
 from chirptext.leutile import Counter
+from chirptext.io import CSV
 from chirptext.texttaglib import TaggedDoc, TagInfo
 
+from coolisf.dao import read_tsdb
 from coolisf.model import Document, Sentence
 
 from .lexsem import tag_gold
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
+
 # -----------------------------------------------------------------------
 
+logger = logging.getLogger(__name__)
 DATA_DIR = FileHelper.abspath('./data')
 GOLD_PROFILE = os.path.join(DATA_DIR, 'gold')
 GOLD_MRS_FILE = 'data/gold.out.txt'
@@ -78,60 +81,33 @@ MY_DIR = os.path.dirname(os.path.realpath(__file__))
 LICENSE_TEMPLATE_LOC = os.path.join(MY_DIR, 'CCBY30_template.txt')
 LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
-
 # -----------------------------------------------------------------------
 
-class TSDBSentence:
-    def __init__(self, sid, text, mrs=''):
-        self.sid = sid
-        self.ntuid = None
-        self.text = text
-        self.mrs = mrs
 
+def get_mrs(s, default=''):
+    ''' Get top MRS in a sentense if available else return default value '''
+    return s[0].mrs().tostring(pretty_print=False) if len(s) else default
 
-# -----------------------------------------------------------------------
 
 def extract_tsdb_gold():
-    # read NTU-MC
-    raw_sentences = []
-    tagdoc.read()
-    for s in tagdoc:
-        raw_sentences.append(TSDBSentence(s.ID, s.text))
+    # read NTUMC
+    tagged_doc = TaggedDoc(DATA_DIR, 'gold').read()
     # read Itsdb
-    prof = itsdb.ItsdbProfile(GOLD_PROFILE)
+    doc = read_tsdb(GOLD_PROFILE)
 
-    # Read all items
-    tbl_item = prof.read_table('item')
-    gold_sentences = []
-    sentences_map = dict()
-    for row in tbl_item:
-        iid = row.get('i-id')
-        raw_text = row.get('i-input').strip()
-        sentences_map[iid] = TSDBSentence(iid, raw_text)
-        gold_sentences.append(sentences_map[iid])
+    header("Extracting gold data from itsdb profile at {}".format(GOLD_PROFILE))
 
-    # Read all parse results
-    tbl_result = prof.read_table('result')
-    for row in tbl_result:
-        pid = row.get('parse-id')
-        mrs = row.get('mrs')
-        if pid not in sentences_map:
-            print('pid %s cannot be found' % pid)
-        else:
-            sentences_map[pid].mrs = StringTool.to_str(mrs)
-
-    # Compare raw sentences with sentences from ITSDB
+    # Compare NTUMC to ITSDB
     c = Counter()
-    for i in range(len(raw_sentences)):
-        s = gold_sentences[i]
-        rs = raw_sentences[i]
-        ratio = fuzz.ratio(rs.text, s.text)
+    for idx, ntumc_sent in enumerate(tagged_doc):
+        tsdb_sent = doc[idx]
+        ratio = fuzz.ratio(tsdb_sent.text, ntumc_sent.text)
         c.count("TOTAL")
         if ratio < 95:
-            print("[%s] != [%s]" % (rs.text, s.text))
+            print("[%s] != [%s]" % (tsdb_sent.text, ntumc_sent.text))
             c.count('MISMATCH')
         else:
-            s.ntuid = rs.sid
+            tsdb_sent.ident = ntumc_sent.ID
             if ratio < 100:
                 c.count("FUZZMATCHED")
             else:
@@ -139,26 +115,10 @@ def extract_tsdb_gold():
     c.summarise()
 
     # Write found sentences and parse results to a text file
-    with open(GOLD_MRS_FILE, 'w') as outfile:
-        for sent in gold_sentences:
-            outfile.write('%s\t%s\t%s\t%s\n' % (sent.ntuid, sent.sid, sent.text, sent.mrs))
-
-    # Verification
-    with open(GOLD_MRS_FILE, 'r') as testfile:
-        for line in testfile:
-            parts = line.split('\t')
-            if len(parts) != 4:
-                print("WARNING: INVALID LINE")
-    print("All done!")
-    return True
-
-
-def read_data(file_path):
-    data = []
-    with open(file_path, 'r') as input_file:
-        for line in input_file:
-            data.append(tuple(line.split()))
-    return data
+    rows = ({'ntuid': s.ident, 'tsdbid': s.ID, 'text': s.text, 'mrs': get_mrs(s)} for s in doc)
+    CSV.write_tsv(GOLD_MRS_FILE, rows, header=['ntuid', 'tsdbid', 'text', 'mrs'])
+    print("Gold profile has been extracted")
+    return doc
 
 
 def build_root_node():
@@ -219,18 +179,15 @@ def build_root_node():
 
 
 def read_gold_mrs():
-    # Read gold profile from ITSDB (ERG-TRUNK)
-    # Generate INPUT_MRS file (gold.out.txt) if needed
+    # Generate INPUT_MRS file (gold.out.txt) from itsdb if needed
     if not os.path.isfile(GOLD_MRS_FILE):
         extract_tsdb_gold()
     doc = Document(name="speckled", title="The Adventure of the Speckled Band")
-    with open(GOLD_MRS_FILE) as input_mrs:
-        lines = input_mrs.readlines()
-        for line in lines:
-            (ntuid, tsdbid, text, mrs) = line.split('\t')
-            sent = doc.new(text=text, ident=int(ntuid))
-            if mrs and len(mrs.strip()) > 0:
-                sent.add(mrs_str=mrs)
+    for line in CSV.read(GOLD_MRS_FILE, header=True):
+        sent = doc.new(text=line['text'], ident=int(line['ntuid']))
+        mrs = line['mrs']
+        if mrs and len(mrs.strip()) > 0:
+            sent.add(mrs_str=mrs)
     return doc
 
 
@@ -242,10 +199,10 @@ def read_gold_sents(perform_wsd=False):
     # sense tagging
     for sent in doc:
         if len(sent) == 0:
-            print("WARNING: empty sentence #{}: {}".format(sent.ident, sent.text))
+            logger.warning("Empty sentence #{}: {}".format(sent.ident, sent.text))
             continue
         dmrs = sent[0].dmrs()
-        print("Processing sentence #{}".format(sent))
+        logger.info("Processing sentence #{}".format(sent))
         sent.shallow = tagdoc.sent_map[str(sent.ident)]
         m, n = tag_gold(dmrs, sent.shallow, sent.text)
         if n:
@@ -254,7 +211,7 @@ def read_gold_sents(perform_wsd=False):
         if perform_wsd:
             sent.tag(method=TagInfo.MFS)
         sent.tag_xml()
-    print("Not matched:", not_matched)
+    logger.info("Not matched:", not_matched)
     return doc
 
 

@@ -470,7 +470,15 @@ class TestTransformer(unittest.TestCase):
             adj_list[n.cto + 1].append(n)
         return {frozenset(n.predstr for n in v) for k, v in adj_list.items() if len(v) > 1}
 
+    def test_manual_transformer(self):
+        dmrs = Reading('''[ TOP: h0 INDEX: e2 [ e SF: prop-or-ques ] RELS: < [ unknown<0:8> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg GEND: n PT: notpro ] ARG0: e2 ] [ udef_q<0:8> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ] [ _emerge_v_1<0:8> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: + PERF: - ] ARG1: i10 ] [ nominalization<0:8> LBL: h11 ARG0: x4 ARG1: h8 ] > HCONS: < h0 qeq h1 h6 qeq h11 > ]''').dmrs().layout
+        head = dmrs.head()
+        print("nodes", dmrs.nodes)
+        print("head", head)
+        print(head['ARG1'])
+
     def test_adjacent(self):
+        ''' Generate a list of predicates that are adjacent '''
         p = self.ERG.parse('green tea').edit(0)
         adj_list = p.adjacent_nodes()
         expected = {frozenset({'_green_a_2', '_tea_n_1'})}

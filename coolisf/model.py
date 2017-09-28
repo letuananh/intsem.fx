@@ -51,6 +51,8 @@ __status__ = "Prototype"
 import io
 import copy
 import json
+import gzip
+import codecs
 import logging
 # import threading
 from collections import defaultdict as dd
@@ -73,7 +75,6 @@ from chirptext.io import CSV
 from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
-from puchikarui import Schema
 
 from coolisf.parsers import parse_dmrs_str
 from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
@@ -83,11 +84,9 @@ from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
 # Configuration
 ########################################################################
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
-########################################################################
-# Models
 ########################################################################
 
 class Corpus(object):
@@ -134,12 +133,22 @@ class Document(object):
         self.lang = lang
         self.corpus = None
         self.sentences = []
+        self.ident_map = {}
+        self.id_map = {}
         pass
 
     def add(self, sent):
         ''' Add a sentence '''
         sent.docID = self.ID
         sent.doc = self
+        if sent.ID:
+            if sent.ID in self.id_map and self.id_map[sent.ID] is not None:
+                logger.warning("{}: Duplicate sent ID {}".format(self, sent.ID))
+            self.id_map[sent.ID] = sent
+        if sent.ident:
+            if sent.ident in self.ident_map and self.ident_map[sent.ident] is not None:
+                logger.warning("{}: Duplicate sent ident {}".format(self, sent.ident))
+            self.ident_map[sent.ident] = sent
         self.sentences.append(sent)
 
     def new(self, text='', ident=None):
@@ -163,7 +172,7 @@ class Document(object):
     def __iter__(self):
         return iter(self.sentences)
 
-    def to_xml_node(self, corpus_node=None, with_raw=True):
+    def to_xml_node(self, corpus_node=None, with_raw=True, with_shallow=True, with_dmrs=True):
         doc_node = etree.Element('document')
         if corpus_node is not None:
             corpus_node.append(doc_node)
@@ -171,7 +180,27 @@ class Document(object):
         doc_node.set('name', self.name if self.name else '')
         doc_node.set('title', self.title if self.title else '')
         for sent in self.sentences:
-            sent.to_xml_node(doc_node=doc_node, with_raw=with_raw)
+            sent.to_xml_node(doc_node=doc_node, with_raw=with_raw, with_shallow=with_shallow, with_dmrs=with_dmrs)
+        return doc_node
+
+    def to_xml_str(self, corpus_node=None, pretty_print=True, with_raw=True, with_shallow=True, with_dmrs=True):
+        xml_node = self.to_xml_node(corpus_node, with_raw, with_shallow, with_dmrs)
+        return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
+
+    @staticmethod
+    def from_xml_node(doc_node):
+        doc = Document(name=get_attr(doc_node, 'name', ''), title=get_attr(doc_node, 'title', ''))
+        doc.ident = get_attr(doc_node, 'ident', None)
+        doc.ID = get_attr(doc_node, 'ID', None)
+        sent_nodes = doc_node.findall("sentence")
+        for sent_node in sent_nodes:
+            sent = Sentence.from_xml_node(sent_node)
+            doc.add(sent)
+        return doc
+
+    @staticmethod
+    def from_xml_str(xml_str):
+        return Document.from_xml_node(etree.XML(xml_str))
 
 
 class Sentence(object):
@@ -183,7 +212,7 @@ class Sentence(object):
 
     def __init__(self, text='', ID=None, ident=None, docID=None, doc=None):
         # corpus management
-        self.ID = ID
+        self.ID = ID if ID else None
         self.ident = ident
         self.filename = None
         self.docID = docID
@@ -311,9 +340,10 @@ class Sentence(object):
             parse.dmrs().tag_xml(method=method, update_back=update_back)
         return self
 
-    def to_xml_node(self, doc_node=None, with_raw=True, with_shallow=True):
+    def to_xml_node(self, doc_node=None, with_raw=True, with_shallow=True, with_dmrs=True, pretty_print=True):
         sent_node = etree.Element('sentence')
-        sent_node.set('id', str(self.ident) if self.ident else '')
+        sent_node.set('id', str(self.ID) if self.ID else '')
+        sent_node.set('ident', str(self.ident) if self.ident else '')
         sent_node.set('version', '0.1')
         sent_node.set('lang', 'eng')
         # add to doc_node if available
@@ -336,21 +366,65 @@ class Sentence(object):
             # store MRS raw
             if reading.mrs():
                 mrs_node = etree.SubElement(intp_node, 'mrs')
-                mrs_node.text = etree.CDATA(reading.mrs().tostring())
+                mrs_node.text = etree.CDATA(reading.mrs().tostring(pretty_print=pretty_print))
             # store DMRS
-            intp_node.append(reading.dmrs().xml())
+            if with_dmrs:
+                intp_node.append(reading.dmrs().xml())
             # store shallow if needed
             if with_shallow and self.shallow is not None:
                 shallow_node = etree.SubElement(sent_node, 'shallow')
-                shallow_node.text = json.dumps(self.shallow.to_json())
+                shallow_node.text = json.dumps(self.shallow.to_json(), indent=2 if pretty_print else None)
         return sent_node
 
-    def to_xml_str(self, doc_node=None, with_raw=True, with_shallow=True, pretty_print=True):
-        xml_node = self.to_xml_node(doc_node, with_raw, with_shallow)
+    def to_xml_str(self, pretty_print=True, **kwargs):
+        xml_node = self.to_xml_node(pretty_print=pretty_print, **kwargs)
         return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
 
     def to_latex(self):
         return dmrs_tikz_dependency([p.dmrs().obj() for p in self])
+
+    @staticmethod
+    def from_xml_node(sent_node):
+        sid = sent_node.attrib['id']
+        sident = sent_node.attrib['ident']
+        text = sent_node.find('text').text
+        sentence = Sentence(ID=sid, ident=sident, text=text)
+        comment_tag = sent_node.find('comment')
+        if comment_tag is not None:
+            sentence.comment = comment_tag.text
+        shallow_tag = sent_node.find('shallow')
+        if shallow_tag is not None and shallow_tag.text:
+            shallow = TaggedSentence.from_json(json.loads(shallow_tag.text))
+            sentence.shallow = shallow  # import tags
+            for c in shallow.concepts:
+                if c.flag == 'E':
+                    sentence.flag = Sentence.ERROR
+        for idx, reading_node in enumerate(sent_node.findall('reading')):
+            mrs = reading_node.findall('mrs')
+            dmrs = reading_node.findall('dmrs')
+            if len(mrs) or len(dmrs):
+                reading = sentence.add()
+                reading.rid = reading_node.attrib['id']
+                reading.mode = reading_node.attrib['mode']
+            if mrs:
+                reading.mrs(mrs[0].text)
+            if dmrs:
+                reading._dmrs = DMRS()
+                reading.dmrs().from_xml_node(dmrs[0])
+        return sentence
+
+    @staticmethod
+    def from_xml_str(xmlstr):
+        return Sentence.from_xml_node(etree.XML(xmlstr))
+
+    @staticmethod
+    def from_file(path):
+        if path.endswith('.gz'):
+            with gzip.open(path, 'rt', encoding='utf-8') as infile:
+                return Sentence.from_xml_str(infile.read())
+        else:
+            with codecs.open(path, encoding='utf-8') as infile:
+                return Sentence.from_xml_str(infile.read())
 
 
 class Reading(object):
@@ -515,8 +589,8 @@ class DMRS(object):
         self.reset(node=xml_node)
         self._node = xml_node
         self._raw = etree.tostring(xml_node).decode('utf-8')
-        if self.parse:
-            self.parse.update_mrs()
+        if self.reading:
+            self.reading.update_mrs()
 
     def from_json(self, j):
         self.reset(obj=Dmrs.from_dict(j))
@@ -525,10 +599,10 @@ class DMRS(object):
         return self
 
     def surface(self, node):
-        if node is None or self.parse is None or self.parse.sent is None:
+        if node is None or self.parse is None or self.reading.sent is None:
             return None
         else:
-            return self.parse.sent.text[int(node.cfrom):int(node.cto)]
+            return self.reading.sent.text[int(node.cfrom):int(node.cto)]
 
     def preds(self):
         ''' Get all pred strings '''
