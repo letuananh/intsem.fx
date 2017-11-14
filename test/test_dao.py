@@ -51,7 +51,12 @@ import os
 import logging
 import unittest
 
-from coolisf.dao import read_tsdb
+from chirptext import header
+
+from coolisf import GrammarHub
+from coolisf.dao import read_tsdb, CorpusDAOSQLite
+from coolisf.dao.ruledb import LexRuleDB, parse_lexunit
+from coolisf.model import Document, LexUnit, RuleInfo
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
@@ -72,6 +77,74 @@ class TestTSDBDAO(unittest.TestCase):
         doc = read_tsdb('data/gold')
         self.assertTrue(doc)
         self.assertTrue(len(doc))
+
+
+class TestRuleDB(unittest.TestCase):
+
+    ghub = GrammarHub()
+    rdb = LexRuleDB(':memory:')
+
+    def get_constructions(self):
+        return [LexUnit(lemma='emergence', pos='n', synsetid='00044455-n'),
+                LexUnit(lemma='green tea', pos='n', synsetid='07935152-n'),
+                LexUnit(lemma='look up', pos='v', synsetid='00877083-v'),
+                LexUnit(lemma='emergent', pos='a', synsetid='00003553-a'),
+                LexUnit(lemma='quickly', pos='r', synsetid='00085811-r')]
+
+    def test_add_lexunit(self):
+        lu = LexUnit(lemma='emergence', pos='n', synsetid='00044455-n')
+        with self.rdb.ctx() as ctx:
+            lu.ID = ctx.lexunit.save(lu)
+            self.rdb.flag(lu, LexUnit.GOLD, ctx=ctx)
+
+    def test_add_stuff(self):
+        constructions = self.get_constructions()
+        with self.rdb.ctx() as ctx:
+            # generate rules
+            self.rdb.generate_rules(constructions, lambda x: parse_lexunit(x, self.ghub.ERG), ctx=ctx)
+            # generate rule head
+            for lu in ctx.lexunit.select():
+                self.rdb.get_lexunit(lu, ctx=ctx)
+                for r in lu.parses:
+                    head = r.dmrs().layout.head()
+                    if head is not None:
+                        rinfo = RuleInfo(lu.ID, r.ID, head.predstr)
+                        self.rdb.ruleinfo.save(rinfo, ctx=ctx)
+            # verification
+            tea_rules = self.rdb.find_rule('_tea_n_1', ctx=ctx)
+            self.assertTrue(len(tea_rules))
+            for rinfo in tea_rules:
+                self.assertTrue(rinfo.lid)
+                self.assertTrue(rinfo.rid)
+                self.assertEqual(rinfo.pred, '_tea_n_1')
+                rule = self.rdb.get_rule(rinfo.lid, rinfo.rid, ctx=ctx)
+                self.assertEqual(len(rule), 1)
+            for c in constructions:
+                lus = self.rdb.find_lexunits(lemma=c.lemma, ctx=ctx)
+                self.assertEqual(len(lus), 1)
+                lu = lus[0]
+                self.rdb.get_lexunit(lu, ctx=ctx)
+                self.assertEqual(lu.lemma, c.lemma)
+                self.assertTrue(len(lu.parses))
+                self.assertTrue(lu.parses.docID)
+                # test select a specific reading
+                rule = self.rdb.get_rule(lu.ID, lu[0].ID, ctx=ctx)
+                self.assertEqual(len(rule), 1)
+
+    def test_get_rule(self):
+        rdb = LexRuleDB(':memory:')
+        with rdb.ctx() as ctx:
+            # generate rules
+            rdb.generate_rules(self.get_constructions(), lambda x: parse_lexunit(x, self.ghub.ERG), ctx=ctx)
+            all_lus = ctx.lexunit.select()
+            for l in all_lus:
+                print(l)
+            lu = ctx.lexunit.select_single('lemma=?', ('green tea',))
+            self.assertIsNotNone(lu)
+            rdb.get_lexunit(lu, ctx=ctx)
+            lid, rid = (lu.ID, lu[0].ID)  # rule ID = (lid, rid)
+            rule = self.rdb.get_rule(lid, rid, ctx=ctx)
+            print(rule[0])
 
 
 ########################################################################

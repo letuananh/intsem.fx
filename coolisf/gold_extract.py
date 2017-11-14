@@ -134,7 +134,7 @@ def build_root_node():
     filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
     # License text
     license_node = etree.SubElement(filedesc_node, "license")
-    license_node.text = LICENSE_TEXT
+    license_node.text = etree.CDATA(LICENSE_TEXT)
     # CoolISF
     procs_node = etree.SubElement(header_node, "linguisticProcessors")
     proc_node = etree.SubElement(procs_node, "linguisticProcessor")

@@ -52,6 +52,7 @@ __credits__ = []
 import os
 import unittest
 
+from chirptext import header
 from coolisf import GrammarHub
 from coolisf.dao import CorpusDAOSQLite
 
@@ -66,7 +67,7 @@ TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 # TEST SCRIPTS
 # -------------------------------------------------------------------------------
 
-class TestVirgo(unittest.TestCase):
+class TestGrammarHub(unittest.TestCase):
 
     db = CorpusDAOSQLite(":memory:", "memdb")
     ghub = GrammarHub()
@@ -87,6 +88,12 @@ class TestVirgo(unittest.TestCase):
             j2 = sent[0].dmrs().json()
             self.assertEqual(j1, j2)
 
+    def test_extra_args(self):
+        output = self.ghub.ERG.parse("self sufficient", extra_args=['-r', 'root_formal'])
+        self.assertEqual(len(output), 0)
+        output = self.ghub.ERG.parse("self sufficient", extra_args=['-r', 'root_frag'])
+        self.assertTrue(len(output))
+
     def test_ghub_to_corpus(self):
         db = self.db
         with self.db.ctx() as ctx:
@@ -99,8 +106,62 @@ class TestVirgo(unittest.TestCase):
             db.save_sent(s, ctx=ctx)
             # select back
             sent = db.get_sent(s.ID, ctx=ctx)
-            print(sent[0])
+            self.assertIsNotNone(sent)
+            self.assertTrue(len(sent))
 
+    def test_all_grammars(self):
+        header("Verify available grammars (JACY/VRG/ERG)")
+        for n in ('JACY', 'VRG', 'ERG'):
+            self.assertIn(n, self.ghub.names)
+
+    def test_grammar_names(self):
+        gm = self.ghub.available
+        self.assertEqual(gm['JACYMC'], 'JACY/MeCab')
+
+    def test_config(self):
+        erg = self.ghub.ERG
+        self.assertIsNotNone(erg)
+
+    def test_parse_cache(self):
+        ERG = self.ghub.ERG
+        txt = "I saw a girl with a telescope."
+        ERG.parse(txt, 5)
+        # with extra args
+        ERG.parse(txt, 10, ['-r', 'root_robust'])
+        # test retrieving
+        s = ERG.cache.load(txt, ERG.name, 5, None)
+        self.assertIsNotNone(s)
+        self.assertEqual(len(s), 5)
+        s = ERG.cache.load(txt, ERG.name, 10, '-r root_robust')
+        self.assertIsNotNone(s)
+        self.assertEqual(len(s), 10)
+        # test parse many
+        texts = ['I eat.', 'I drink.']
+        pc = 10
+        extra_args = ['-r', 'root_robust']
+        sents = ERG.parse_many(texts, parse_count=pc, extra_args=extra_args)
+        for sent in sents:
+            self.assertGreater(len(sent), 0)
+            cached = ERG.cache.load(sent.text, ERG.name, pc, ' '.join(extra_args))
+            self.assertIsNotNone(cached)
+
+    def test_parse_iterative(self):
+        texts = ['I eat.', 'I drink.', 'I study.', 'I sleep.']
+        parses = self.ghub.ERG.parse_many_iterative(texts, ignore_cache=True)
+        for text, sent in zip(texts, parses):
+            self.assertIsNotNone(sent)
+            self.assertEqual(text, sent.text)
+            self.assertGreater(len(sent), 0)
+
+    def test_isf_cache(self):
+        txt = "I saw a girl with a telescope."
+        grm = "ERG"
+        pc = 5
+        tagger = "MFS"
+        s = self.ghub.parse_json(txt, grm, pc, tagger)
+        s = self.ghub.cache.load(txt, grm, pc, tagger)
+        self.assertIsNotNone(s)
+        self.assertEqual(len(s['parses']), 5)
 
 # -------------------------------------------------------------------------------
 # MAIN

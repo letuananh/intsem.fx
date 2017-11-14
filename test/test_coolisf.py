@@ -61,12 +61,12 @@ from lelesk import LeLeskWSD, LeskCache
 
 from yawlib import YLConfig, WordnetSQL as WSQL
 
-from miner import ChunkDB
 from coolisf import GrammarHub
 from coolisf.gold_extract import export_to_visko, read_gold_mrs
 from coolisf.util import read_ace_output
-from coolisf.morph import Compound, Integral, Transformer, NounNounCompound, RuleDB
-from coolisf.model import Sentence, MRS, Pred, Predicate, Triplet, Reading, LexItem
+from coolisf.dao.ruledb import LexRuleDB
+from coolisf.morph import Compound, Integral, Transformer, SimpleHeadedCompound as HCMP, LEXRULES_DB
+from coolisf.model import Sentence, MRS, Triplet, Reading, Link
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION
@@ -80,71 +80,11 @@ TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
-CHUNKDB = FileHelper.abspath("data/chunks.db")
 
 
 # ------------------------------------------------------------------------------
 # TEST SCRIPTS
 # ------------------------------------------------------------------------------
-
-class TestGrammarHub(unittest.TestCase):
-
-    ghub = GrammarHub()
-
-    def test_all_grammars(self):
-        header("Verify available grammars (JACY/VRG/ERG)")
-        for n in ('JACY', 'VRG', 'ERG'):
-            self.assertIn(n, self.ghub.names)
-
-    def test_grammar_names(self):
-        gm = self.ghub.available
-        self.assertEqual(gm['JACYMC'], 'JACY/MeCab')
-
-    def test_config(self):
-        erg = self.ghub.ERG
-        self.assertIsNotNone(erg)
-
-    def test_parse_cache(self):
-        ERG = self.ghub.ERG
-        txt = "I saw a girl with a telescope."
-        ERG.parse(txt, 5)
-        # with extra args
-        ERG.parse(txt, 10, ['-r', 'root_robust'])
-        # test retrieving
-        s = ERG.cache.load(txt, ERG.name, 5, None)
-        self.assertIsNotNone(s)
-        self.assertEqual(len(s), 5)
-        s = ERG.cache.load(txt, ERG.name, 10, '-r root_robust')
-        self.assertIsNotNone(s)
-        self.assertEqual(len(s), 10)
-        # test parse many
-        texts = ['I eat.', 'I drink.']
-        pc = 10
-        extra_args = ['-r', 'root_robust']
-        sents = ERG.parse_many(texts, parse_count=pc, extra_args=extra_args)
-        for sent in sents:
-            self.assertGreater(len(sent), 0)
-            cached = ERG.cache.load(sent.text, ERG.name, pc, ' '.join(extra_args))
-            self.assertIsNotNone(cached)
-
-    def test_parse_iterative(self):
-        texts = ['I eat.', 'I drink.', 'I study.', 'I sleep.']
-        parses = self.ghub.ERG.parse_many_iterative(texts, ignore_cache=True)
-        for text, sent in zip(texts, parses):
-            self.assertIsNotNone(sent)
-            self.assertEqual(text, sent.text)
-            self.assertGreater(len(sent), 0)
-
-    def test_isf_cache(self):
-        txt = "I saw a girl with a telescope."
-        grm = "ERG"
-        pc = 5
-        tagger = "MFS"
-        s = self.ghub.parse_json(txt, grm, pc, tagger)
-        s = self.ghub.cache.load(txt, grm, pc, tagger)
-        self.assertIsNotNone(s)
-        self.assertEqual(len(s['parses']), 5)
-
 
 class TestData(object):
 
@@ -235,53 +175,33 @@ class TestData(object):
 
 class TestRuleGenerator(unittest.TestCase):
 
+    optimus = Transformer()
+    rdb = LexRuleDB(LEXRULES_DB)
+
     def test_load_rule(self):
-        rdb = RuleDB(CHUNKDB)
-        with rdb.ctx() as ctx:
-            words = rdb.get_words(lemma='living thing', flag=LexItem.COMP_NN, pos='n', ctx=ctx)
+        with self.rdb.ctx() as ctx:
+            words = self.rdb.find_lexunits(lemma='living thing', pos='n', ctx=ctx)
             self.assertGreater(len(words), 0)
 
     def test_gen_one_rule(self):
-        rdb = RuleDB(CHUNKDB)  # rule DB
+        rdb = self.rdb
         with rdb.ctx() as ctx:
-            words = rdb.get_words(lemma='living thing', flag=LexItem.COMP_NN, pos='n', ctx=ctx)
-            rules = rdb.get_rules(words[0])
-            r = rules[0]
+            lu = rdb.find_lexunits(lemma='living thing', pos='n', ctx=ctx)[0]
+            rdb.get_lexunit(lu)
+            r = HCMP(lu[0].dmrs().layout, 'living+thing')
             self.assertIsInstance(r.construction.to_dmrs().to_mrs(), MRS)
-            self.assertEqual(r.head().nodeid, 10005)
+            self.assertEqual(r.head().predstr, "_thing_n_of-about")
 
     def test_get_rule_from_db(self):
-        wid, pid = (21811, 80632)
-        rdb = RuleDB(CHUNKDB)  # rule DB
+        rdb = self.rdb
         with rdb.ctx() as ctx:
-            rule = rdb.get_rule(wid, pid, ctx=ctx)
-            self.assertIsInstance(rule, NounNounCompound)
+            lu = rdb.find_lexunits(lemma='living thing', pos='n', ctx=ctx)[0]
+            rdb.get_lexunit(lu)
+            wid, pid = lu.ID, lu[0].ID
+            ruleinfo = rdb.get_rule(wid, pid, ctx=ctx)
+            rule = self.optimus.to_hcmp_rule(ruleinfo[0].dmrs().layout, "living+thing")
+            self.assertIsInstance(rule, HCMP)
             self.assertIsNotNone(rule.dmrs())
-
-    def test_gen(self):
-        rdb = ChunkDB(CHUNKDB)  # rule DB
-        rule_map = dd(set)
-        with rdb.ctx() as ctx:
-            nn_comps = rdb.get_words(flag=LexItem.COMP_NN, pos='n', deep_select=False, ctx=ctx)
-            for nnc in nn_comps[:5]:
-                rdb.get_parses(nnc, ctx=ctx)
-                innc = nnc.to_isf()
-                for p, ip in zip(nnc.parses, innc):
-                    e = ip.edit()
-                    head = e.top if e.top.predstr != "unknown" else e.top['ARG']
-                    if not head or head.rppos != 'n':
-                        continue
-                    rule_map[head.predstr].add((nnc.ID, p.ID))
-        self.assertTrue(dict(rule_map))
-
-    def test_rule_pred(self):
-        from coolisf.mappings.optimus import rules
-        rdb = RuleDB(CHUNKDB)
-        with rdb.ctx() as ctx:
-            for k in list(rules.keys())[:5]:
-                wids = {r[0] for r in rules[k]}
-                words = [ctx.word.by_id(w).lemma for w in wids]
-                self.assertTrue(words)
 
 
 class TestTransformer(unittest.TestCase):
@@ -290,20 +210,8 @@ class TestTransformer(unittest.TestCase):
     ghub = GrammarHub()
     ERG = ghub.ERG
 
-    def test_predicate(self):
-        p = 'unknown'
-        self.assertEqual(str(Predicate.from_string(p)), p)
-        p = 'compound_rel'
-        self.assertEqual(str(Predicate.from_string(p)), 'compound')  # without _rel
-        p = 'udef_q'
-        self.assertEqual(str(Predicate.from_string(p)), p)
-        p = '_dog_n_1'
-        self.assertEqual(str(Predicate.from_string(p)), p)
-
-    def test_is_named(self):
-        pass
-
     def test_merge_compound(self):
+        header("Test merge compound")
         n = self.data.get_named()
         ne = n.edit(0)
         head = ne.top['ARG']
@@ -312,60 +220,6 @@ class TestTransformer(unittest.TestCase):
         Integral.merge_compound(comps[0], True)
         self.assertEqual(head.predstr, "named")
         self.assertEqual(head.carg, "Charles Bond")
-
-    def test_get_top(self):
-        sent = self.data.get_sent()
-        e = sent[0].edit()
-        self.assertIsNotNone(e.top)
-        self.assertEqual(e.top.predstr, "_be_v_id")
-        # construction
-        s = self.data.get_struct()
-        se = s[0].edit()
-        self.assertIsNotNone(se.top)
-        self.assertEqual(se.top.predstr, "_dog_n_1")
-
-    def test_pred(self):
-        p = Pred.string_or_grammar_pred('unknown')
-        self.assertEqual((p.type, p.lemma, p.pos, p.sense), (0, 'unknown', None, None))
-        p = Pred.string_or_grammar_pred('udef_q')
-        self.assertEqual((p.type, p.lemma, p.pos, p.sense), (0, 'udef', 'q', None))
-        p = Pred.string_or_grammar_pred('_dog_n_1')
-        self.assertEqual((p.type, p.lemma, p.pos, p.sense), (Pred.STRINGPRED, 'dog', 'n', '1'))
-        p = Pred.realpred('dog', 'n', 1)
-        self.assertEqual((p.type, p.lemma, p.pos, p.sense), (Pred.REALPRED, 'dog', 'n', '1'))
-        p = Pred.string_or_grammar_pred('proper_q')
-        self.assertEqual(p, 'proper_q_rel')
-        self.assertEqual(p, 'proper_q')
-        self.assertTrue(p in ('unknown_rel', 'proper_q_rel'))
-        p = Pred.string_or_grammar_pred('compound_rel')
-        self.assertEqual(p, 'compound')
-
-    def test_delete(self):
-        sent = self.data.get_struct()
-        sent[0].edit().delete(10000, 10001).save()
-        preds = sent[0].dmrs().preds()
-        self.assertEqual(preds, ['_guard_n_1_rel', '_dog_n_1_rel'])
-
-    def test_to_graph(self):
-        struct = self.data.get_struct()
-        sed = struct[0].edit()
-        sed.top = 10003
-        g = sed.top.to_graph()
-        self.assertEqual(g, Triplet(name='_dog_n_1', in_links=frozenset({('ARG1/EQ', Triplet(name='compound', in_links=frozenset(), out_links=frozenset({('ARG2/NEQ', Triplet(name='_guard_n_1', in_links=frozenset({('RSTR/H', Triplet(name='udef_q', in_links=frozenset(), out_links=frozenset()))}), out_links=frozenset()))})))}), out_links=None))
-
-    def test_subgraph(self):
-        # load a sample sentencce
-        sent = self.data.get_sent()
-        ded = sent[0].edit()
-        # load construction
-        struct = self.data.get_struct()
-        sed = struct[0].edit()
-        # look for construction in given sentence
-        sub = ded.subgraph(ded[10008], constraints=sed)
-        # The structure now should be exactly the same
-        sg = sub.top.to_graph()
-        seg = sed.top.to_graph()
-        self.assertEqual(sg, seg)
 
     def test_raw_merge_operator(self):
         sent = self.data.get_struct()
@@ -383,15 +237,6 @@ class TestTransformer(unittest.TestCase):
         expected = '[ TOP: h0 RELS: < [ _guard+dog_n_1<0:9> LBL: h1 ARG0: x2 [ x NUM: sg PERS: 3 IND: + ] ] > HCONS: < h0 qeq h1 > ]'
         actual = sent[0].mrs().tostring(False)
         self.assertEqual(actual, expected)
-
-    def test_cfrom_cto(self):
-        constr = self.data.get_struct()
-        ce = constr[0].edit()
-        self.assertEqual(len(ce.nodes), 4)
-        self.assertEqual(ce[10000]['ARG1'].predstr, "_dog_n_1")
-        self.assertEqual(ce[10000]['ARG2'].predstr, "_guard_n_1")
-        self.assertEqual(ce[10000]['ARG1'].predstr, "_dog_n_1")
-        self.assertEqual(ce[10000]['ARG2'].predstr, "_guard_n_1")
 
     def test_named(self):
         # all are connected
@@ -427,6 +272,16 @@ class TestTransformer(unittest.TestCase):
             comp.transform(se, m)
         self.assertEqual(se.top['ARG2'].predstr, "_guard+dog_n_1")
 
+    def test_green_tea(self):
+        sent = Sentence("I like green tea.")
+        sent.add('''[ TOP: h0 RELS: < [ pron<0:1> LBL: h1 ARG0: x6 [ x IND: + NUM: sg PERS: 1 PT: std ] ] [ pronoun_q<0:1> LBL: h2 ARG0: x6 RSTR: h10 ] [ _like_v_1<2:6> LBL: h3 ARG0: e7 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: pres ] ARG1: x6 ARG2: x9 [ x NUM: sg PERS: 3 ] ] [ udef_q<7:17> LBL: h4 ARG0: x9 RSTR: h11 ] [ _green_a_2<7:12> LBL: h5 ARG0: e8 [ e MOOD: indicative PERF: - PROG: bool SF: prop TENSE: untensed ] ARG1: x9 ] [ _tea_n_1<13:17> LBL: h5 ARG0: x9 ] > HCONS: < h0 qeq h3 h10 qeq h1 h11 qeq h5 > ]''')
+        trans = Transformer(ruledb_path=None)
+        trans.apply(sent)
+        preds = set(sent[0].dmrs().preds())
+        expected = {'udef_q_rel', '_like_v_1_rel', 'pron_rel', '_green+tea_n_1_rel', 'pronoun_q_rel'}
+        self.assertEqual(preds, expected)
+        # with a compound
+
     def test_all(self):
         parse = Reading('''[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
@@ -445,20 +300,10 @@ class TestTransformer(unittest.TestCase):
           [ _guard_n_1<27:32> LBL: h33 ARG0: x29 ]
           [ _dog_n_1<33:38> LBL: h27 ARG0: x23 ] >
   HCONS: < h0 qeq h1 h5 qeq h7 h11 qeq h13 h18 qeq h20 h25 qeq h27 h31 qeq h33 > ]''')
-        optimus = Transformer()
+        optimus = Transformer(ruledb_path=None)
         optimus.apply(parse)
         preds = set(parse.dmrs().preds())
         self.assertEqual(preds, {'proper_q_rel', 'named_rel', '_love_v_1_rel', 'udef_q_rel', '_guard+dog_n_1_rel'})
-
-    def test_green_tea(self):
-        sent = Sentence("I like green tea.")
-        sent.add('''[ TOP: h0 RELS: < [ pron<0:1> LBL: h1 ARG0: x6 [ x IND: + NUM: sg PERS: 1 PT: std ] ] [ pronoun_q<0:1> LBL: h2 ARG0: x6 RSTR: h10 ] [ _like_v_1<2:6> LBL: h3 ARG0: e7 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: pres ] ARG1: x6 ARG2: x9 [ x NUM: sg PERS: 3 ] ] [ udef_q<7:17> LBL: h4 ARG0: x9 RSTR: h11 ] [ _green_a_2<7:12> LBL: h5 ARG0: e8 [ e MOOD: indicative PERF: - PROG: bool SF: prop TENSE: untensed ] ARG1: x9 ] [ _tea_n_1<13:17> LBL: h5 ARG0: x9 ] > HCONS: < h0 qeq h3 h10 qeq h1 h11 qeq h5 > ]''')
-        trans = Transformer()
-        trans.apply(sent)
-        preds = set(sent[0].dmrs().preds())
-        expected = {'udef_q_rel', '_like_v_1_rel', 'pron_rel', '_green+tea_n_1_rel', 'pronoun_q_rel'}
-        self.assertEqual(preds, expected)
-        # with a compound
 
     def gen_adj(self, sub):
         adj_list = dd(list)
@@ -470,13 +315,6 @@ class TestTransformer(unittest.TestCase):
             adj_list[n.cto + 1].append(n)
         return {frozenset(n.predstr for n in v) for k, v in adj_list.items() if len(v) > 1}
 
-    def test_manual_transformer(self):
-        dmrs = Reading('''[ TOP: h0 INDEX: e2 [ e SF: prop-or-ques ] RELS: < [ unknown<0:8> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg GEND: n PT: notpro ] ARG0: e2 ] [ udef_q<0:8> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ] [ _emerge_v_1<0:8> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: + PERF: - ] ARG1: i10 ] [ nominalization<0:8> LBL: h11 ARG0: x4 ARG1: h8 ] > HCONS: < h0 qeq h1 h6 qeq h11 > ]''').dmrs().layout
-        head = dmrs.head()
-        print("nodes", dmrs.nodes)
-        print("head", head)
-        print(head['ARG1'])
-
     def test_adjacent(self):
         ''' Generate a list of predicates that are adjacent '''
         p = self.ERG.parse('green tea').edit(0)
@@ -486,7 +324,7 @@ class TestTransformer(unittest.TestCase):
 
     def test_big_bad_wolf(self):
         p = self.ERG.parse('He is a big bad wolf.').edit(0)
-        optimus = Transformer()
+        optimus = Transformer(ruledb_path=None)
         optimus.apply(p)
         nodes = {n.predstr for n in p.nodes}
         expected = {'pron', 'pronoun_q', '_be_v_id', '_a_q', '_big+bad+wolf_n_1'}
@@ -499,8 +337,15 @@ class TestTransformer(unittest.TestCase):
         self.assertEqual(ringer.predstr, "_ringer_n_1")
         # Load a rule from optimus
         optimus = Transformer()
-        rule = optimus.rdb.get_rule(22034, 81197)  # load a specific rule
-        self.assertEqual(rule.sign, "_ringer_n_1")
+        rules = optimus.find_rules((ringer,))
+        self.assertTrue(rules)
+        lemmas = [r.lemma for r in rules]
+        self.assertIn('bell+ringer', lemmas)
+        rule = None
+        for r in rules:
+            if r.sign == '_ringer_n_1' and r.lemma == 'bell+ringer':
+                rule = r
+                break
         self.assertEqual(rule.dmrs().preds(), ['compound_rel', 'udef_q_rel', '_bell_n_1_rel', '_ringer_n_1_rel'])
         # compare graph manually
         sub = p.subgraph(ringer, constraints=rule.construction)
@@ -510,13 +355,44 @@ class TestTransformer(unittest.TestCase):
         expected = ['pron_rel', 'pronoun_q_rel', '_be_v_id_rel', '_a_q_rel', '_bell+ringer_n_1_rel']
         self.assertEqual(p.source.preds(), expected)
 
-    def test_optimus_rule_db(self):
-        sent = self.ERG.parse('We made eye contact.')
+    def test_finding_rules(self):
         optimus = Transformer()
+        rules = optimus.rdb.find_rule('_contact_n_1')
+        signs = [optimus.rdb.get_rule(rule.lid, rule.rid).lemma for rule in rules]
+        self.assertIn('eye contact', signs)
+        rules = optimus.rdb.find_rule('_chest_n_1')
+        signs = [optimus.rdb.get_rule(rule.lid, rule.rid).lemma for rule in rules]
+        self.assertIn('tea chest', signs)
+
+    def test_rule_matching(self):
+        optimus = Transformer()
+        sent = self.ERG.parse('I made it.')
+        d = sent[0].dmrs()
+        # find applicable rules
+        applicable_rules = optimus.find_rules(d.layout.nodes)
+        mafs = []
+        for r in applicable_rules:
+            if r.lemma == 'make+a+face':
+                mafs.append(r)
+            # print(r)
+        for maf in mafs:
+            subs = maf.match(d.layout)
+            if subs:
+                print("-" * 20)
+                print("{} is matched with {}".format(maf.construction.to_dmrs().to_mrs(), subs[0].to_dmrs()))
+                print("sub", subs[0].top.to_graph(), subs[0].nodes)
+                print("maf", maf.graph, maf.construction.nodes)
+        optimus.apply(d)
+        # print(d.to_mrs())
+
+    def test_optimus_rule_db(self):
+        optimus = Transformer()
+        sent = self.ERG.parse('We made eye contact.')
         optimus.apply(sent)
         expected = ['pron_rel', 'pronoun_q_rel', '_make_v_1_rel', 'udef_q_rel', '_eye+contact_n_1_rel']
         actual = sent[0].dmrs().preds()
-        self.assertEqual(expected, actual)
+        print(actual)
+        self.assertEqual(actual, expected)
 
 
 class TestERGISF(unittest.TestCase):
@@ -530,6 +406,10 @@ class TestERGISF(unittest.TestCase):
         preds = p.source.preds()
         expected = ['pron_rel', 'pronoun_q_rel', '_be_v_id_rel', '_a_q_rel', '_big+bad+wolf_n_1_rel']
         self.assertEqual(preds, expected)
+
+    def test_tea_chest(self):
+        sent = self.EI.parse("I have a tea chest.")
+        self.assertEqual(sent[0].edit().preds(), ['pron', 'pronoun_q', '_have_v_1', '_a_q', '_tea+chest_n_1'])
 
 
 class TestMain(unittest.TestCase):

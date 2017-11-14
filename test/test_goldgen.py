@@ -53,11 +53,14 @@ import os
 import unittest
 import logging
 from collections import defaultdict as dd
+from lxml import etree
 from delphin.mrs.components import Pred
 
 from chirptext import header, Counter, TextReport
 from chirptext.texttaglib import TaggedDoc, TagInfo
 from coolisf import tag_gold, Lexsem
+from coolisf.lexsem import import_shallow
+from coolisf.gold_extract import build_root_node
 from coolisf.gold_extract import filter_wrong_senses
 from coolisf.gold_extract import extract_tsdb_gold
 from coolisf.gold_extract import read_gold_mrs
@@ -78,7 +81,77 @@ ERG = ghub.ERG
 # TEST SCRIPTS
 # ------------------------------------------------------------------------------
 
+class TestGoldAccuracy(unittest.TestCase):
+
+    def test_accuracy(self):
+        c = Counter()
+        sid = '10000'
+        sents = read_gold_mrs()
+        smap = {str(s.ident): s for s in sents}
+        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        sent = smap[sid]  # gold MRS
+        sent.shallow = doc.sent_map[sid]  # IMI tags
+        import_shallow(sent)  # import gold tags from IMI
+        sent.tag(method=TagInfo.LELESK)  # perfrom WSD using LeLESK
+        d = sent[0].dmrs()
+        print(d.tags)
+        for k, v in d.tags.items():
+            g, l = v
+            if g.synset.ID == l.synset.ID:
+                c.count("same")
+            else:
+                print(d.layout[k].pred, g.synset.ID, l.synset.ID)
+                c.count("diff")
+        c.summarise()
+
+    def test_gold_accuracy(self):
+        header("Test gold accuracy (only top 5)")
+        report = TextReport("data/gold_accuracy.txt")
+        c = Counter()
+        sents = read_gold_mrs()
+        print(len(sents))
+        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        total_sents = len(sents)
+        for idx, sent in enumerate(sents):
+            if idx > 5:
+                break
+            print("Processing sentence {}/{}".format(idx + 1, total_sents))
+            c.count("sentences")
+            if len(sent) == 0:
+                report.print("SKIPPING SENTENCE: {}".format(sent.ident))
+                c.count("skipped sentences")
+                continue
+            sent.shallow = doc.sent_map[str(sent.ident)]  # IMI tags
+            import_shallow(sent, mode=Lexsem.STRICT)  # import gold tags from IMI
+            sent.tag(method=TagInfo.LELESK)  # perfrom WSD using LeLESK
+            d = sent[0].dmrs()
+            for k, v in d.tags.items():
+                c.count("senses")
+                if len(v) == 2:
+                    # has both
+                    g, l = v
+                    if g.synset.ID == l.synset.ID:
+                        c.count("same")
+                    else:
+                        report.print("#{} {}: {} --- {}".format(sent.ident, d.layout[k].pred, g.synset.ID, l.synset.ID))
+                        c.count("diff")
+                elif v[0].method == TagInfo.LELESK:
+                    report.print("#{} {}: LL<{}>".format(sent.ident, d.layout[k].pred, v[0].synset.ID))
+                    c.count("no gold")
+                elif v[0].method == TagInfo.GOLD:
+                    report.print("#{} {}: G<{}>".format(sent.ident, d.layout[k].pred, v[0].synset.ID))
+                    c.count("not found")
+                else:
+                    c.count("other")
+                    pass
+        c.summarise(report=report)
+
+
 class TestGoldData(unittest.TestCase):
+
+    def build_root_node(self):
+        node = build_root_node()
+        self.assertTrue(etree.tostring(node, pretty_print=True).decode('utf-8'))
 
     def test_read_tsdb(self):
         gold = extract_tsdb_gold()
@@ -117,6 +190,14 @@ class TestGoldData(unittest.TestCase):
         out = s.to_latex()
         for i in range(1, 3):
             self.assertIn('%%% {}'.format(i), out)
+
+    def test_import_tags(self):
+        print("Test import tags ...")
+        sents = read_gold_mrs()
+        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        for s in sents:
+            s.shallow = doc.sent_map[str(s.ident)]
+            import_shallow(s)
 
     def test_ep_types(self):
         sid = '10598'
@@ -239,10 +320,10 @@ class TestGoldData(unittest.TestCase):
         fix_texts = []
         instances = Counter()
         tag_map = dd(set)
+        report = TextReport('data/gold_report.txt')
         matched_report = TextReport('data/gold_matched.txt')
         not_matched_report = TextReport('data/gold_notmatched.txt')
         for s in sents:
-            # header(s, 'h0')
             sid = str(s.ident)
             if sid not in doc.sent_map:
                 raise Exception("Cannot find sentence {}".format(sid))
@@ -297,8 +378,8 @@ class TestGoldData(unittest.TestCase):
         #     print(i)
         #     print(t1)
         #     print(t2)
-        count_good_bad.summarise()
-        instances.summarise()
+        count_good_bad.summarise(report=report)
+        instances.summarise(report=report)
 
 
 # ------------------------------------------------------------------------------

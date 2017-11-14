@@ -66,8 +66,9 @@ INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'init_corpus.sql')
 
 class RichKopasu(Schema):
 
-    def __init__(self, data_source):
-        Schema.__init__(self, data_source=data_source, setup_file=INIT_SCRIPT)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_file(INIT_SCRIPT)
         self.add_table('corpus', ['ID', 'name', 'title'], proto=Corpus).set_id('ID')
         self.add_table('document', ['ID', 'name', 'corpusID', 'title',
                                     'grammar', 'tagger', 'parse_count', 'lang'],
@@ -163,8 +164,8 @@ class CachedTable():
 
 class CorpusDAOSQLite(RichKopasu):
 
-    def __init__(self, db_path, name, auto_fill=False):
-        super().__init__(db_path)
+    def __init__(self, data_source=":memory:", name='', auto_fill=False, *args, **kwargs):
+        super().__init__(data_source, *args, **kwargs)
         self.name = name
         self.lemmaCache = CachedTable(self.rplemma, "lemma", auto_fill=auto_fill)
         self.gpredCache = CachedTable(self.gpval, "value", auto_fill=auto_fill)
@@ -195,37 +196,44 @@ class CorpusDAOSQLite(RichKopasu):
 
     @with_ctx
     def get_docs(self, corpusID, ctx=None):
-        return ctx.doc.select('corpusID=?', (corpusID,))
+        corpus = ctx.corpus.by_id(corpusID)
+        docs = ctx.doc.select('corpusID=?', (corpus.ID,))
+        for doc in docs:
+            doc.corpus = corpus
+            q = "SELECT COUNT(*) FROM sentence WHERE docID = ?"
+            p = (doc.ID,)
+            doc.sent_count = ctx.select_scalar(q, p)
+        return docs
 
     @with_ctx
     def get_doc(self, doc_name, ctx=None):
         # doc.name is unique
-        return ctx.doc.select_single('name=?', (doc_name,))
+        doc = ctx.doc.select_single('name=?', (doc_name,))
+        if doc is None:
+            return None
+        doc.corpus = ctx.corpus.by_id(doc.corpusID)
+        q = "SELECT COUNT(*) FROM sentence WHERE docID = ?"
+        p = (doc.ID,)
+        doc.sent_count = ctx.select_scalar(q, p)
+        return doc
 
     @with_ctx
-    def get_sents(self, docID, flag=None, add_dummy_parses=True, ctx=None):
-        where = 'docID = ?'
+    def get_sents(self, docID, flag=None, add_dummy_parses=True, page=None, pagesize=1000, ctx=None):
+        where = ['docID = ?']
         params = [docID]
-        if flag:
-            where += ' AND flag = ?'
+        limit = None
+        if flag is not None:
+            where.append('flag = ?')
             params.append(flag)
+        if page is not None:
+            offset = page * pagesize
+            limit = "{}, {}".format(offset, pagesize)
+        sents = ctx.sentence.select(' AND '.join(where), params, limit=limit)
         if add_dummy_parses:
-            query = '''
-            SELECT sentence.*, count(reading.ID) AS 'parse_count'
-            FROM sentence LEFT JOIN reading
-            ON sentence.ID = reading.sentID
-            WHERE {where}
-            GROUP BY sentID ORDER BY sentence.ID;
-            '''.format(where=where)
-            rows = ctx.execute(query, params)
-            sents = []
-            for row in rows:
-                sent = self.sentence.to_obj(row)
-                sent.readings = [None] * row['parse_count']
-                sents.append(sent)
-            return sents
-        else:
-            return ctx.Sentence.select(where, params)
+            for sent in sents:
+                reading_count = ctx.select_scalar('SELECT COUNT(*) FROM reading WHERE sentid=?', (sent.ID,))
+                sent.readings = [None] * reading_count
+        return sents
 
     @with_ctx
     def note_sentence(self, sent_id, comment, ctx=None):
@@ -272,16 +280,18 @@ class CorpusDAOSQLite(RichKopasu):
 
     @with_ctx
     def save_reading(self, reading, ctx=None):
-        # ctx is not None now
-        reading.ID = ctx.reading.save(reading)
+        # save or update reading info
+        reading.ID = ctx.reading.save(reading) if reading.ID is None else reading.ID
         # Save DMRS
         dmrs = reading.dmrs()
         # store raw if needed
         if dmrs.raw is None:
             dmrs.raw = dmrs.xml_str(pretty_print=False)
+
         dmrs.readingID = reading.ID
         if dmrs.ident is None:
             dmrs.ident = reading.rid
+        dmrs.ID = None  # reset DMRS ID
         dmrs.ID = ctx.dmrs.save(dmrs)
         # nodes and links are in layout
         # save nodes
@@ -308,18 +318,22 @@ class CorpusDAOSQLite(RichKopasu):
                     if t.method == TagInfo.GOLD:
                         tag = t
                         break
-                node.synsetid = tag.synset.sid.to_canonical()
+                node.synsetid = tag.synset.ID.to_canonical()
                 node.synset_score = tag.synset.tagcount
+            # reset node ID
+            node.ID = None
             node.ID = ctx.node.save(node)
             # save sortinfo
             node.sortinfo.dmrs_nodeID = node.ID
+            node.sortinfo.ID = None  # reset sortinfo ID
             ctx.sortinfo.save(node.sortinfo)
         # save links
         for link in dmrs.layout.links:
             link.dmrsID = dmrs.ID
             if link.rargname is None:
                 link.rargname = ''
-            ctx.link.save(link)
+            link.ID = None  # reset link ID
+            link.ID = ctx.link.save(link)
 
     @with_ctx
     def get_reading(self, a_reading, ctx=None):
@@ -373,8 +387,17 @@ class CorpusDAOSQLite(RichKopasu):
         # delete readings
         ctx.reading.delete("ID=?", (readingID,))
 
-    def update_reading(self, reading):
-        raise NotImplementedError
+    @with_ctx
+    def update_reading(self, reading, ctx=None):
+        # delete all DMRS link, node
+        ctx.dmrs_link.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (reading.ID,))
+        ctx.dmrs_node_sortinfo.delete('dmrs_nodeID IN (SELECT ID FROM dmrs_node WHERE dmrsID IN (SELECT ID from dmrs WHERE readingID=?))', (reading.ID,))
+
+        ctx.dmrs_node.delete('dmrsID IN (SELECT ID FROM dmrs WHERE readingID=?)', (reading.ID,))
+        # delete all DMRS
+        ctx.dmrs.delete("readingID=?", (reading.ID,))
+        # update reading info
+        self.save_reading(reading, ctx=ctx)
 
     def build_search_result(self, rows, no_more_query=False):
         if rows:

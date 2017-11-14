@@ -50,11 +50,8 @@ import os
 import logging
 from collections import defaultdict as dd
 
-from puchikarui import with_ctx
-
-from coolisf.dao.ruledb import ChunkDB
-from coolisf.mappings.optimus import rules as optimus_rules
-from coolisf.model import Sentence, Reading, DMRS
+from coolisf.dao.ruledb import LexRuleDB
+from coolisf.model import Sentence, Reading, DMRS, RuleInfo
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION
@@ -62,7 +59,7 @@ from coolisf.model import Sentence, Reading, DMRS
 
 logger = logging.getLogger(__name__)
 DATA_FOLDER = os.path.abspath(os.path.expanduser('./data'))
-CHUNKDB = os.path.join(DATA_FOLDER, "chunks.db")
+LEXRULES_DB = os.path.join(DATA_FOLDER, "lexrules.db")
 
 
 # -------------------------------------------------------------------------------
@@ -175,19 +172,20 @@ class Compound(object):
         for node in dmrs.nodes:
             if node.predstr == self.sign:
                 sub = dmrs.subgraph(node, constraints=self.construction)
-                if sub.top.to_graph() == self.graph:
-                    if self.adjacent:
-                        if self.adjacent_nodes != sub.adjacent_nodes():
-                            continue
+                if len(sub.nodes) == len(self.construction.nodes) and sub.top.to_graph() == self.graph:
+                    if self.adjacent and self.adjacent_nodes != sub.adjacent_nodes():
+                        continue
                     found.append(sub)
         return found
 
     def apply(self, dmrs):
         for sub in self.match(dmrs):
+            logger.debug("applying rule [lemma={}]: {} => {}".format(self.lemma, self.dmrs(), sub.to_dmrs()))
             self.transform(dmrs, sub)
         return dmrs
 
     def transform(self, dmrs, sub):
+        ''' subgraph -> pred '''
         head = dmrs[sub.top.nodeid]
         # update lemma
         head.pred.lemma = self.lemma
@@ -202,60 +200,34 @@ class Compound(object):
         return self.construction.to_dmrs()
 
 
-class NounNounCompound(Compound):
+class SimpleHeadedCompound(Compound):
 
     def __init__(self, construction, lemma, adjacent=True):
         super().__init__(construction, lemma, adjacent)
         head = self.head()
-        if head is None or head.rppos != 'n':
-            raise Exception("Invalid noun-noun compound rule")
-        # remove the unknown & RSTR by default
-        to_del = set()
-        for l in head.in_links:
-            if l.is_rstr() or l.from_node.predstr == "unknown":
-                to_del.add(l.from_node)
-        self.construction.delete(*to_del)
+        if head is None:
+            raise Exception("Invalid headed compound rule")
+            # remove the unknown & RSTR by default
+            to_del = set()
+            for l in head.in_links:
+                if l.is_rstr() or l.from_node.predstr == "unknown":
+                    to_del.add(l.from_node)
+            self.construction.delete(*to_del)
 
-
-class RuleDB(ChunkDB):
-
-    def __init__(self, dbpath):
-        super().__init__(dbpath)
-
-    def get_rules(self, word):
-        lemma = word.lemma.replace(' ', '+').replace('-', '+')
-        iword = word.to_isf()
-        rules = [NounNounCompound(p.edit(), lemma) for p in iword]
-        return rules
-
-    @with_ctx
-    def get_rule(self, wid, pid, ctx=None):
-        word = ctx.word.by_id(wid)
-        parse = ctx.parse.by_id(pid)
-        if word is not None and parse is not None:
-            word.parses.append(parse)
-        else:
-            logger.warning("Rule {}/{} could not be loaded. Make sure that rule db file exists.".format(wid, pid))
-            return None
-        try:
-            r = self.get_rules(word)
-            return r[0]
-        except:
-            logger.exception("Cannot load rule")
-            return None
+    def __str__(self):
+        return "SHComp(lemma={}, construction={})".format(repr(self.lemma), repr(self.construction.to_dmrs().to_mrs().tostring(False)))
 
 
 class Transformer(object):
 
-    def __init__(self):
+    def __init__(self, ruledb_path=LEXRULES_DB):
         # read rules
         self.rules = [self.get_guard_dog(),
                       self.get_green_tea(),
                       self.get_big_bad_wolf()]
         self.rule_map = dd(list)
-        if os.path.isfile(CHUNKDB):
-            self.rdb = RuleDB(CHUNKDB)
-            self.rule_signs = optimus_rules
+        if ruledb_path and os.path.isfile(ruledb_path):
+            self.rdb = LexRuleDB(ruledb_path)
         else:
             logger.warning("Rule DB could not be found. Only manual rules will be available.")
             self.rdb = None
@@ -269,28 +241,32 @@ class Transformer(object):
         self.rules.append(rule)
         self.rule_map[rule.sign].append(rule)
 
+    def to_hcmp_rule(self, layout, lemma, adjacent=True):
+        return SimpleHeadedCompound(layout, lemma, adjacent)
+
     def find_rules(self, nodes):
         applicable_rules = []
         # use manual rules
         # [TODO] Fix this
         if self.rdb is None:
+            # There is no ruledb
             for node in nodes:
                 applicable_rules.extend(self.rule_map[node.predstr])
             return applicable_rules
         with self.rdb.ctx() as ctx:
             for node in nodes:
                 if node.predstr in self.rule_map:
+                    # predstr in rule_map
                     applicable_rules.extend(self.rule_map[node.predstr])
-                elif node.predstr in self.rule_signs:
-                    # print(node.predstr, "Found rule: ", self.rule_signs[node.predstr])
-                    for wid, pid in self.rule_signs[node.predstr]:
-                        rule = self.rdb.get_rule(wid, pid, ctx=ctx)
-                        if rule is not None:
+                else:
+                    rulesigs = self.rdb.find_rule(node.predstr, flag=RuleInfo.COMPOUND, ctx=ctx)
+                    for rulesig in rulesigs:
+                        ruleinfo = self.rdb.get_rule(rulesig.lid, rulesig.rid, ctx=ctx)
+                        if ruleinfo is not None:
+                            lemma = ruleinfo.lemma.replace(' ', '+')
+                            rule = self.to_hcmp_rule(ruleinfo[0].edit(), lemma)
                             self.add_rule(rule)
                             applicable_rules.append(rule)
-                else:
-                    # something else
-                    continue
         return applicable_rules
 
     def get_guard_dog(self):

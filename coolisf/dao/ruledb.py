@@ -31,9 +31,10 @@ import os
 import os.path
 import logging
 
-from puchikarui import Schema, with_ctx
+from puchikarui import with_ctx
 
-from coolisf.model import LexItem
+from coolisf.dao import CorpusDAOSQLite
+from coolisf.model import LexUnit, RuleInfo
 
 ########################################################################
 
@@ -55,25 +56,24 @@ MY_DIR = os.path.dirname(os.path.realpath(__file__))
 RULEDB_INIT_SCRIPT = os.path.join(MY_DIR, 'scripts', 'init_ruledb.sql')
 
 
-class ChunkDB(Schema):
+class LexRuleDB(CorpusDAOSQLite):
 
-    def __init__(self, data_source=':memory:', setup_script=None, setup_file=RULEDB_INIT_SCRIPT):
-        Schema.__init__(self, data_source=data_source, setup_script=setup_script, setup_file=setup_file)
-        self.add_table('word', ['ID', 'lemma', 'pos', 'flag'], proto=LexItem, id_cols=('ID',))
-        self.add_table('parse').add_fields('ID', 'raw', 'wid', 'preds').set_id('ID')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_file(RULEDB_INIT_SCRIPT)
+        self.add_table('lexunit', ['ID', 'lemma', 'pos', 'synsetid', 'sentid', 'flag'], proto=LexUnit, id_cols=('ID',))
+        self.add_table('ruleinfo', ['pred', 'lid', 'rid', 'flag'], proto=RuleInfo)
 
-    def get_parses(self, word, ctx):
-        parses = ctx.parse.select('wid = ?', (word.ID,))
-        if parses:
-            word.parses = parses
-        return parses
+    def get_lexunit(self, lexunit, mode=None, ctx=None):
+        lexunit.parses = self.get_sent(lexunit.sentid, mode=mode, ctx=ctx)
+        return lexunit
 
-    def flag(self, word, flag, ctx):
-        word.flag = flag
-        self.word.save(word, columns=('flag',))
+    def flag(self, lexunit, flag, ctx):
+        lexunit.flag = flag
+        ctx.lexunit.save(lexunit, columns=('flag',))
 
     @with_ctx
-    def get_words(self, lemma=None, pos=None, flag=None, limit=None, deep_select=True, ctx=None):
+    def find_lexunits(self, lemma=None, pos=None, flag=None, limit=None, lazy=False, ctx=None):
         query = []
         params = []
         if lemma:
@@ -85,8 +85,70 @@ class ChunkDB(Schema):
         if flag:
             query.append("flag = ?")
             params.append(flag)
-        words = ctx.word.select(" AND ".join(query), params, limit=limit)
-        if deep_select:
-            for word in words:
-                self.get_parses(word, ctx=ctx)
-        return words
+        lexunits = ctx.lexunit.select(" AND ".join(query), params, limit=limit)
+        if lazy:
+            for lu in lexunits:
+                lu.parses = self.get_sent(lu.sentid, ctx=ctx)
+        return lexunits
+
+    @with_ctx
+    def generate_rules(self, lexunits, parser=None, ctx=None):
+        # parse lexical units and save the parses
+        for lu in lexunits:
+            lu.ID = ctx.lexunit.save(lu)
+            self.parse_rule(lu, parser, ctx=ctx)
+
+    doc_map = {'v': 'verb', 'n': 'noun', 'a': 'adj', 'r': 'adv', 'x': 'other'}
+
+    @with_ctx
+    def parse_rule(self, lu, parser=None, ctx=None):
+        if parser is not None:
+            parser(lu)
+            if lu.parses is not None and len(lu.parses) > 0:
+                if lu.pos in self.doc_map:
+                    lu.parses.docID = self.get_doc(self.doc_map[lu.pos], ctx=ctx).ID
+                else:
+                    lu.parses.docID = self.get_doc("processed", ctx=ctx).ID
+                self.save_sent(lu.parses, ctx=ctx)
+                # save sentid, flag as processed
+                lu.sentid = lu.parses.ID
+                lu.flag = LexUnit.PROCESSED
+                ctx.lexunit.save(lu, columns=('sentid', 'flag'))
+            else:
+                lu.flag = LexUnit.ERROR
+                ctx.lexunit.save(lu, columns=('flag',))
+
+    @with_ctx
+    def get_rule(self, lid, rid, ctx=None):
+        lu = ctx.lexunit.by_id(lid)
+        if lu is None:
+            return None
+        lu.parses = self.get_sent(lu.sentid, readingIDs=(rid,), ctx=ctx)
+        if not len(lu.parses):
+            return None
+        return lu
+
+    @with_ctx
+    def flag_rule(self, lid, rid, flag, ctx=None):
+        ctx.ruleinfo.update((flag,), 'lid=? AND rid=?', (lid, rid), ('flag',))
+
+    @with_ctx
+    def find_rule(self, predstr, flag=None, ctx=None):
+        query = ['pred = ?']
+        params = [predstr]
+        if flag is not None:
+            query.append('flag = ?')
+            params.append(flag)
+        return ctx.ruleinfo.select(' AND '.join(query), params)
+
+
+def parse_lexunit(lu, ERG):
+    lu.parses = []
+    if lu.pos == 'v':
+        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn_v'])
+    if len(lu.parses) == 0:
+        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn'])
+        # still cannot be parsed? use root_frag
+        if len(lu.parses) == 0:
+            lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_frag'])
+    return lu

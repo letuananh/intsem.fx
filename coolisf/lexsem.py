@@ -48,18 +48,14 @@ __status__ = "Prototype"
 ########################################################################
 
 import logging
-from collections import defaultdict as dd
 
 from delphin.mrs.components import Pred
 
-# from chirptext import header, Counter, TextReport
 from chirptext.texttaglib import TagInfo, Concept
-from yawlib import Synset
 
-
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -69,9 +65,9 @@ PREPS = ['aboard', 'about', 'above', 'across', 'after', 'against', 'along', 'ami
 PREPS_PLUS = PREPS + ['a']
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # FUNCTIONS
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 class Lexsem(object):
 
@@ -99,9 +95,6 @@ def match(concept, ep, sent_text):
     cfrom, cto, surface = fix_tokenization(ep, sent_text)
     if len(concept.words) == 1:
         pred_bits = list(ep.pred.lemma.split('+'))
-        # if concept.tag == '01554230-n':
-        #     print(concept, ep.pred.lemma, pred_bits, cfrom, cto, surface)
-        # ind concept
         w0 = concept.words[0]
         if w0.cfrom == cfrom or w0.cfrom == ep.cfrom:
             if w0.cto == cto or w0.cto == ep.cto:
@@ -111,11 +104,9 @@ def match(concept, ep, sent_text):
             elif len(pred_bits) == 2 and pred_bits[-1] in PREPS_PLUS and pred_bits[0] == w0.label:
                 return True
     elif len(concept.words) > 1:
+        # MWE
         tagged_words = tuple(w.label for w in concept.words)
         pred_bits = list(ep.pred.lemma.split('+'))
-        # if concept.tag == '01554230-n':
-        #     print("MWE", concept, ep.pred.lemma, pred_bits, cfrom, cto, surface, tagged_words)
-        # MWE
         # try to match using min-cfrom and max-cto first
         min_cfrom = concept.words[0].cfrom
         max_cto = concept.words[0].cto
@@ -163,7 +154,7 @@ def filter_concepts(concepts):
 
 
 def taggable_eps(eps):
-    """ Only tag real_preds, string_preds and some special gpred:
+    """ Only tag real_preds, string_preds and some special gpreds:
              + named_rel
              + pron_rel
              + card_rel
@@ -194,6 +185,12 @@ def filter_small_senses(tagged):
     for cid in to_be_removed:
         if cid in tagged.concept_map:
             tagged.concept_map.pop(cid)
+
+
+def import_shallow(isf_sent, mode=Lexsem.ROBUST):
+    for reading in isf_sent:
+        if reading.dmrs() is not None:
+            tag_gold(reading.dmrs(), isf_sent.shallow, isf_sent.text, mode)
 
 
 def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):

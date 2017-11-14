@@ -110,7 +110,7 @@ class TestMain(unittest.TestCase):
             scores = l.lelesk_wsd(w.lemma, tsent.text, context=context)
             if scores:
                 # take the best one
-                tsent.add_concept(cid, w.lemma, scores[0].candidate.synset.sid, [w])
+                tsent.add_concept(cid, w.lemma, scores[0].candidate.synset.ID, [w])
                 cid += 1
         tags = {c.tag for c in tsent.concepts}
         self.assertEqual(tags, {'07376731-n', '02084071-n'})

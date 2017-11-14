@@ -206,8 +206,47 @@ class TestDMRSSQLite(TestDAOBase):
             self.assertEqual(s1[0].mrs().tostring(), s2[0].mrs().tostring())
             d1 = s1[0].dmrs()
             d2 = s2[0].dmrs()
-            self.assertEqual(d1.tags[10002][0].synset.sid, d2.tags[10002][0].synset.sid)
+            self.assertEqual(d1.tags[10002][0].synset.ID, d2.tags[10002][0].synset.ID)
             self.assertEqual(d1.tags[10002][0].synset.lemma, d2.tags[10002][0].synset.lemma)
+
+    def test_modify_reading(self):
+        with self.db.ctx() as ctx:
+            sent = self.ensure_sent(self.db, ctx)
+            r = sent[0]
+            preds = ['pron_rel', 'pronoun_q_rel', '_love_v_1_rel', 'pron_rel', 'pronoun_q_rel']
+            self.assertEqual(r.dmrs().preds(), preds)
+            # delete some nodes
+            to_del = [n for n in r.dmrs().layout.nodes if n.predstr == 'pronoun_q']
+            r.dmrs().layout.delete(*to_del)
+            r.dmrs().layout.save()
+            r.sentID = sent.ID
+            # update reading
+            self.db.update_reading(r, ctx=ctx)
+            # reread sentence from DB
+            s2 = self.db.get_sent(sent.ID, ctx=ctx)
+            preds2 = ['pron_rel', '_love_v_1_rel', 'pron_rel']
+            self.assertEqual(s2[0].dmrs().preds(), preds2)
+
+    def test_paging(self):
+        with self.db.ctx() as ctx:
+            sent = self.ensure_sent(self.db, ctx)
+            # create 49 more sentences
+            for idx in range(49):
+                new_sent = Sentence(sent.text)
+                new_sent.add(sent[0].mrs().tostring())
+                new_sent.docID = sent.docID
+                self.db.save_sent(new_sent, ctx=ctx)
+            # now do paging
+            all_sents = self.db.get_sents(sent.docID, ctx=ctx)
+            self.assertEqual(len(all_sents), 50)
+            page1 = self.db.get_sents(sent.docID, page=0, pagesize=30, ctx=ctx)
+            self.assertEqual(len(page1), 30)
+            self.assertEqual(page1[0].ID, 1)
+            self.assertEqual(page1[-1].ID, 30)
+            page2 = self.db.get_sents(sent.docID, page=1, pagesize=30, ctx=ctx)
+            self.assertEqual(len(page2), 20)
+            self.assertEqual(page2[0].ID, 31)
+            self.assertEqual(page2[-1].ID, 50)
 
 
 class TestCorpusManagement(TestDAOBase):
