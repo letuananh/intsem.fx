@@ -19,23 +19,23 @@ References:
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, intsem.fx"
@@ -65,7 +65,7 @@ from chirptext.leutile import header
 
 from yawlib import YLConfig
 from yawlib import WordnetSQL as WNSQL
-from .model import PredSense
+from coolisf.mappings import PredSense
 
 ########################################################################
 
@@ -78,57 +78,61 @@ ERG_PRED_FILE = FileHelper.abspath('data/ergpreds.py')
 ERG_PRED_NOT_FOUND_FILE = FileHelper.abspath("data/ergpreds_not_mapped.txt")
 ERG_PRED_FILE_TEMPLATE = open(FileHelper.abspath('data/ergpreds.template.py'), 'r').read()
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
-# ERGLexTup = namedtuple('ERGLex', 'name userid modstamp dead lextype orthography keyrel altkey alt2key keytag altkeytag compkey ocompkey pronunciation complete semclasses preferences classifier selectrest jlink comments exemplars usages lang country dialect domains genres register confidence source'.split())
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 class ERGLex:
 
-    def __init__(self, name, userid, modstamp, dead, lextype, orthography, keyrel, altkey, alt2key, keytag,
+    def __init__(self, name, userid, modstamp, dead, lextype, orthography, nagreement, keyrel, altkey, alt2key, keytag,
                  altkeytag, compkey, ocompkey, pronunciation, complete, semclasses, preferences,
                  classifier, selectrest, jlink, comments, exemplars, usages, lang, country, dialect, domains, genres, register, confidence, source):
         # user defined
         # LexDbFieldMappings >>> HOW TO create initial .fld file (first 4 columns are name, userid, modstamp, dead)
-        self.name          = name
-        self.userid        = userid
-        self.modstamp      = modstamp
-        self.dead          = (False if dead == 'f' else True)
+        self.name = name
+        self.userid = userid
+        self.modstamp = modstamp
+        self.dead = (False if dead == 'f' else True)
         # the rest in lexdb.fld
-        self.lextype       = lextype
-        self.orthography   = orthography
-        self.keyrel        = keyrel
-        self.altkey        = altkey
-        self.alt2key       = alt2key
-        self.keytag        = keytag
-        self.altkeytag     = altkeytag
-        self.compkey       = compkey
-        self.ocompkey      = ocompkey
-        self.pronunciation = pronunciation
-        self.complete      = complete
-        self.semclasses    = semclasses
-        self.preferences   = preferences
-        self.classifier    = classifier
-        self.selectrest    = selectrest
-        self.jlink         = jlink
-        self.comments      = comments
-        self.exemplars     = exemplars
-        self.usages        = usages 
-        self.lang          = lang 
-        self.country       = country
-        self.dialect       = dialect
-        self.domains       = domains
-        self.genres        = genres
-        self.register      = register
-        self.confidence    = confidence
-        self.source        = source
+        self.lextype = self.parse_text(lextype)
+        self.orthography = self.parse_text(orthography)
+        self.nagreement = self.parse_text(nagreement)
+        self.keyrel = self.parse_text(keyrel)
+        self.altkey = self.parse_text(altkey)
+        self.alt2key = self.parse_text(alt2key)
+        self.keytag = self.parse_text(keytag)
+        self.altkeytag = self.parse_text(altkeytag)
+        self.compkey = self.parse_text(compkey)
+        self.ocompkey = self.parse_text(ocompkey)
+        self.pronunciation = self.parse_text(pronunciation)
+        self.complete = self.parse_text(complete)
+        self.semclasses = self.parse_text(semclasses)
+        self.preferences = self.parse_text(preferences)
+        self.classifier = self.parse_text(classifier)
+        self.selectrest = self.parse_text(selectrest)
+        self.jlink = self.parse_text(jlink)
+        self.comments = self.parse_text(comments)
+        self.exemplars = self.parse_text(exemplars)
+        self.usages = self.parse_text(usages)
+        self.lang = self.parse_text(lang)
+        self.country = self.parse_text(country)
+        self.dialect = self.parse_text(dialect)
+        self.domains = self.parse_text(domains)
+        self.genres = self.parse_text(genres)
+        self.register = self.parse_text(register)
+        self.confidence = self.parse_text(confidence)
+        self.source = self.parse_text(source)
 
     def __repr__(self):
         return self.keyrel
 
+    def parse_text(self, value):
+        return value if value != '\\N' else ''
+
     def __str__(self):
-        return "name = %s | userid = %s | modstamp = %s | dead = %s | lextype = %s | orthography = %s | keyrel = %s | altkey = %s | alt2key = %s | keytag = %s | altkeytag = %s | compkey = %s | ocompkey = %s | pronunciation = %s | complete = %s | semclasses = %s | preferences = %s | classifier = %s | selectrest = %s | jlink = %s | comments = %s | exemplars = %s | usages = %s | lang = %s | country = %s | dialect = %s | domains = %s | genres = %s | register = %s | confidence = %s | source = %s" % (self.name, self.userid, self.modstamp, self.dead, self.lextype, self.orthography, self.keyrel, self.altkey, self.alt2key, self.keytag, self.altkeytag, self.compkey, self.ocompkey, self.pronunciation, self.complete, self.semclasses, self.preferences, self.classifier, self.selectrest, self.jlink, self.comments, self.exemplars, self.usages, self.lang, self.country, self.dialect, self.domains, self.genres, self.register, self.confidence, self.source)
+        fields = ("{}={}".format(k, repr(v)) for k, v in self.__dict__.items() if v)
+        return "ERGLex({})".format(", ".join(fields))
 
 
 def to_sense_map(k, v):
