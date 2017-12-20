@@ -50,9 +50,10 @@ __status__ = "Prototype"
 import os
 import re
 import logging
-from chirptext import Counter, FileHelper
-from coolisf.model import Sentence
 
+from chirptext import Counter, FileHelper
+
+from coolisf.model import Sentence
 
 ##########################################
 # CONFIGURATION
@@ -60,8 +61,10 @@ from coolisf.model import Sentence
 
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 ########################################################################
@@ -71,7 +74,7 @@ def read_ace_output(ace_output_file):
     Sample command: ace -g grammar.dat infile.txt > outfile.txt
     Read more: http://moin.delph-in.net/AceOptions
     '''
-    logger.info("Reading parsed MRS from %s..." % (ace_output_file,))
+    getLogger().info("Reading parsed MRS from %s..." % (ace_output_file,))
     c = Counter()
     items = []
     sentences = []

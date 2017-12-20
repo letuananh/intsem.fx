@@ -323,7 +323,7 @@ class TestGoldData(unittest.TestCase):
         report = TextReport('data/gold_report.txt')
         matched_report = TextReport('data/gold_matched.txt')
         not_matched_report = TextReport('data/gold_notmatched.txt')
-        for s in sents:
+        for s in sents[:5]:
             sid = str(s.ident)
             if sid not in doc.sent_map:
                 raise Exception("Cannot find sentence {}".format(sid))
@@ -359,7 +359,7 @@ class TestGoldData(unittest.TestCase):
             matched_report.writeline()
         # report not matched
         not_matched_report.header("By senses", "h0")
-        for k, v in concept_count.sorted_by_count():
+        for k, v in concept_count.most_common():
             sids = ' '.join(["#{}".format(x) for x in tbc_concepts[k]])
             not_matched_report.print("{}: {} | {} => {}".format(k, v, sids, tag_map[k]))
         not_matched_report.header("By sentences", "h0")

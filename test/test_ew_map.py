@@ -55,7 +55,7 @@ import unittest
 import logging
 
 from coolisf.ergex import read_erg_lex, find_mwe
-from coolisf.model import PredSense
+from coolisf.mappings import PredSense
 from coolisf import GrammarHub
 
 # ------------------------------------------------------------------------------
@@ -84,27 +84,44 @@ class TestMain(unittest.TestCase):
         mwe_list = list(find_mwe())[:5]
         self.assertEqual(len(mwe_list), 5)
 
-    def test_read_erg(self):
+    def test_read_erg_lexdb(self):
         # get non empty rels
         nonempty = [x for x in self.lexdb if x.keyrel != '\\N']
         self.assertGreater(len(nonempty), 30000)
+        for l in self.lexdb:
+            self.assertTrue(l.lextype)
 
     def test_erg2wn(self):
         d = PredSense.search_pred_string('_test_v_1')
-        self.assertEqual([str(x.synsetid) for x in d], ['02531625-v', '02533109-v', '00786458-v', '02745713-v', '01112584-v', '00920778-v', '00669970-v'])
+        self.assertEqual({str(x.synsetid) for x in d}, {'02531625-v', '02533109-v', '00786458-v', '02745713-v', '01112584-v', '00920778-v', '00669970-v'})
         pass
 
+    def test_extend_lemma(self):
+        self.assertEqual(PredSense.extend_lemma('night bird'), {'night-bird', 'night bird', 'nightbird'})
+
     def test_known_concepts(self):
-        preds = PredSense.search_pred_string('_bark_v_1')
-        for p in preds:
-            self.assertEqual((p.synsetid.pos, p.lemma), ('v', 'bark'))
-        preds = PredSense.search_pred_string('_bark_n_1')
-        for p in preds:
-            self.assertEqual((p.synsetid.pos, p.lemma), ('n', 'bark'))
-        d = PredSense.search_pred_string('_dog_v_1')
-        self.assertTrue(d)
-        d = PredSense.search_pred_string('_look_v_up')
-        self.assertTrue(d)
+        # test verb
+        synsets = PredSense.search_pred_string('_bark_v_1')
+        self.assertTrue(synsets)
+        for synset in synsets:
+            self.assertEqual(synset.ID.pos, 'v')
+            self.assertIn('bark', synset.lemmas)
+        # test noun
+        synsets = PredSense.search_pred_string('_bark_n_1')
+        self.assertTrue(synsets)
+        for synset in synsets:
+            self.assertEqual(synset.ID.pos, 'n')
+            self.assertIn('bark', synset.lemmas)
+        # test adj
+        synsets = PredSense.search_pred_string('_quick_a_1')
+        self.assertTrue(synsets)
+        for synset in synsets:
+            self.assertEqual(synset.ID.pos, 'a')
+            self.assertIn('quick', synset.lemmas)
+        # MWE
+        synsets = PredSense.search_pred_string('_look_v_up')
+        for synset in synsets:
+            self.assertIn("look up", synset.lemmas)
 
     def test_known_mwe(self):
         d = PredSense.search_pred_string('_green+tea_n_1')

@@ -66,7 +66,7 @@ from coolisf.gold_extract import export_to_visko, read_gold_mrs
 from coolisf.util import read_ace_output
 from coolisf.dao.ruledb import LexRuleDB
 from coolisf.morph import Compound, Integral, Transformer, SimpleHeadedCompound as HCMP, LEXRULES_DB
-from coolisf.model import Sentence, MRS, Triplet, Reading, Link
+from coolisf.model import Sentence, MRS, Reading
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION

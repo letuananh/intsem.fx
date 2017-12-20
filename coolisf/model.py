@@ -68,16 +68,15 @@ from delphin.mrs import Dmrs
 from delphin.mrs.components import Pred
 from delphin.mrs.components import normalize_pred_string
 
-from chirptext.anhxa import update_data
+from chirptext.anhxa import update_obj
 from chirptext.leutile import StringTool, header
 from chirptext.texttaglib import TagInfo, TaggedSentence, Token
-from chirptext.io import CSV
 from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
 from coolisf.parsers import parse_dmrs_str
-from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
+from coolisf.mappings import PredSense
 
 
 ########################################################################
@@ -521,7 +520,7 @@ class MRS(object):
         return json.dumps(self.json())
 
     def to_dmrs(self, with_raw=False):
-        xml_str = dmrx.serialize([self.obj()])
+        xml_str = dmrx.dumps_one(self.obj())
         dmrs_node = etree.XML(xml_str)[0]
         # insert RAW to dmrs_xml
         if with_raw:
@@ -634,8 +633,10 @@ class DMRS(object):
                     else:
                         raise Exception("Broken DMRS object")
                 # from pyDelphin object?
-                self._raw = dmrx.etree_tostring(dmrx._encode_dmrs(self._obj))
-                self._node = etree.XML(self._raw)
+                xml_str = dmrx.dumps_one(self._obj)
+                dmrs_list_node = etree.XML(xml_str)
+                self._raw = None
+                self._node = dmrs_list_node[0]
         return self._node
 
     def xml_str(self, pretty_print=False):
@@ -686,9 +687,9 @@ class DMRS(object):
         ''' Get pydelphin DMRS object
         '''
         if self._obj is None:
-            xml_str = self.xml_str()
+            xml_str = '<dmrs-list>{}</dmrs-list>'.format(self.xml_str())
             mrses = []
-            mrses.extend(dmrx.deserialize(io.StringIO(xml_str)))
+            mrses.extend(dmrx.loads(xml_str))
             if len(mrses) == 1:
                 self._obj = mrses[0]
                 # store available tags
@@ -708,9 +709,9 @@ class DMRS(object):
     def __str__(self):
         return self.tostring()
 
-    #-------------------------------
+    # -------------------------------
     # Read & write tags from/to XML
-    #-------------------------------
+    # -------------------------------
 
     def find_tags(self):
         ''' Find all available sense tags that are stored in XML'''
@@ -1475,7 +1476,7 @@ class DMRSLayout(object):
                 sense_tag = node_tag.find('sense')
                 if sense_tag is not None:
                     sense_info = Sense()
-                    update_data(sense_tag.attrib, sense_info)
+                    update_obj(sense_tag.attrib, sense_info)
                     temp_node.sense = sense_info
 
             # Completed parsing, add the node_tag to DMRS object
@@ -1563,165 +1564,6 @@ class SortInfo(object):
             return self.cvarsort + ' ' + ' '.join(('{}={}'.format(k.upper(), str(v)) for (k, v) in valdict))
         else:
             return ' '.join(('{}={}'.format(k.upper(), str(v)) for (k, v) in valdict))
-
-
-class PredSense(object):
-
-    lwsd = LeLeskWSD(dbcache=LeskCache())
-
-    MODAL_VERBS = ('would', 'could', 'may', 'must', 'should', 'might', 'going+to', 'ought')
-
-    REPLACE_TEMPLATES = [
-        ['-', ' ']
-        , ['-', '']
-        , ['-', '+']
-        , ['_', ' ']
-        , ['_', '']
-        , ['+', ' ']
-        , ['+', '-']
-        , ['+', '']
-        , [' ', '-']
-        , [' ', '']
-    ]
-    #   cut off is adj in wn but n in ERG???
-    #   no dole as a verb in Wordnet
-    #   direct should not be a noun
-    #   ,['church-goer','churchgoer']
-    #       #,['line+up','lineup']
-    #       #,['the+same','same']
-    #   downstairs_n not in WN
-    #   # droppings vs dropping?
-    #   # east+west => direction?
-    #   # intermediary (n in WN) but a???
-    #   # no solar_n in WN but there are a lot of [solar x]
-    #   # trapdoor => trap door (WN)
-    #   #thanks a ? (is n in WN)
-    #   # Not in WN:
-    #       # attracted_a_to_rel    attracted   a   to  1
-    #       # childrens_a_1_rel childrens   a   1   1
-    #       # caribbean (a)
-    #   # all modals
-    #   # other_n
-    #       #re-_a_again_rel    re- a   again   124
-    #       #un-_a_rvrs_rel un- a   rvrs    104
-    #       #
-    #   # else_a_1_rel
-    #   # oh_a_1_rel
-    #   # colon_v_id_rel
-    #   # own_n_1_rel
-
-    @staticmethod
-    def extend_lemma(lemma):
-        potential = set()
-        potential.add(lemma)
-        for rfrom, rto in PredSense.REPLACE_TEMPLATES:
-            if rfrom in lemma:
-                potential.add(lemma.replace(rfrom, rto))
-        # add lower case
-        potential.add(lemma.lower())
-        # add +/-
-        potential.add(lemma + '+')
-        potential.add(lemma + '-')
-        # negations & determiners
-        if lemma.startswith('not+') or lemma.startswith('the+'):
-            potential.add(lemma[4:])
-        # add WNL
-        potential.add(PredSense.lwsd.lemmatize(lemma))
-        return tuple(potential)
-
-    singleton_sm = None
-
-    @staticmethod
-    def search_sense(lemmata, pos):
-        if PredSense.singleton_sm is None:
-            PredSense.singleton_sm = PredSense.lwsd.wn.all_senses()
-        sm = PredSense.singleton_sm
-
-        for lemma in lemmata:
-            if lemma in sm:
-                potential = [x for x in sm[lemma] if x.synsetid.pos == pos or pos in ('x', 'p')]
-                if potential:
-                    return potential
-        return []
-
-    # alias
-    def search_pred_string(pred_str, extend_lemma=True, tracer=None):
-        if pred_str is None:
-            return []
-        # if pred_str.startswith("_"):
-        #     pred_str = pred_str[1:]
-        if pred_str in MWE_ERG_PRED_LEMMA:
-            pred = Pred.string_or_grammar_pred(pred_str)
-            if isinstance(tracer, list):
-                tracer.append(([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos, 'MWE', 'See also?: ' + Pred.grammarpred(pred_str).lemma))
-            ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], pred.pos)
-            return sorted(ss, key=lambda x: x.tagcount, reverse=True)
-        else:
-            return PredSense.search_pred(Pred.grammarpred(pred_str), extend_lemma, tracer)
-
-    AUTO_EXTEND = {
-        ('st', 'n'): (('saint',), 'n'),
-        ('children',): ('child',),
-        ('childrens',): ('child',),
-        ('trapdoor',): ('trap door',),
-        ('declining',): ('decline',),
-        ('allright',): ('alright',),
-        ('a+couple',): ('a couple of',),
-        ('diagnostic',): ('diagnostics',),
-        ('had+better',): ('better',),
-        ('suburbian',): ('suburban',),
-        ('little-few',): ('few',),
-        ('much-many',): ('many',),
-        ('or+not',): ('not',),
-        ('undoubted',): ('undoubtedly',),
-        ('used+to', 'v'): (('used to',), 'a'),
-    }
-
-    # [TODO]:
-    # significantly: x vs r
-    # _along_p_rel
-    # if pos ==  x or p => ignore POS
-    #
-    # slurp        : n vs v (in WN)
-    # _add_v_up-to_rel >>> add up
-    # _make_v_up-for_rel
-    # _come_v_up_rel
-    # _duck_v_out_rel
-    # _crumble_n_1_rel >>> checked a but v in WN
-
-    @staticmethod
-    def search_pred(pred, auto_expand=True, tracer=None):
-        if not pred:
-            return None
-
-        lemmata = (pred.lemma,) if not auto_expand else PredSense.extend_lemma(pred.lemma)
-        pos = pred.pos
-
-        if (lemmata, pos) in PredSense.AUTO_EXTEND:
-            lemmata, pos = PredSense.AUTO_EXTEND[(lemmata, pos)]
-        elif (lemmata,) in PredSense.AUTO_EXTEND:
-            lemmata = PredSense.AUTO_EXTEND[(lemmata,)]
-
-        if isinstance(tracer, list):
-            tracer.append((lemmata, pos))
-        ss = PredSense.search_sense(lemmata, pos)
-
-        # hardcode: try to match noun & adj/v
-        if not ss and auto_expand:
-            # hard code modal
-            if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v':
-                lemmata, pos = (('modal',), 'a')
-            elif pred.pos == 'a':
-                lemmata, pos = ([pred.lemma], 'n')
-            elif pred.pos == 'n':
-                lemmata, pos = ([pred.lemma], 'a')
-            #-----------
-            if isinstance(tracer, list):
-                tracer.append((lemmata, pos))
-            ss = PredSense.search_sense(lemmata, pos)
-
-        # Done
-        return sorted(ss, key=lambda x: x.tagcount, reverse=True)
 
 
 class LexUnit(object):
