@@ -183,7 +183,7 @@ def read_gold_mrs():
     if not os.path.isfile(GOLD_MRS_FILE):
         extract_tsdb_gold()
     doc = Document(name="speckled", title="The Adventure of the Speckled Band")
-    for line in CSV.read(GOLD_MRS_FILE, header=True):
+    for line in CSV.read(GOLD_MRS_FILE, dialect='excel-tab', header=True):
         sent = doc.new(text=line['text'], ident=int(line['ntuid']))
         mrs = line['mrs']
         if mrs and len(mrs.strip()) > 0:
