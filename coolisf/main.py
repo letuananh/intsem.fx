@@ -55,6 +55,7 @@ import sys
 import gzip
 import argparse
 
+from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper
 from chirptext.texttaglib import TagInfo
 
@@ -72,10 +73,13 @@ OUTPUT_MRS = 'mrs'
 OUTPUT_XML = 'xml'
 OUTPUT_FORMATS = [OUTPUT_DMRS, OUTPUT_MRS, OUTPUT_XML]
 
+setup_logging('logging.json', 'logs')
+
 
 ########################################################################
 
-def to_visko(args):
+def to_visko(cli, args):
+    ''' Export MRS to VISKO '''
     # determine docpath
     if args.bibloc:
         visko_data_dir = os.path.abspath(args.bibloc)
@@ -101,7 +105,8 @@ def to_visko(args):
     export_to_visko(sents, export_path)
 
 
-def parse_isf(args):
+def parse_isf(cli, args):
+    ''' Process raw text file '''
     # verification
     if not os.path.isfile(args.infile):
         print("Error. File does not exist. (provided: {})".format(args.infile))
@@ -120,7 +125,7 @@ def parse_isf(args):
         report.writeline("\n\n")
 
 
-def extract_tsdb(args):
+def extract_tsdb(cli, args):
     ''' Read parsed sentences from a TSDB profile '''
     if not os.path.isdir(args.path):
         print("TSDB profile does not exist (path: {})".format(args.path))
@@ -139,7 +144,8 @@ def extract_tsdb(args):
             print(doc_xml_str)
 
 
-def parse_text(args):
+def parse_text(cli, args):
+    ''' Analyse a text '''
     ghub = GrammarHub()
     text = args.input
     result = ghub.parse(text, args.grammar, args.n, args.wsd, args.nocache)
@@ -149,6 +155,7 @@ def parse_text(args):
             report.header(result)
             for reading in result:
                 report.writeline(reading.dmrs().tostring(pretty_print=not args.compact))
+                report.writeline()
         elif args.format == OUTPUT_XML:
             result.tag_xml()
             report.writeline(result.to_xml_str(pretty_print=not args.compact))
@@ -156,61 +163,49 @@ def parse_text(args):
             report.header(result)
             for reading in result:
                 report.writeline(reading.mrs().tostring(pretty_print=not args.compact))
+                report.writeline()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="CoolISF Main Application")
+    app = CLIApp("CoolISF Main Application", logger=__name__)
 
-    tasks = parser.add_subparsers(help='Task to be done')
+    task = app.add_task('parse', func=parse_isf)
+    task.add_argument('infile', help='Path to input text file')
+    task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
+    task.add_argument('-n', help='Maximum parse count', default=None)
+    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    task.add_argument('--tagger', help='Word Sense Tagger', default=TagInfo.LELESK)
+    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
 
-    parse_task = tasks.add_parser('parse', help='Process raw text file')
-    parse_task.add_argument('infile', help='Path to input text file')
-    parse_task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
-    parse_task.add_argument('-n', help='Maximum parse count', default=None)
-    parse_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    parse_task.add_argument('--tagger', help='Word Sense Tagger', default=TagInfo.LELESK)
-    parse_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
-    parse_task.set_defaults(func=parse_isf)
-
-    text_task = tasks.add_parser('text', help='Analyse a text')
-    text_task.add_argument('input', help='Any text')
-    text_task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
-    text_task.add_argument('-n', help="Only show top n parses", default=None)
-    text_task.add_argument('--wsd', help="Word-Sense Disambiguation engine", default=TagInfo.LELESK)
-    text_task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    text_task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
-    text_task.add_argument('-o', '--output', help="Write output to path")
-    text_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
-    text_task.set_defaults(func=parse_text)
+    task = app.add_task('text', func=parse_text)
+    task.add_argument('input', help='Any text')
+    task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
+    task.add_argument('-n', help="Only show top n parses", default=None)
+    task.add_argument('--wsd', help="Word-Sense Disambiguation engine", default=TagInfo.LELESK)
+    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
+    task.add_argument('-o', '--output', help="Write output to path")
+    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
 
     # Create ISF gold profile
-    gold_task = tasks.add_parser('gold', help='Extract gold profile')
-    gold_task.set_defaults(func=lambda arsg: generate_gold_profile())
+    task = app.add_task('gold', lambda cli, args: generate_gold_profile(), help='Extract gold profile')
 
     # Extract sentences from TSDB profile
-    tsdb_task = tasks.add_parser('tsdb', help='Read TSDB profile')
+    tsdb_task = app.add_task('tsdb', func=extract_tsdb)
     tsdb_task.add_argument('path', help='Path to TSDB profile folder')
     tsdb_task.add_argument('output', help='Save extracted sentences to a file', nargs="?", default=None)
     tsdb_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     tsdb_task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
-    tsdb_task.set_defaults(func=extract_tsdb)
 
-    export_task = tasks.add_parser('export', help='Export MRS to VISKO')
-    export_task.add_argument('-f', '--file', help='MRS file')
-    export_task.add_argument('biblioteca')
-    export_task.add_argument('corpus')
-    export_task.add_argument('doc')
-    export_task.add_argument('-k', '--topk', help='Only extract top K sentences')
-    export_task.add_argument('-b', '--bibloc', help='Path to Biblioteche folder (corpus collection root)')
-    export_task.set_defaults(func=to_visko)
+    task = app.add_task('export', func=to_visko)
+    task.add_argument('-f', '--file', help='MRS file')
+    task.add_argument('biblioteca')
+    task.add_argument('corpus')
+    task.add_argument('doc')
+    task.add_argument('-k', '--topk', help='Only extract top K sentences')
+    task.add_argument('-b', '--bibloc', help='Path to Biblioteche folder (corpus collection root)')
 
-    if len(sys.argv) == 1:
-        parser.print_help()
-    else:
-        # Parse input arguments
-        args = parser.parse_args()
-        args.func(args)
-    pass
+    app.run()
 
 
 if __name__ == "__main__":
