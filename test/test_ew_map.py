@@ -139,6 +139,8 @@ class TestMain(unittest.TestCase):
         synsets = PredSense.search_pred_string('_above-mentioned_a_1_rel')
         getLogger().debug("above-mentioned", synsets)
         self.assertTrue(synsets)
+        getLogger().debug(PredSense.search_pred_string("_allright_a_for_rel"))
+        getLogger().debug(PredSense.search_pred_string("_abrasive_a_1_rel"))
 
     def test_known_mwe(self):
         d = PredSense.search_pred_string('_green+tea_n_1')

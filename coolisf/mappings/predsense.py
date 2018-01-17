@@ -204,7 +204,7 @@ class PredSense(object):
             if (lemma, pos) in PredSense.AUTO_EXTEND:
                 lemmata, pos = PredSense.AUTO_EXTEND[(lemmata, pos)]
             elif (lemma,) in PredSense.AUTO_EXTEND:
-                lemmata = PredSense.AUTO_EXTEND[(lemmata,)]
+                lemmata = PredSense.AUTO_EXTEND[(lemma,)]
 
         ss = PredSense.search_sense(lemmata, pos)
         # hardcode: try to match noun & adj/v
