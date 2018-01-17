@@ -1,0 +1,2 @@
+col2-cor1-doc1-1	The cathedral and the bazaar
+col2-cor1-doc1-2	Linux is an operating system.

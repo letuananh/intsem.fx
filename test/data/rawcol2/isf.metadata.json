@@ -1,0 +1,5 @@
+{
+  "name": "rawcol2",
+  "title": "Raw Collection 2",
+  "corpuses": ["cor1", "cor2"]
+}

@@ -1,0 +1,2 @@
+I give a book to Mary.
+I give Mary a book.

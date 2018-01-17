@@ -1,0 +1,6 @@
+{
+  "name": "cor2",
+  "title": "Raw Corpus 2",
+  "documents": ["file1.txt", "file2.txt"],
+  "format": "txt"
+}

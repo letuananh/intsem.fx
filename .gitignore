@@ -1,3 +1,8 @@
+data/bm.txt
+data/bib.mrs.txt.skipped.txt
+data/lexdb.rev
+data/lexicon.tdl
+data/lexrules*
 data/chunks*
 data/*.dat
 data/*.db

@@ -1,0 +1,6 @@
+{
+  "name": "cor1",
+  "title": "Raw Corpus 1",
+  "documents": ["doc1.txt", "doc2.txt"],
+  "format": "tsv"
+}

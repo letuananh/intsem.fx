@@ -57,6 +57,7 @@ from coolisf import GrammarHub
 from coolisf.dao import read_tsdb, CorpusDAOSQLite
 from coolisf.dao.ruledb import LexRuleDB, parse_lexunit
 from coolisf.model import Document, LexUnit, RuleInfo
+from coolisf.dao.textcorpus import RawCollection
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
@@ -77,6 +78,69 @@ class TestTSDBDAO(unittest.TestCase):
         doc = read_tsdb('data/gold')
         self.assertTrue(doc)
         self.assertTrue(len(doc))
+
+
+class TestRawData(unittest.TestCase):
+
+    def test_no_metadata(self):
+        colpath = os.path.join(TEST_DATA, 'rawcol1')
+        col = RawCollection(colpath)
+        self.assertEqual(col.name, 'rawcol1')
+        self.assertEqual(col.title, '')
+        corpuses = col.get_corpuses()
+        self.assertEqual(len(corpuses), 2)
+        corpus_names = {c.name for c in corpuses}
+        self.assertEqual(corpus_names, {'cor1', 'cor2'})
+        cor1 = corpuses['cor1']
+        cor2 = corpuses['cor2']
+        cor1_docs = cor1.get_documents()
+        cor2_docs = cor2.get_documents()
+        cor1_docnames = {d.name for d in cor1_docs}
+        cor2_docnames = {d.name for d in cor2_docs}
+        self.assertEqual(cor1_docnames, {'doc1', 'doc2'})
+        self.assertEqual(cor2_docnames, {'file1', 'file2'})
+        sents = set()
+        for corpus in corpuses:
+            for doc in corpus.get_documents():
+                for sent in doc.read_sentences():
+                    sents.add(sent)
+        sent_texts = {s.text for s in sents}
+        expected = {'It rains.', 'I give a book to Mary.', 'The cathedral and the bazaar', 'It works.', 'Coding is fun.', 'The dog barked.', 'Linux is an operating system.', 'I give Mary a book.'}
+        self.assertEqual(sent_texts, expected)
+
+    def test_with_metadata(self):
+        colpath = os.path.join(TEST_DATA, 'rawcol2')
+        col = RawCollection(colpath)
+        self.assertEqual(col.name, 'rawcol2')
+        self.assertEqual(col.title, 'Raw Collection 2')
+        corpuses = col.get_corpuses()
+        self.assertEqual(len(corpuses), 2)
+        cor1 = corpuses['cor1']
+        cor2 = corpuses['cor2']
+        self.assertEqual(cor1.title, 'Raw Corpus 1')
+        self.assertEqual(cor2.title, 'Raw Corpus 2')
+        cor1_docs = cor1.get_documents()
+        cor2_docs = cor2.get_documents()
+        cor1_docnames = {d.name for d in cor1_docs}
+        cor2_docnames = {d.name for d in cor2_docs}
+        self.assertEqual(cor1_docnames, {'doc1', 'doc2'})
+        self.assertEqual(cor2_docnames, {'file1', 'file2'})
+        # verify sentence ID in cor2 (which is formatted in TSV)
+        cor1_ids = set()
+        for d in cor1_docs:
+            for s in d.read_sentences():
+                cor1_ids.add(s.ident)
+        self.assertEqual(cor1_ids, {'col2-cor1-doc1-1', 'col2-cor1-doc1-2', 'col2-cor1-doc2-1', 'col2-cor1-doc2-2'})
+        # verify all available sentences
+        # cor3 and the 3rd sentence in each corpus should not be included
+        sents = set()
+        for corpus in corpuses:
+            for doc in corpus.get_documents():
+                for sent in doc.read_sentences():
+                    sents.add(sent)
+        sent_texts = {s.text for s in sents}
+        expected = {'It rains.', 'I give a book to Mary.', 'The cathedral and the bazaar', 'It works.', 'Coding is fun.', 'The dog barked.', 'Linux is an operating system.', 'I give Mary a book.'}
+        self.assertEqual(sent_texts, expected)
 
 
 class TestRuleDB(unittest.TestCase):
