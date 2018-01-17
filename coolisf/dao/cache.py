@@ -89,8 +89,11 @@ class AceCache(Schema):
     def save(self, sent, grm, pc, extra_args, ctx=None):
         self.clear(sent.text, grm, pc, extra_args, ctx=ctx)
         sid = ctx.sent.insert(sent.text, grm, pc, extra_args)
+        # store MRS
         for p in sent:
             ctx.mrs.insert(sid, p.mrs()._raw)
+        # store shallow
+        # store tags?
 
     @with_ctx
     def load(self, text, grm, pc, extra_args, ctx=None):

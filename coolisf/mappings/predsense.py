@@ -47,11 +47,16 @@ __status__ = "Prototype"
 
 ########################################################################
 
+import logging
 from delphin.mrs.components import Pred
 
 from yawlib import SynsetCollection
 from yawlib.helpers import get_wn
 from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------
@@ -141,12 +146,19 @@ class PredSense(object):
                 potential.add(lemma.replace(rfrom, rto))
         # add lower case
         potential.add(lemma.lower())
+        potential.add(lemma.replace('+', ' '))
+        potential.add(lemma.replace('+', '-'))
+        potential.add(lemma.replace('-', ' '))
+        potential.add(lemma.replace('-', '_'))
+        potential.add(lemma.replace('_', ' '))
+        potential.add(lemma.replace(' ', ''))
         # add +/-
         # potential.add(lemma + '+')
         # potential.add(lemma + '-')
         # negations & determiners
         if lemma.startswith('not+') or lemma.startswith('the+'):
             potential.add(lemma[4:])
+        getLogger().debug("Potential for `{}': {}".format(lemma, potential))
         return potential
 
     singleton_sm = None
@@ -160,6 +172,7 @@ class PredSense(object):
         with PredSense.wn.ctx() as ctx:
             for lemma in lemmata:
                 synsets = PredSense.wn.search(lemma, pos=pos, ctx=ctx)
+                getLogger().debug("search_sense: {} (pos={}): {}".format(lemma, pos, synsets))
                 for synset in synsets:
                     if synset.ID not in potential:
                         potential.add(synset)

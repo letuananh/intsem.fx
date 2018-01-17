@@ -59,12 +59,15 @@ from coolisf.util import sent2json
 from coolisf.model import Sentence
 from coolisf.processors.base import ProcessorManager
 
+
 # ----------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+def getLogger():
+    return logging.getLogger(__name__)
+
+
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
 
@@ -84,11 +87,11 @@ class GrammarHub:
         self.posts = ProcessorManager.from_json(self.cfg["postprocessors"])
 
     def read_config(self, cfg_path=CONFIG_FILE):
-        logger.info("Reading grammars configuration from: {}".format(cfg_path))
+        getLogger().info("Reading grammars configuration from: {}".format(cfg_path))
         with open(cfg_path) as cfgfile:
             self.cfg = json.loads(cfgfile.read())
             self.cache_path = FileHelper.abspath(self.cfg['cache'])
-            logger.info("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
+            getLogger().info("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
         return self.cfg
 
     @property
@@ -139,12 +142,12 @@ class GrammarHub:
         if not ignore_cache and self.cache:
             s = self.cache.load(txt, grm, pc, tagger)
             if s is not None:
-                logger.info("Retrieved {} parse(s) from cache for sent: {}".format(len(s['parses']), s['sent']))
+                getLogger().info("Retrieved {} parse(s) from cache for sent: {}".format(len(s['parses']), s['sent']))
                 return s
         # else parse it ...
         sent = self.parse(txt, grm, pc, tagger, ignore_cache)
         # cache sent if possible
-        if self.cache:
+        if self.cache and not ignore_cache:
             self.cache.save(txt, grm, pc, tagger, sent)
         # make it JSON
         return sent2json(sent, txt, pc, tagger, grm)
@@ -155,10 +158,10 @@ class GrammarHub:
         if not txt:
             raise ValueError('Sentence cannot be empty')
         # Parse sentence
-        logger.debug("Parsing sentence: {}".format(txt))
-        sent = self[grm].parse(txt, parse_count=pc)
+        getLogger().debug("Parsing sentence: {}".format(txt))
+        sent = self[grm].parse(txt, parse_count=pc, ignore_cache=ignore_cache)
         if tagger:
-            logger.info("Sense-tagging sentence using {}".format(tagger))
+            getLogger().debug("Sense-tagging sentence using {}".format(tagger))
             sent.tag(method=tagger)
         return sent
 
@@ -169,12 +172,12 @@ class Grammar:
         self.gram_file = FileHelper.abspath(gram_file)
         self.cmdargs = cmdargs
         self.ace_bin = FileHelper.abspath(ace_bin)
-        logger.info("Initializing grammar {n} | GRM Path: [{g}] - ACE: [{a}]".format(n=self.name, g=self.gram_file, a=self.ace_bin))
+        getLogger().info("Initializing grammar {n} | GRM Path: [{g}] - ACE: [{a}]".format(n=self.name, g=self.gram_file, a=self.ace_bin))
         # init cache
         if cache_loc:
             self.cache_loc = FileHelper.abspath(cache_loc)
             self.cache = AceCache(self.cache_loc)
-            logger.info("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
+            getLogger().info("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
         else:
             self.cache = None
         self.preps = preps  # pre-processors
@@ -203,14 +206,14 @@ class Grammar:
         if extra_args:
             args += extra_args
         with ace.AceParser(self.gram_file, executable=self.ace_bin, cmdargs=args) as parser, self.cache.ctx() as ctx:
-            logger.debug("Executing ACE with cmdargs: {}".format(args))
+            getLogger().debug("Executing ACE with cmdargs: {}".format(args))
             for text in texts:
                 exargs_str = ' '.join(extra_args) if extra_args else None
                 if not ignore_cache and self.cache:
                     # try to fetch from cache first
                     s = self.cache.load(text, self.name, parse_count, exargs_str, ctx=ctx)
                     if s is not None:
-                        logger.debug("Retrieved {pc} parses from cache for sent: {s}".format(s=text, pc=len(s)))
+                        getLogger().debug("Retrieved {pc} parses from cache for sent: {s}".format(s=text, pc=len(s)))
                         yield s
                         continue
                 # not in cache then ...
@@ -221,7 +224,9 @@ class Grammar:
                         for prep in self.preps:
                             prep.process(s)
                     # interact with grammar
+                    getLogger().debug("interacting with ACE")
                     result = parser.interact(s.text)
+                    getLogger().debug("reading ACE output")
                     # postprocessors
                     if result and 'RESULTS' in result:
                         top_res = result['RESULTS']
@@ -231,12 +236,13 @@ class Grammar:
                                 for p in self.posts:
                                     p.process(parse)
                     # cache it
-                    if self.cache:
+                    if not ignore_cache and self.cache:
+                        getLogger().debug("Caching result")
                         self.cache.save(s, self.name, parse_count, exargs_str, ctx=ctx)
                 except Exception as e:
                     s.flag = Sentence.ERROR
                     s.comment = "This sentence is not fully processed"
-                    logger.exception("Error happened while processing sentence: {}".format(text))
+                    getLogger().exception("Error happened while processing sentence: {}".format(text))
                 yield s
 
     def parse_many(self, texts, parse_count=None, extra_args=None, ignore_cache=False):

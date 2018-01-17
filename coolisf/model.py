@@ -83,7 +83,8 @@ from coolisf.mappings import PredSense
 # Configuration
 ########################################################################
 
-logger = logging.getLogger(__name__)
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 ########################################################################
@@ -143,11 +144,11 @@ class Document(object):
         sent.doc = self
         if sent.ID:
             if sent.ID in self.id_map and self.id_map[sent.ID] is not None:
-                logger.warning("{}: Duplicate sent ID {}".format(self, sent.ID))
+                getLogger().warning("{}: Duplicate sent ID {}".format(self, sent.ID))
             self.id_map[sent.ID] = sent
         if sent.ident:
             if sent.ident in self.ident_map and self.ident_map[sent.ident] is not None:
-                logger.warning("{}: Duplicate sent ident {}".format(self, sent.ident))
+                getLogger().warning("{}: Duplicate sent ident {}".format(self, sent.ident))
             self.ident_map[sent.ident] = sent
         self.sentences.append(sent)
 
@@ -800,7 +801,7 @@ class DMRS(object):
             # taggable eps
             # TODO: Use POS for better sense-tagging?
             lemma = get_ep_lemma(ep)
-            logger.debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
+            getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
             candidates = PredSense.search_pred_string(ep.pred.string) if ep.pred != "named" else None
             if method == TagInfo.LELESK:
                 scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
@@ -1470,7 +1471,7 @@ class DMRSLayout(object):
                 sense_info.pos = sense_info.synsetid[-1]
                 sense_info.score = '999'
                 temp_node.sense = sense_info
-                logger.debug("Using gold => %s" % (sense_info.synsetid))
+                getLogger().debug("Using gold => %s" % (sense_info.synsetid))
                 pass
             else:
                 sense_tag = node_tag.find('sense')

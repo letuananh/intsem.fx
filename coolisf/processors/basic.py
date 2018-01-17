@@ -60,20 +60,25 @@ from .base import Processor
 # CONFIGURATION
 ##########################################
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+def getLogger():
+    return logging.getLogger(__name__)
+
 
 ########################################################################
 
-
 class PostISF(Processor):
+
+    # static
+    transformer = Transformer()
 
     def __init__(self, info, name="isf"):
         super().__init__(info, name)
-        self.transformer = Transformer()
+        # self.transformer = Transformer()
 
     def process(self, parse):
+        getLogger().debug("{} is postprocessing 1 mrs".format(self.name))
         self.transformer.apply(parse)
+        getLogger().debug("{} ended".format(self.name))
         return parse
 
 

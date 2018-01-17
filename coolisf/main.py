@@ -54,9 +54,10 @@ import os
 import sys
 import gzip
 import argparse
+import logging
 
 from chirptext.cli import CLIApp, setup_logging
-from chirptext import header, confirm, TextReport, FileHelper
+from chirptext import header, confirm, TextReport, FileHelper, Counter
 from chirptext.texttaglib import TagInfo
 
 from .dao import read_tsdb
@@ -65,6 +66,8 @@ from .gold_extract import generate_gold_profile
 from .util import read_ace_output
 from .gold_extract import export_to_visko
 from .gold_extract import read_gold_sents
+from .model import Document
+from .dao.textcorpus import RawCollection
 
 ########################################################################
 
@@ -120,7 +123,7 @@ def parse_isf(cli, args):
     ghub = GrammarHub()
     lines = FileHelper.read(args.infile).splitlines()
     for sent in ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.n, ignore_cache=args.nocache):
-        sent.tag_xml(method=args.tagger)
+        sent.tag_xml(method=args.wsd)
         report.writeline(sent.to_xml_str(pretty_print=not args.compact))
         report.writeline("\n\n")
 
@@ -166,27 +169,87 @@ def parse_text(cli, args):
                 report.writeline()
 
 
+def parse_bib(cli, args):
+    c = Counter()
+    ghub = GrammarHub()
+    bib_path = FileHelper.abspath(args.input)
+    if not os.path.isdir(bib_path):
+        cli.logger.warning("Raw biblioteca could not be found at {}".format(bib_path))
+        exit()
+    cli.logger.info("Analysing biblioteca {}".format(bib_path))
+    # validate output
+    if not args.output or not os.path.isdir(args.output):
+        cli.logger.warning("Output directory does not exist")
+        exit()
+    bib = RawCollection(bib_path)
+    corpuses = bib.get_corpuses()
+    print("Available corpuses: {}".format(len(corpuses)))
+    c.update({"Corpuses": len(corpuses)})
+    for corpus in corpuses:
+        print("Processing corpus: {} ({})".format(corpus.name, corpus.title))
+        # create dir for corpus
+        corpus_path = os.path.join(args.output, corpus.name)
+        if not os.path.exists(corpus_path):
+            os.makedirs(corpus_path)
+        for doc in corpus.get_documents():
+            c.count("Documents")
+            sents = list(doc.read_sentences())
+            c.update({'Sentences': len(sents)})
+            print("Processing document: {} {} | Size: {}".format(doc.name, doc.title, len(sents)))
+            doc_path = os.path.join(corpus_path, doc.name + '.xml')
+            doc_isf = Document(name=doc.name, title=doc.title)
+            sent_texts = [s.text for s in sents]
+            # parse document
+            report = TextReport(doc_path)
+            for sent in ghub.ERG_ISF.parse_many_iterative(sent_texts, parse_count=args.n, ignore_cache=args.nocache):
+                sent.tag_xml(method=args.wsd)
+                print("Processed: {}".format(sent.text))
+                doc_isf.add(sent)
+            report.writeline(doc_isf.to_xml_str(pretty_print=not args.compact))
+    c.summarise()
+
+
+def isf_config_logging(args):
+    if args.quiet:
+        logging.getLogger().setLevel(logging.CRITICAL)
+    elif args.verbose:
+        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger('coolisf.ghub').setLevel(logging.DEBUG)
+        logging.getLogger('coolisf.morph').setLevel(logging.DEBUG)
+        logging.getLogger('coolisf.processors').setLevel(logging.DEBUG)
+
+
 def main():
-    app = CLIApp("CoolISF Main Application", logger=__name__)
+    app = CLIApp("CoolISF Main Application", logger=__name__, config_logging=isf_config_logging)
 
     task = app.add_task('parse', func=parse_isf)
     task.add_argument('infile', help='Path to input text file')
     task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
     task.add_argument('-n', help='Maximum parse count', default=None)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    task.add_argument('--tagger', help='Word Sense Tagger', default=TagInfo.LELESK)
+    task.add_argument('--wsd', help='Word Sense Disambiguator', default=TagInfo.LELESK)
     task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
 
     task = app.add_task('text', func=parse_text)
     task.add_argument('input', help='Any text')
     task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
     task.add_argument('-n', help="Only show top n parses", default=None)
-    task.add_argument('--wsd', help="Word-Sense Disambiguation engine", default=TagInfo.LELESK)
+    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=TagInfo.LELESK)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
     task.add_argument('-o', '--output', help="Write output to path")
     task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
 
+    # batch processing a raw text corpus
+    task = app.add_task('bib', func=parse_bib)
+    task.add_argument('input', help='Path to raw biblioteca')
+    task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
+    task.add_argument('-n', help="Only show top n parses", default=None)
+    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=TagInfo.LELESK)
+    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
+    task.add_argument('-o', '--output', help="Write output to path")
+    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     # Create ISF gold profile
     task = app.add_task('gold', lambda cli, args: generate_gold_profile(), help='Extract gold profile')
 

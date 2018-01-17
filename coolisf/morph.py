@@ -57,9 +57,12 @@ from coolisf.model import Sentence, Reading, DMRS, RuleInfo
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
 DATA_FOLDER = os.path.abspath(os.path.expanduser('./data'))
 LEXRULES_DB = os.path.join(DATA_FOLDER, "lexrules.db")
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------
@@ -180,7 +183,7 @@ class Compound(object):
 
     def apply(self, dmrs):
         for sub in self.match(dmrs):
-            logger.debug("applying rule [lemma={}]: {} => {}".format(self.lemma, self.dmrs(), sub.to_dmrs()))
+            getLogger().debug("applying rule [lemma={}]: {} => {}".format(self.lemma, self.dmrs(), sub.to_dmrs()))
             self.transform(dmrs, sub)
         return dmrs
 
@@ -229,7 +232,7 @@ class Transformer(object):
         if ruledb_path and os.path.isfile(ruledb_path):
             self.rdb = LexRuleDB(ruledb_path)
         else:
-            logger.warning("Rule DB could not be found. Only manual rules will be available.")
+            getLogger().warning("Rule DB could not be found. Only manual rules will be available.")
             self.rdb = None
             self.rule_signs = {}
         # sample rules
@@ -238,6 +241,7 @@ class Transformer(object):
         self.add_rule(self.get_big_bad_wolf())
 
     def add_rule(self, rule):
+        # getLogger().debug("Adding rule {}".format(rule.sign))
         self.rules.append(rule)
         self.rule_map[rule.sign].append(rule)
 
@@ -255,18 +259,25 @@ class Transformer(object):
             return applicable_rules
         with self.rdb.ctx() as ctx:
             for node in nodes:
+                # getLogger().debug("Looking for {} in cache".format(node.predstr))
                 if node.predstr in self.rule_map:
                     # predstr in rule_map
-                    applicable_rules.extend(self.rule_map[node.predstr])
+                    cached_rules = self.rule_map[node.predstr]
+                    # getLogger().debug("Using {} cached rules for node {}".format(len(cached_rules), node))
+                    applicable_rules.extend(cached_rules)
                 else:
+                    getLogger().debug("locating rules for {}".format(node))
                     rulesigs = self.rdb.find_rule(node.predstr, flag=RuleInfo.COMPOUND, ctx=ctx)
+                    getLogger().debug("Found {} rules for {}".format(len(rulesigs), node))
                     for rulesig in rulesigs:
                         ruleinfo = self.rdb.get_rule(rulesig.lid, rulesig.rid, ctx=ctx)
                         if ruleinfo is not None:
                             lemma = ruleinfo.lemma.replace(' ', '+')
                             rule = self.to_hcmp_rule(ruleinfo[0].edit(), lemma)
                             self.add_rule(rule)
+                            # getLogger().debug("{} vs {}".format(rule.sign, node.predstr))
                             applicable_rules.append(rule)
+        getLogger().debug("Found {} rules in total".format(len(applicable_rules)))
         return applicable_rules
 
     def get_guard_dog(self):
@@ -306,8 +317,10 @@ class Transformer(object):
                     if Integral.is_named(arg1):
                         # collapse compound
                         Integral.collapse(arg1)
+            getLogger().debug("locating rules for nodes {}".format(target.nodes))
             applicable_rules = self.find_rules(target.nodes)
             # apply MWE rules
+            getLogger().debug("Applying {} rules".format(len(applicable_rules)))
             for rule in applicable_rules:
                 rule.apply(target)
             return target
