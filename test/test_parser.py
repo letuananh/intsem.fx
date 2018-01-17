@@ -60,11 +60,12 @@ from coolisf.parsers.dmrs_str import parse_dmrs_str, tokenize_dmrs_str, parse_dm
 
 ########################################################################
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
-
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 ########################################################################

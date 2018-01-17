@@ -105,6 +105,10 @@ class TestMain(unittest.TestCase):
         self.assertEqual(PredSense.extend_lemma('night bird'), {'night-bird', 'night bird', 'nightbird'})
         self.assertEqual(PredSense.extend_lemma('above+all'), {'above-all', 'above+all', 'aboveall', 'above all'})
 
+    def test_lemma_searching(self):
+        ss = PredSense.search_sense({'above all'}, 'r')
+        self.assertEqual({'00150671-r', '00158190-r'}, {s.ID for s in ss})
+
     def test_known_concepts(self):
         # test verb
         synsets = PredSense.search_pred_string('_bark_v_1')
@@ -129,9 +133,12 @@ class TestMain(unittest.TestCase):
         for synset in synsets:
             self.assertIn("look up", synset.lemmas)
         synsets = PredSense.search_pred_string('_above+all_a_1_rel')
-        print("above+all", synsets)
+        getLogger().debug("above+all", synsets)
+        for synset in synsets:
+            self.assertIn('above all', synset.lemmas)
         synsets = PredSense.search_pred_string('_above-mentioned_a_1_rel')
-        print("above-mentioned", synsets)
+        getLogger().debug("above-mentioned", synsets)
+        self.assertTrue(synsets)
 
     def test_known_mwe(self):
         d = PredSense.search_pred_string('_green+tea_n_1')

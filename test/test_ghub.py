@@ -51,6 +51,7 @@ __credits__ = []
 
 import os
 import unittest
+import logging
 
 from chirptext import header
 from coolisf import GrammarHub
@@ -61,6 +62,10 @@ from coolisf.dao import CorpusDAOSQLite
 # -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------
@@ -162,6 +167,7 @@ class TestGrammarHub(unittest.TestCase):
         s = self.ghub.cache.load(txt, grm, pc, tagger)
         self.assertIsNotNone(s)
         self.assertEqual(len(s['parses']), 5)
+
 
 # -------------------------------------------------------------------------------
 # MAIN

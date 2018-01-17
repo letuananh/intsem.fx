@@ -51,6 +51,7 @@ __credits__ = []
 
 import os
 import unittest
+import logging
 
 from coolisf import GrammarHub
 
@@ -59,6 +60,10 @@ from coolisf import GrammarHub
 # -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------

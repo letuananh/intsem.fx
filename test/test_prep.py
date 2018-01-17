@@ -52,6 +52,7 @@ __credits__ = []
 import os
 import unittest
 import coolisf
+import logging
 from chirptext.texttaglib import TaggedSentence
 from coolisf.model import Reading
 from coolisf import GrammarHub
@@ -63,6 +64,10 @@ from coolisf.processors import ProcessorManager
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_DATA = os.path.join(TEST_DIR, 'data')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------

@@ -77,6 +77,10 @@ ghub = GrammarHub()
 ERG = ghub.ERG
 
 
+def getLogger():
+    return logging.getLogger(__name__)
+
+
 # ------------------------------------------------------------------------------
 # TEST SCRIPTS
 # ------------------------------------------------------------------------------
@@ -243,7 +247,7 @@ class TestGoldData(unittest.TestCase):
             tagged = doc.sent_map[str(s.ident)]
             self.assertEqual(tagged.text, s.text)
             # if tagged.text != s.text:
-            #     logger.debug("UPDATE sent SET sent = '{}' WHERE sid = {};".format(s.text.replace("'", "''"), s.ident))
+            #     getLogger().debug("UPDATE sent SET sent = '{}' WHERE sid = {};".format(s.text.replace("'", "''"), s.ident))
 
     def test_tag_one_sent(self):
         print("Test tagging one sentence")

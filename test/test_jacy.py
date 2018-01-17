@@ -51,6 +51,7 @@ __credits__ = []
 
 import os
 import unittest
+import logging
 
 from coolisf import GrammarHub
 
@@ -61,6 +62,10 @@ from coolisf import GrammarHub
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 txt = '雨 が 降る 。'
 txt2 = '猫が好きです。'
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------------------
@@ -85,10 +90,10 @@ class TestJacy(unittest.TestCase):
         self.assertEqual(s.text, '猫 が 好き です 。 \n')
         # test JACY/DK
         s = self.ghub.JACYDK.parse(txt, ignore_cache=True)
-        print("shallow", s.shallow)
+        getLogger().debug("shallow", s.shallow)
         for tk in s.shallow:
-            print(tk)
-        print(s)
+            getLogger.debug(tk)
+        getLogger.debug(s)
 
 
 # -------------------------------------------------------------------------------

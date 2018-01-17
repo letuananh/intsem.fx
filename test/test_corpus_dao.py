@@ -61,10 +61,12 @@ from coolisf.model import Document, Sentence
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
 DB_FILE = os.path.join(TEST_DATA, 'test_corpus.db')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------
@@ -309,9 +311,9 @@ class TestHumanAnnotation(TestDAOBase):
             # retrieve them
             sent2 = self.db.get_annotations(sent.ID, ctx=ctx)
             v2_json = sent2.shallow.to_json()
-            # logger.debug("Words: {}".format(sent2.words))
-            # logger.debug("Concepts: {}".format([(x, x.words) for x in sent2.concepts]))
-            # logger.debug("v2_json: {}".format(v2_json))
+            # getLogger().debug("Words: {}".format(sent2.words))
+            # getLogger().debug("Concepts: {}".format([(x, x.words) for x in sent2.concepts]))
+            # getLogger().debug("v2_json: {}".format(v2_json))
             # compare to json_sent
             self.assertEqual(v2_json["text"], SENT_TAGS["text"])
             self.assertEqual(v2_json["tokens"], SENT_TAGS["tokens"])

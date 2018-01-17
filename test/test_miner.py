@@ -51,6 +51,7 @@ __credits__ = []
 
 import os
 import unittest
+import logging
 
 from chirptext import header
 from yawlib import YLConfig
@@ -72,6 +73,10 @@ TEST_GOLD_DIR = 'data'
 ghub = GrammarHub()
 ERG = ghub.ERG
 wn = OMWSQL(YLConfig.OMW_DB)
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------------------

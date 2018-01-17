@@ -67,11 +67,12 @@ from coolisf.model import get_ep_lemma
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
-
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------

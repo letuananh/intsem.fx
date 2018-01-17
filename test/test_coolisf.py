@@ -72,14 +72,15 @@ from coolisf.model import Sentence, MRS, Reading
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)  # Change this to DEBUG for more information
-
 wsql = WSQL(YLConfig.WNSQL30_PATH)
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------------------
@@ -516,9 +517,9 @@ class TestMain(unittest.TestCase):
         for w, p in zip(context, preds):
             scores = wsd.lelesk_wsd(w, '', lemmatizing=False, context=context)
             if scores:
-                logger.debug("Word: {w} (p={p}|{nid}) => {ss} | Score: {sc} | Def: {d}".format(w=w, p=str(p.pred), nid=p.nodeid, ss=scores[0].candidate.synset, sc=scores[0].score, d=scores[0].candidate.synset.glosses[0].text()))
+                getLogger().debug("Word: {w} (p={p}|{nid}) => {ss} | Score: {sc} | Def: {d}".format(w=w, p=str(p.pred), nid=p.nodeid, ss=scores[0].candidate.synset, sc=scores[0].score, d=scores[0].candidate.synset.glosses[0].text()))
             else:
-                logger.debug("Word: {w} => N/A".format(w=w))
+                getLogger().debug("Word: {w} => N/A".format(w=w))
 
     def test_sensetag_using_lelesk(self):
         text = "A big bird is flying on the sky."
@@ -528,7 +529,7 @@ class TestMain(unittest.TestCase):
         d.tag(method='lelesk')
         self.assertTrue(d.tags)
         js = d.json_str()
-        logger.debug("Tagged JSON (using LeLesk): {}".format(js))
+        getLogger().debug("Tagged JSON (using LeLesk): {}".format(js))
 
     def test_erg_isf_lelesk(self):
         s = self.ghub.ERG_ISF.parse("Ali Baba didn't drink green tea.")
@@ -598,7 +599,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(len(d.tags), 3)
         self.assertEqual(len(d.tags[10006]), 1)
         ss, method = d.tags[10006][0]
-        logger.debug("JSON str: {}".format(d.json_str()))
+        getLogger().debug("JSON str: {}".format(d.json_str()))
 
     def test_preserve_shallow(self):
         txt = "雨が降る。"

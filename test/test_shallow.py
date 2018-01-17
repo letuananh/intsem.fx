@@ -51,6 +51,7 @@ __credits__ = []
 
 import os
 import unittest
+import logging
 from lelesk import LeLeskWSD, LeskCache
 from coolisf.shallow import Analyser, EnglishAnalyser, JapaneseAnalyser
 
@@ -59,6 +60,10 @@ from coolisf.shallow import Analyser, EnglishAnalyser, JapaneseAnalyser
 # -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------

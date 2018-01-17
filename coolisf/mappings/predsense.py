@@ -164,11 +164,12 @@ class PredSense(object):
     singleton_sm = None
 
     @staticmethod
-    def search_sense(lemmata, pos):
+    def search_sense(lemmata, pos=None):
         ''' Return a SynsetCollection '''
         if pos and pos in ('x', 'p'):
             pos = None
         potential = SynsetCollection()
+        getLogger().debug("search sense lemmas={} (pos={})".format(lemmata, pos))
         with PredSense.wn.ctx() as ctx:
             for lemma in lemmata:
                 synsets = PredSense.wn.search(lemma, pos=pos, ctx=ctx)
@@ -208,13 +209,17 @@ class PredSense(object):
         ss = PredSense.search_sense(lemmata, pos)
         # hardcode: try to match noun & adj/v
         if not ss and auto_expand:
+            getLogger().debug("Trying to change POS for lemmas: {}".format(lemmata))
             # hard code modal
             if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v':
                 lemmata, pos = (('modal',), 'a')
             elif pred.pos == 'a':
-                lemmata, pos = ([pred.lemma], 'n')
+                ss = PredSense.search_sense(lemmata, 'r')
+                if not ss:
+                    pos = 'n'
             elif pred.pos == 'n':
-                lemmata, pos = ([pred.lemma], 'a')
-            ss = PredSense.search_sense(lemmata, pos)
+                pos = 'a'
+            if not ss:
+                ss = PredSense.search_sense(lemmata, pos)
         # Done
         return sorted(ss, key=lambda x: x.tagcount, reverse=True)

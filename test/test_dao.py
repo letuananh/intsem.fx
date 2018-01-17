@@ -63,9 +63,11 @@ from coolisf.dao.textcorpus import RawCollection
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------
