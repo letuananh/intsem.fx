@@ -19,7 +19,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "WARNING",
             "formatter": "simple",
-            "filename": "logs/logging_important.log",
+            "filename": "test/logs/logging_important.log",
             "maxBytes": 1000000,
             "backupCount": 20,
             "encoding": "utf8"
@@ -29,7 +29,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
             "formatter": "simple",
-            "filename": "logs/logging_details.log",
+            "filename": "test/logs/logging_details.log",
             "maxBytes": 1000000,
             "backupCount": 20,
             "encoding": "utf8"
@@ -43,10 +43,20 @@
             "handlers": ["console", "file_handler_verbose"],
             "propagate": "no"
         }
+        ,"coolisf.mappings": {
+            "level": "INFO",
+            "handlers": ["console", "file_handler_verbose"],
+            "propagate": "no"
+        }
+        ,"test.test_ew_map": {
+            "level": "INFO",
+            "propagate": "no"
+        }
     },
 
     "root": {
         "level": "WARNING",
-        "handlers": ["console", "file_handler_important"]
+        "handlers": ["console", "file_handler_important"],
+        "propagate": "no"
     }
 }

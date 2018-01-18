@@ -183,6 +183,8 @@ class PredSense(object):
     def search_pred_string(pred_str, extend_lemma=True):
         if not pred_str:
             raise Exception("pred_str cannot be empty")
+        # ensure that pred_str is really a str
+        pred_str = str(pred_str)
         pred = Pred.string_or_grammar_pred(pred_str)
         # use manual mapping whenever possible
         pred_str_search = pred_str if pred_str.endswith('_rel') else pred_str + '_rel'
@@ -212,14 +214,14 @@ class PredSense(object):
             getLogger().debug("Trying to change POS for lemmas: {}".format(lemmata))
             # hard code modal
             if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v':
-                lemmata, pos = (('modal',), 'a')
+                ss = PredSense.search_sense(('modal',), 'a')
             elif pred.pos == 'a':
                 ss = PredSense.search_sense(lemmata, 'r')
                 if not ss:
                     pos = 'n'
+                    ss = PredSense.search_sense(lemmata, pos)
             elif pred.pos == 'n':
                 pos = 'a'
-            if not ss:
                 ss = PredSense.search_sense(lemmata, pos)
         # Done
         return sorted(ss, key=lambda x: x.tagcount, reverse=True)

@@ -1,4 +1,4 @@
-#!/Usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -133,14 +133,16 @@ class TestMain(unittest.TestCase):
         for synset in synsets:
             self.assertIn("look up", synset.lemmas)
         synsets = PredSense.search_pred_string('_above+all_a_1_rel')
-        getLogger().debug("above+all", synsets)
+        getLogger().debug("above+all: {}".format(synsets))
         for synset in synsets:
             self.assertIn('above all', synset.lemmas)
-        synsets = PredSense.search_pred_string('_above-mentioned_a_1_rel')
-        getLogger().debug("above-mentioned", synsets)
         self.assertTrue(synsets)
-        getLogger().debug(PredSense.search_pred_string("_allright_a_for_rel"))
-        getLogger().debug(PredSense.search_pred_string("_abrasive_a_1_rel"))
+        preds = ["_above-mentioned_a_1_rel", "_allright_a_for_rel", "_abrasive_a_1_rel",
+                 "_squeak_n_1_rel", "_abbreviation_n_1_rel", "_abandon_n_1_rel", "_bitter_a_1_rel",
+                 '"_abbreviate_v_1_rel"']
+        for p in preds:
+            ss = PredSense.search_pred_string(p)
+            getLogger().debug("{}: {}".format(p, ss))
 
     def test_known_mwe(self):
         d = PredSense.search_pred_string('_green+tea_n_1')
