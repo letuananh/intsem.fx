@@ -47,11 +47,20 @@
             "level": "INFO",
             "handlers": ["console", "file_handler_verbose"],
             "propagate": "no"
-        }
-        ,"test.test_ew_map": {
+         }
+        ,"coolisf.ghub": {
             "level": "INFO",
+            "handlers": ["console", "file_handler_verbose"],
             "propagate": "no"
         }
+        ,"test": {
+            "level": "INFO",
+            "propagate": "no"
+         }
+        ,"puchikarui": {
+            "level": "INFO",
+            "propagate": "no"
+         }
     },
 
     "root": {

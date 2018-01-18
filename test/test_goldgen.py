@@ -71,7 +71,7 @@ from coolisf import GrammarHub
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+from test.common import TEST_DIR, TEST_DATA
 TEST_GOLD_DIR = 'data'
 ghub = GrammarHub()
 ERG = ghub.ERG
@@ -98,28 +98,28 @@ class TestGoldAccuracy(unittest.TestCase):
         import_shallow(sent)  # import gold tags from IMI
         sent.tag(method=TagInfo.LELESK)  # perfrom WSD using LeLESK
         d = sent[0].dmrs()
-        print(d.tags)
+        getLogger().debug(d.tags)
         for k, v in d.tags.items():
             g, l = v
             if g.synset.ID == l.synset.ID:
                 c.count("same")
             else:
-                print(d.layout[k].pred, g.synset.ID, l.synset.ID)
+                getLogger().debug("{} {} {}".format(d.layout[k].pred, g.synset.ID, l.synset.ID))
                 c.count("diff")
         c.summarise()
 
     def test_gold_accuracy(self):
-        header("Test gold accuracy (only top 5)")
-        report = TextReport("data/gold_accuracy.txt")
+        header("Test gold accuracy (only top 3)")
+        report = TextReport()
         c = Counter()
         sents = read_gold_mrs()
-        print(len(sents))
+        getLogger().debug(len(sents))
         doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
         total_sents = len(sents)
         for idx, sent in enumerate(sents):
-            if idx > 5:
+            if idx > 3:
                 break
-            print("Processing sentence {}/{}".format(idx + 1, total_sents))
+            getLogger().debug("Processing sentence {}/{}".format(idx + 1, total_sents))
             c.count("sentences")
             if len(sent) == 0:
                 report.print("SKIPPING SENTENCE: {}".format(sent.ident))
@@ -196,7 +196,7 @@ class TestGoldData(unittest.TestCase):
             self.assertIn('%%% {}'.format(i), out)
 
     def test_import_tags(self):
-        print("Test import tags ...")
+        getLogger().debug("Test import tags ...")
         sents = read_gold_mrs()
         doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
         for s in sents:
@@ -240,7 +240,7 @@ class TestGoldData(unittest.TestCase):
                 self.assertEqual(len(actual), len(concepts), "WARNING: duplicate concept (w={} | c={})".format(w, concepts))
 
     def test_sent_surface_matching(self):
-        print("Test surface matching ...")
+        getLogger().debug("Test surface matching ...")
         sents = read_gold_mrs()
         doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
         for s in sents:
@@ -250,7 +250,7 @@ class TestGoldData(unittest.TestCase):
             #     getLogger().debug("UPDATE sent SET sent = '{}' WHERE sid = {};".format(s.text.replace("'", "''"), s.ident))
 
     def test_tag_one_sent(self):
-        print("Test tagging one sentence")
+        getLogger().debug("Test tagging one sentence")
         sid = '10081'
         sents = read_gold_mrs()
         smap = {str(s.ident): s for s in sents}
@@ -258,32 +258,32 @@ class TestGoldData(unittest.TestCase):
         doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
         sent.shallow = doc.sent_map[sid]
         if sent.text != sent.shallow.text:
-            print("WARNING: Inconsistent")
-            print(sent.text)
-            print(sent.shallow.text)
+            getLogger().debug("WARNING: Inconsistent")
+            getLogger().debug(sent.text)
+            getLogger().debug(sent.shallow.text)
         dmrs = sent[0].dmrs()
         # print(sent.to_xml_str())
         m, n = tag_gold(dmrs, sent.shallow, sent.text)
         header("#{}: {}".format(sid, sent.text), 'h0')
-        print(sent[0].dmrs())
+        getLogger().debug(sent[0].dmrs())
         header('Available concepts')
         for c in sent.shallow.concepts:
-            print(c, c.words)
+            getLogger().debug("{} {}".format(c, c.words))
         header('Matched')
         for con, nid, pred in m:
-            print("{}::{} => #{}::{}".format(con.tag, con.clemma, nid, pred))
+            getLogger().debug("{}::{} => #{}::{}".format(con.tag, con.clemma, nid, pred))
         header("Not matched")
         if n:
             for c in n:
-                print(c)
+                getLogger().debug(c)
         else:
-            print("All was matched.")
+            getLogger().debug("All was matched.")
         sent.tag(method=TagInfo.MFS)
         xml_str = sent.tag_xml().to_xml_str()
         self.assertTrue(xml_str)
         self.assertIn("<sensegold", xml_str)
         self.assertIn("<sense", xml_str)
-        print(sent.to_xml_str())
+        getLogger().debug(sent.to_xml_str())
 
     def test_gen_gold(self):
         sents = read_gold_mrs()
@@ -295,10 +295,10 @@ class TestGoldData(unittest.TestCase):
                 tag_gold(s[0].dmrs(), tagged, s.text)
 
     def test_generate_from_gold(self):
-        header("Test generating from gold (THIS IS SLOW)")
+        header("Test generating from gold (THIS CAN BE VERY SLOW)")
         sents = read_gold_mrs()
         c = Counter()
-        for sent in sents[:3]:
+        for sent in sents[:2]:
             if len(sent) > 0:
                 try:
                     gsents = ERG.generate(sent[0])
@@ -310,7 +310,7 @@ class TestGoldData(unittest.TestCase):
         c.summarise()
 
     def test_tagging_all(self):
-        print("Tagging everything ...")
+        getLogger().debug("Tagging everything ...")
         sents = read_gold_mrs()
         smap = {str(s.ident): s for s in sents}
         # reag tags
@@ -379,9 +379,9 @@ class TestGoldData(unittest.TestCase):
                 not_matched_report.writeline(n)
 
         # for i, t1, t2 in fix_texts:
-        #     print(i)
-        #     print(t1)
-        #     print(t2)
+        #     getLogger().debug(i)
+        #     getLogger().debug(t1)
+        #     getLogger().debug(t2)
         count_good_bad.summarise(report=report)
         instances.summarise(report=report)
 

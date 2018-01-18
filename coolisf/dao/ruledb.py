@@ -146,9 +146,12 @@ def parse_lexunit(lu, ERG):
     lu.parses = []
     if lu.pos == 'v':
         lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn_v'])
+    elif lu.pos == 'n':
+        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn_n'])
+    elif lu.pos in ('a', 's'):
+        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn_adj'])
+    elif lu.pos in ('r'):
+        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn_adv'])
     if len(lu.parses) == 0:
-        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_wn'])
-        # still cannot be parsed? use root_frag
-        if len(lu.parses) == 0:
-            lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_frag'])
+        lu.parses = ERG.parse(lu.lemma, parse_count=20, extra_args=['-r', 'root_frag'])
     return lu

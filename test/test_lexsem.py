@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 
 '''
-Test script for coolisf/jacy
+Script for testing lexem module
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-    Python unittest documentation:
-        https://docs.python.org/3/library/unittest.html
     Python documentation:
         https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 0257 - Python Docstring Conventions:
+    Python unittest
+        https://docs.python.org/3/library/unittest.html
+    --
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
         https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
@@ -38,14 +39,14 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, intsem.fx"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
+__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
+__copyright__ = "Copyright 2017, coolisf"
 __credits__ = []
+__license__ = "MIT"
+__version__ = "0.1"
+__maintainer__ = "Le Tuan Anh"
+__email__ = "<tuananh.ke@gmail.com>"
+__status__ = "Prototype"
 
 ########################################################################
 
@@ -53,53 +54,36 @@ import os
 import unittest
 import logging
 
+from chirptext.texttaglib import TagInfo
 from coolisf import GrammarHub
 
-# ------------------------------------------------------------------------------
-# Configuration
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# CONFIGURATION
+# -------------------------------------------------------------------------------
 
 from test.common import TEST_DIR, TEST_DATA
-
-txt = '雨 が 降る 。'
-txt2 = '猫が好きです。'
 
 
 def getLogger():
     return logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------------------------
-# Test cases
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# TEST SCRIPTS
+# -------------------------------------------------------------------------------
 
-class TestJacy(unittest.TestCase):
+class TestLexsem(unittest.TestCase):
 
     ghub = GrammarHub()
 
-    def test_jacy(self):
-        # without mecab
-        s = self.ghub.JACY.parse(txt)
-        self.assertTrue(s)
-        s = self.ghub.JACY.parse(txt2)
-        self.assertFalse(s)
-        # with mecab
-        s = self.ghub.JACYMC.parse(txt)
-        self.assertTrue(s)
-        s = self.ghub.JACYMC.parse(txt2)
-        self.assertTrue(s)
-        self.assertEqual(s.text, '猫 が 好き です 。 \n')
-        # test JACY/DK
-        s = self.ghub.JACYDK.parse(txt, ignore_cache=True)
-        getLogger().debug("shallow", s.shallow)
-        for tk in s.shallow:
-            getLogger().debug(tk)
+    def test_wsd(self):
+        s = self.ghub.parse("I give a book to him.", "ERG_ISF", tagger=TagInfo.MFS, ignore_cache=True)
         getLogger().debug(s)
+        self.assertTrue(s)
+        self.assertTrue(len(s))
 
 
-# -------------------------------------------------------------------------------
-# MAIN
-# -------------------------------------------------------------------------------
+########################################################################
 
 if __name__ == "__main__":
     unittest.main()

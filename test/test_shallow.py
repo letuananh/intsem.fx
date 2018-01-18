@@ -59,7 +59,7 @@ from coolisf.shallow import Analyser, EnglishAnalyser, JapaneseAnalyser
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+from test.common import TEST_DIR
 
 
 def getLogger():

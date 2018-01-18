@@ -26,6 +26,8 @@ if not os.path.isfile(lex):
 log = open('lex2wn.log', 'w')
 
 f = open(lex, 'r')
+# speed up search_pred_string by using a single transaction
+ctx = PredSense.wn.ctx()
 
 for l in tdl.parse(f):
     lid=l.identifier
@@ -33,7 +35,7 @@ for l in tdl.parse(f):
         if 'LKEYS.KEYREL.PRED' in [f for (f,v) in l['SYNSEM'].features()]:
             if isinstance(l['SYNSEM']['LKEYS.KEYREL.PRED'],str):
                 pred = l['SYNSEM']['LKEYS.KEYREL.PRED']
-                synsets = PredSense.search_pred_string(pred)
+                synsets = PredSense.search_pred_string(pred, ctx=ctx)
                 if synsets:
                     for ss in synsets:
                         print (lid, ss.synsetid,ss.lemmas)

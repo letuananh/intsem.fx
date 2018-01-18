@@ -2,23 +2,24 @@
 # -*- coding: utf-8 -*-
 
 '''
-Test script for coolisf/virgo
+common test functions
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 References:
-    Python unittest documentation:
-        https://docs.python.org/3/library/unittest.html
     Python documentation:
         https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 0257 - Python Docstring Conventions:
+    Python unittest
+        https://docs.python.org/3/library/unittest.html
+    --
+    argparse module:
+        https://docs.python.org/3/howto/argparse.html
+    PEP 257 - Python Docstring Conventions:
         https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
 
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -38,52 +39,24 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, intsem.fx"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
+__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
+__copyright__ = "Copyright 2015, intsem.fx"
 __credits__ = []
+__license__ = "MIT"
+__version__ = "0.1"
+__maintainer__ = "Le Tuan Anh"
+__email__ = "<tuananh.ke@gmail.com>"
+__status__ = "Prototype"
 
 ########################################################################
 
 import os
-import unittest
-import logging
+from chirptext.cli import setup_logging
 
-from coolisf import GrammarHub
-
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # CONFIGURATION
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-from test.common import TEST_DIR
-
-
-def getLogger():
-    return logging.getLogger(__name__)
-
-
-# -------------------------------------------------------------------------------
-# TEST SCRIPTS
-# -------------------------------------------------------------------------------
-
-class TestVirgo(unittest.TestCase):
-
-    ghub = GrammarHub()
-
-    def test_virgo(self):
-        s = self.ghub.VRG.parse("chim bay.")
-        actual = [n.predstr for n in s.edit(0).nodes]
-        expected = ['_chim_n', 'exist_q', '_bay_v']
-        self.assertEqual(actual, expected)
-
-
-# -------------------------------------------------------------------------------
-# MAIN
-# -------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    unittest.main()
+TEST_DIR = os.path.dirname(__file__)
+TEST_DATA = os.path.join(TEST_DIR, 'data')
+setup_logging(os.path.join(TEST_DIR, 'logging.json'), os.path.join(TEST_DIR, 'logs'))

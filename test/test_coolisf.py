@@ -1,4 +1,4 @@
-#!/Usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -72,9 +72,8 @@ from coolisf.model import Sentence, MRS, Reading
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
+from test.common import TEST_DIR, TEST_DATA
 wsql = WSQL(YLConfig.WNSQL30_PATH)
-TEST_DIR = os.path.dirname(__file__)
-TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
 

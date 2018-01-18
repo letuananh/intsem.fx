@@ -54,7 +54,6 @@ import os
 import unittest
 import logging
 
-from chirptext.cli import setup_logging
 from coolisf.ergex import read_erg_lex, find_mwe
 from coolisf.mappings import PredSense
 from coolisf import GrammarHub
@@ -63,17 +62,13 @@ from coolisf import GrammarHub
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_DATA = os.path.join(TEST_DIR, 'data')
-TEST_SENTENCES = 'data/bib.txt'
-ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
+from test.common import TEST_DIR, TEST_DATA
+TEST_SENTENCES = os.path.join(TEST_DATA, 'bib.txt')
+ACE_OUTPUT_FILE = os.path.join(TEST_DATA, 'bib.mrs.txt')
 
 
 def getLogger():
     return logging.getLogger(__name__)
-
-
-setup_logging(os.path.join(TEST_DIR, 'logging.json'), os.path.join(TEST_DIR, 'logs'))
 
 
 # ------------------------------------------------------------------------------
@@ -110,39 +105,41 @@ class TestMain(unittest.TestCase):
         self.assertEqual({'00150671-r', '00158190-r'}, {s.ID for s in ss})
 
     def test_known_concepts(self):
+        ctx = PredSense.wn.ctx()
         # test verb
-        synsets = PredSense.search_pred_string('_bark_v_1')
+        synsets = PredSense.search_pred_string('_bark_v_1', ctx=ctx)
         self.assertTrue(synsets)
         for synset in synsets:
             self.assertEqual(synset.ID.pos, 'v')
             self.assertIn('bark', synset.lemmas)
         # test noun
-        synsets = PredSense.search_pred_string('_bark_n_1')
+        synsets = PredSense.search_pred_string('_bark_n_1', ctx=ctx)
         self.assertTrue(synsets)
         for synset in synsets:
             self.assertEqual(synset.ID.pos, 'n')
             self.assertIn('bark', synset.lemmas)
         # test adj
-        synsets = PredSense.search_pred_string('_quick_a_1')
+        synsets = PredSense.search_pred_string('_quick_a_1', ctx=ctx)
         self.assertTrue(synsets)
         for synset in synsets:
             self.assertEqual(synset.ID.pos, 'a')
             self.assertIn('quick', synset.lemmas)
         # MWE
-        synsets = PredSense.search_pred_string('_look_v_up')
+        synsets = PredSense.search_pred_string('_look_v_up', ctx=ctx)
         for synset in synsets:
             self.assertIn("look up", synset.lemmas)
-        synsets = PredSense.search_pred_string('_above+all_a_1_rel')
+        synsets = PredSense.search_pred_string('_above+all_a_1_rel', ctx=ctx)
         getLogger().debug("above+all: {}".format(synsets))
         for synset in synsets:
             self.assertIn('above all', synset.lemmas)
         self.assertTrue(synsets)
         preds = ["_above-mentioned_a_1_rel", "_allright_a_for_rel", "_abrasive_a_1_rel",
                  "_squeak_n_1_rel", "_abbreviation_n_1_rel", "_abandon_n_1_rel", "_bitter_a_1_rel",
-                 '"_abbreviate_v_1_rel"']
+                 '"_abbreviate_v_1_rel"', '"_acrolect_n_1_rel"']
         for p in preds:
-            ss = PredSense.search_pred_string(p)
+            ss = PredSense.search_pred_string(p, ctx=ctx)
             getLogger().debug("{}: {}".format(p, ss))
+        ctx.close()
 
     def test_known_mwe(self):
         d = PredSense.search_pred_string('_green+tea_n_1')

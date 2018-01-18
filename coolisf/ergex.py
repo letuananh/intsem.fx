@@ -142,7 +142,7 @@ def to_sense_map(k, v):
 
 def read_erg_lex():
     if not os.path.isfile(LEXDB):
-        logging.error("ERG DB cannot be found")
+        getLogger().error("ERG DB cannot be found")
         return []
     with open(LEXDB, 'r') as lexdb:
         rows = list(csv.reader(lexdb, delimiter='\t'))
@@ -271,9 +271,9 @@ def extract_all_rel():
 def find_mwe():
     mwe_list = set()
 
-    print("Extracting MWE from ERG's lexicon")
+    getLogger().info("Extracting MWE from ERG's lexicon")
     if not os.path.isfile(ERG_LEX_FILE):
-        logging.error("ERG lexicon file cannot be found")
+        getLogger().warning("ERG lexicon file could not be found at {}".format(ERG_LEX_FILE))
     else:
         with codecs.open(ERG_LEX_FILE, 'r', encoding='utf-8') as erg:
             mwe = None

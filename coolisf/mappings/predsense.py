@@ -79,7 +79,6 @@ class PredSense(object):
                          [' ', '']]
 
     AUTO_EXTEND = {
-        ('st', 'n'): (('saint',), 'n'),
         ('children',): ('child',),
         ('childrens',): ('child',),
         ('trapdoor',): ('trap door',),
@@ -93,7 +92,8 @@ class PredSense(object):
         ('much-many',): ('many',),
         ('or+not',): ('not',),
         ('undoubted',): ('undoubtedly',),
-        ('used+to', 'v'): (('used to',), 'a'),
+        ('st', 'n'): (('saint', 'n'),),
+        ('used+to', 'v'): (('used to', 'a'),),
     }
 
     # [TODO]:
@@ -164,25 +164,32 @@ class PredSense(object):
     singleton_sm = None
 
     @staticmethod
-    def search_sense(lemmata, pos=None):
+    def search_sense(lemmata, pos=None, ctx=None):
+        if ctx is None:
+            with PredSense.wn.ctx() as ctx:
+                return PredSense.search_sense(lemmata, pos=pos, ctx=ctx)
+        # ctx is ensured to be not null
         ''' Return a SynsetCollection '''
         if pos and pos in ('x', 'p'):
             pos = None
         potential = SynsetCollection()
         getLogger().debug("search sense lemmas={} (pos={})".format(lemmata, pos))
-        with PredSense.wn.ctx() as ctx:
-            for lemma in lemmata:
-                synsets = PredSense.wn.search(lemma, pos=pos, ctx=ctx)
-                getLogger().debug("search_sense: {} (pos={}): {}".format(lemma, pos, synsets))
-                for synset in synsets:
-                    if synset.ID not in potential:
-                        potential.add(synset)
+        for lemma in lemmata:
+            synsets = PredSense.wn.search(lemma, pos=pos, ctx=ctx)
+            getLogger().debug("search_sense: {} (pos={}): {}".format(lemma, pos, synsets))
+            for synset in synsets:
+                if synset.ID not in potential:
+                    potential.add(synset)
         return potential
 
     # alias
-    def search_pred_string(pred_str, extend_lemma=True):
+    def search_pred_string(pred_str, extend_lemma=True, ctx=None):
         if not pred_str:
             raise Exception("pred_str cannot be empty")
+        if ctx is None:
+            with PredSense.wn.ctx() as ctx:
+                return PredSense.search_pred_string(pred_str, extend_lemma=extend_lemma, ctx=ctx)
+        # ctx will never be null
         # ensure that pred_str is really a str
         pred_str = str(pred_str)
         pred = Pred.string_or_grammar_pred(pred_str)
@@ -195,33 +202,39 @@ class PredSense(object):
             return PredSense.search_pred(pred, extend_lemma)
 
     @staticmethod
-    def search_pred(pred, auto_expand=True):
+    def search_pred(pred, auto_expand=True, ctx=None):
+        # ensure not null ctx
+        if ctx is None:
+            with PredSense.wn.ctx() as ctx:
+                return PredSense.search_pred(pred, auto_expand=auto_expand, ctx=ctx)
+        # ctx will never be null
         if not pred:
             raise Exception("Predicate cannot be empty")
 
         lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
         pos = pred.pos
+        # FIXME
+        # potentials = {(l, pos) for l in lemmata}
+        # for l in lemmata:
+        #     if (l, pos) in PredSense.AUTO_EXTEND:
+        #         potentials.extend(PredSense.AUTO_EXTEND[(l, pos)])
+        #     elif (l,) in PredSense.AUTO_EXTEND:
+        #         potentials.extend((el, pos) for el in PredSense.AUTO_EXTEND[(l,)])
 
-        for lemma in lemmata:
-            if (lemma, pos) in PredSense.AUTO_EXTEND:
-                lemmata, pos = PredSense.AUTO_EXTEND[(lemmata, pos)]
-            elif (lemma,) in PredSense.AUTO_EXTEND:
-                lemmata = PredSense.AUTO_EXTEND[(lemma,)]
-
-        ss = PredSense.search_sense(lemmata, pos)
+        ss = PredSense.search_sense(lemmata, pos, ctx=ctx)
         # hardcode: try to match noun & adj/v
         if not ss and auto_expand:
             getLogger().debug("Trying to change POS for lemmas: {}".format(lemmata))
             # hard code modal
             if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v':
-                ss = PredSense.search_sense(('modal',), 'a')
+                ss = PredSense.search_sense(('modal',), 'a', ctx=ctx)
             elif pred.pos == 'a':
-                ss = PredSense.search_sense(lemmata, 'r')
+                ss = PredSense.search_sense(lemmata, 'r', ctx=ctx)
                 if not ss:
                     pos = 'n'
-                    ss = PredSense.search_sense(lemmata, pos)
+                    ss = PredSense.search_sense(lemmata, pos, ctx=ctx)
             elif pred.pos == 'n':
                 pos = 'a'
-                ss = PredSense.search_sense(lemmata, pos)
+                ss = PredSense.search_sense(lemmata, pos, ctx=ctx)
         # Done
         return sorted(ss, key=lambda x: x.tagcount, reverse=True)

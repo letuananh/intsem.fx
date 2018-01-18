@@ -67,8 +67,7 @@ from coolisf.morph import LEXRULES_DB
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-
+from test.common import TEST_DIR, TEST_DATA
 TEST_GOLD_DIR = 'data'
 ghub = GrammarHub()
 ERG = ghub.ERG
@@ -90,7 +89,7 @@ class TestMiningPred(unittest.TestCase):
     def test_parsing(self):
         ghub = GrammarHub()
         # noun
-        sent = ghub.ERG.parse('dog', extra_args=['-r', 'root_wn'])
+        sent = ghub.ERG.parse('dog', extra_args=['-r', 'root_wn_n'])
         self.assertGreater(len(sent), 0)
         dmrs = sent[0].dmrs().obj()
         eps = dmrs.eps()
@@ -104,7 +103,7 @@ class TestMiningPred(unittest.TestCase):
         self.assertEqual(len(eps), 1)
         self.assertEqual(eps[0].pred.pos, 'v')
         # adjective
-        sent = ghub.ERG.parse('nice', extra_args=['-r', 'root_wn'])
+        sent = ghub.ERG.parse('nice', extra_args=['-r', 'root_wn_adj'])
         self.assertGreater(len(sent), 0)
         dmrs = sent[0].dmrs().obj()
         eps = dmrs.eps()

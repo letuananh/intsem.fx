@@ -51,19 +51,17 @@ import os
 import logging
 import unittest
 
-from chirptext import header
-
 from coolisf import GrammarHub
-from coolisf.dao import read_tsdb, CorpusDAOSQLite
+from coolisf.dao import read_tsdb
 from coolisf.dao.ruledb import LexRuleDB, parse_lexunit
-from coolisf.model import Document, LexUnit, RuleInfo
+from coolisf.model import LexUnit, RuleInfo
 from coolisf.dao.textcorpus import RawCollection
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
+from test.common import TEST_DIR, TEST_DATA
 
 
 def getLogger():

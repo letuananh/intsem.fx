@@ -59,17 +59,16 @@ from coolisf.util import sent2json
 from coolisf.model import Sentence
 from coolisf.processors.base import ProcessorManager
 
-
 # ----------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------
 
-def getLogger():
-    return logging.getLogger(__name__)
-
-
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 ########################################################################
@@ -87,11 +86,11 @@ class GrammarHub:
         self.posts = ProcessorManager.from_json(self.cfg["postprocessors"])
 
     def read_config(self, cfg_path=CONFIG_FILE):
-        getLogger().info("Reading grammars configuration from: {}".format(cfg_path))
+        getLogger().debug("Reading grammars configuration from: {}".format(cfg_path))
         with open(cfg_path) as cfgfile:
             self.cfg = json.loads(cfgfile.read())
             self.cache_path = FileHelper.abspath(self.cfg['cache'])
-            getLogger().info("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
+            getLogger().debug("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
         return self.cfg
 
     @property
@@ -142,7 +141,7 @@ class GrammarHub:
         if not ignore_cache and self.cache:
             s = self.cache.load(txt, grm, pc, tagger)
             if s is not None:
-                getLogger().info("Retrieved {} parse(s) from cache for sent: {}".format(len(s['parses']), s['sent']))
+                getLogger().debug("Retrieved {} parse(s) from cache for sent: {}".format(len(s['parses']), s['sent']))
                 return s
         # else parse it ...
         sent = self.parse(txt, grm, pc, tagger, ignore_cache)
@@ -172,12 +171,12 @@ class Grammar:
         self.gram_file = FileHelper.abspath(gram_file)
         self.cmdargs = cmdargs
         self.ace_bin = FileHelper.abspath(ace_bin)
-        getLogger().info("Initializing grammar {n} | GRM Path: [{g}] - ACE: [{a}]".format(n=self.name, g=self.gram_file, a=self.ace_bin))
+        getLogger().debug("Initializing grammar {n} | GRM Path: [{g}] - ACE: [{a}]".format(n=self.name, g=self.gram_file, a=self.ace_bin))
         # init cache
         if cache_loc:
             self.cache_loc = FileHelper.abspath(cache_loc)
             self.cache = AceCache(self.cache_loc)
-            getLogger().info("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
+            getLogger().debug("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
         else:
             self.cache = None
         self.preps = preps  # pre-processors

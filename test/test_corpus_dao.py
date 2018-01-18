@@ -61,7 +61,7 @@ from coolisf.model import Document, Sentence
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
+from test.common import TEST_DIR, TEST_DATA
 DB_FILE = os.path.join(TEST_DATA, 'test_corpus.db')
 
 
@@ -118,8 +118,24 @@ class TestDAOBase(unittest.TestCase):
         if sents:
             return db.get_sent(sents[0].ID, ctx=ctx)
         else:
-            txt = "I love you."
-            sent = self.ERG.parse(txt)
+            sent = Sentence("I love you.")
+            sent.add('''[ TOP: h0
+  INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+  RELS: < [ pron<0:1> LBL: h4 ARG0: x3 [ x PERS: 1 NUM: sg IND: + PT: std ] ]
+          [ pronoun_q<0:1> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
+          [ _love_v_1<2:6> LBL: h1 ARG0: e2 ARG1: x3 ARG2: h8 ]
+          [ unknown<7:11> LBL: h9 ARG: x11 [ x PERS: 2 IND: + PT: std ] ARG0: e10 [ e SF: prop ] ]
+          [ pron<7:11> LBL: h12 ARG0: x11 ]
+          [ pronoun_q<7:11> LBL: h13 ARG0: x11 RSTR: h14 BODY: h15 ] >
+  HCONS: < h0 qeq h1 h6 qeq h4 h8 qeq h9 h14 qeq h12 > ]''')
+            sent.add('''[ TOP: h0
+  INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+  RELS: < [ pron<0:1> LBL: h4 ARG0: x3 [ x PERS: 1 NUM: sg IND: + PT: std ] ]
+          [ pronoun_q<0:1> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
+          [ _love_v_1<2:6> LBL: h1 ARG0: e2 ARG1: x3 ARG2: x8 [ x PERS: 2 IND: + PT: std ] ]
+          [ pron<7:11> LBL: h9 ARG0: x8 ]
+          [ pronoun_q<7:11> LBL: h10 ARG0: x8 RSTR: h11 BODY: h12 ] >
+  HCONS: < h0 qeq h1 h6 qeq h4 h11 qeq h9 > ]''')
             doc.add(sent)
             dmrs = sent[0].dmrs()
             dmrs.tag_node(10002, '01775164-v', 'love', TagInfo.OTHER)
@@ -197,7 +213,7 @@ class TestDMRSSQLite(TestDAOBase):
             self.assertEqual(len(sents), 2)
             s1, s2 = sents
             # verify dummy readings inside sentences
-            self.assertEqual(s1.readings, [None])
+            self.assertEqual(s1.readings, [None, None])
             self.assertEqual(s2.readings, [None])
             # select actual data ...
             s1 = self.db.get_sent(s1.ID, ctx=ctx)
@@ -215,10 +231,11 @@ class TestDMRSSQLite(TestDAOBase):
         with self.db.ctx() as ctx:
             sent = self.ensure_sent(self.db, ctx)
             r = sent[0]
-            preds = ['pron_rel', 'pronoun_q_rel', '_love_v_1_rel', 'pron_rel', 'pronoun_q_rel']
+            getLogger().debug(r.dmrs().preds())
+            preds = ['pron_rel', 'pronoun_q_rel', '_love_v_1_rel', 'unknown_rel', 'pron_rel', 'pronoun_q_rel']
             self.assertEqual(r.dmrs().preds(), preds)
             # delete some nodes
-            to_del = [n for n in r.dmrs().layout.nodes if n.predstr == 'pronoun_q']
+            to_del = [n for n in r.dmrs().layout.nodes if n.predstr == 'pronoun_q' or n.predstr == 'unknown']
             r.dmrs().layout.delete(*to_del)
             r.dmrs().layout.save()
             r.sentID = sent.ID

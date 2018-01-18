@@ -1,4 +1,4 @@
-#!/Usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -61,14 +61,12 @@ from coolisf import GrammarHub
 from coolisf.util import is_valid_name, sent2json
 from coolisf.model import Corpus, Document, Sentence, Reading
 from coolisf.model import DMRSLayout, Node, Link, Predicate, Pred, Triplet
-from coolisf.model import get_ep_lemma
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_DATA = os.path.join(TEST_DIR, 'data')
+from test.common import TEST_DIR, TEST_DATA
 
 
 def getLogger():

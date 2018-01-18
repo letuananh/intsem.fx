@@ -61,7 +61,7 @@ from coolisf.dao import CorpusDAOSQLite
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+from test.common import TEST_DIR, TEST_DATA
 
 
 def getLogger():

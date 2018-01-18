@@ -1,4 +1,4 @@
-#!/Usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -54,14 +54,13 @@ import os
 import unittest
 import logging
 
-from coolisf.model import Sentence, Reading, DMRSLayout
+from coolisf.model import Sentence, DMRSLayout
 from coolisf.parsers.dmrs_str import parse_dmrs_str, tokenize_dmrs_str, parse_dmrs
 
 
 ########################################################################
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_DATA = os.path.join(TEST_DIR, 'data')
+from test.common import TEST_DIR, TEST_DATA
 
 
 def getLogger():

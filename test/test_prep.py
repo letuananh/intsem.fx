@@ -62,8 +62,7 @@ from coolisf.processors import ProcessorManager
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-TEST_DATA = os.path.join(TEST_DIR, 'data')
+from test.common import TEST_DIR, TEST_DATA
 
 
 def getLogger():
