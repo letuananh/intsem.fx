@@ -34,9 +34,10 @@ for l in tdl.parse(f):
             if isinstance(l['SYNSEM']['LKEYS.KEYREL.PRED'],str):
                 pred = l['SYNSEM']['LKEYS.KEYREL.PRED']
                 synsets = PredSense.search_pred_string(pred)
-                for ss in synsets:
-                    print (lid, ss.synsetid,ss.lemmas)
-                    print ('# {}\n'.format("; ".join(ss.defs)))
+                if synsets:
+                    for ss in synsets:
+                        print (lid, ss.synsetid,ss.lemmas)
+                        print ('# {}\n'.format("; ".join(ss.defs)))
                 else:
                     print ('No synsets for {}, {}, {}'.format(repr(l.identifier), repr(pred), repr(synsets)),
                            file=log)
