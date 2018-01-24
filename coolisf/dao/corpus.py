@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 '''
-Corpus DAO
-@author: Le Tuan Anh
+Corpus DAO - ISF Corpus management functions
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -27,6 +28,9 @@ Corpus DAO
 
 ########################################################################
 
+# NOTE: This is used to be a parted of VisualKopasu, but relicensed
+# & migrated into coolISF
+
 import os
 import os.path
 import logging
@@ -40,20 +44,6 @@ from coolisf.model import MRS, DMRS, DMRSLayout, Node, Sense, SortInfo, Link, Pr
 from coolisf.model import GpredValue, Lemma
 from coolisf.model import Word, Concept, CWLink
 
-
-########################################################################
-
-__author__ = "Le Tuan Anh"
-__copyright__ = "Copyright 2017, intsem.fx"
-__credits__ = []
-__license__ = "GPL"
-__version__ = "0.2"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "tuananh.ke@gmail.com"
-__status__ = "Prototype"
-
-# NOTE: This is used to be a parted of VisualKopasu, but relicensed
-# & migrated into coolISF
 
 # ----------------------------------------------------------------------
 # Configuration

@@ -16,6 +16,7 @@ References:
         https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -38,29 +39,17 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, intsem.fx"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
-__credits__ = []
-
 ########################################################################
 
-import os
 import unittest
 import logging
 
 from coolisf import GrammarHub
 
+
 # -------------------------------------------------------------------------------
 # CONFIGURATION
 # -------------------------------------------------------------------------------
-
-from test.common import TEST_DIR
-
 
 def getLogger():
     return logging.getLogger(__name__)

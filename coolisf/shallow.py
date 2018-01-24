@@ -4,15 +4,8 @@
 Sentence shallow analyser
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -35,15 +28,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, intsem.fx"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
-__credits__ = []
-
 ########################################################################
 
 import os
@@ -58,17 +42,20 @@ try:
 except:
     logging.warning("Deko cannot be imported. JapaneseAnalyser will not function properly")
 
+
 # -------------------------------------------------------------------------------
-# CONFIGURATION
+# Configuration
 # -------------------------------------------------------------------------------
 
 DATA_FOLDER = os.path.abspath(os.path.expanduser('./data'))
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------
-# FUNCTIONS
+# Classes
 # -------------------------------------------------------------------------------
 
 class Analyser(object):

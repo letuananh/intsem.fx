@@ -17,6 +17,7 @@ References:
         https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -39,35 +40,25 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.2"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
 ########################################################################
 
 import os
-import sys
 import gzip
-import argparse
 import logging
 
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper, Counter
 from chirptext.texttaglib import TagInfo
 
-from .dao import read_tsdb
-from .ghub import GrammarHub
-from .gold_extract import generate_gold_profile
-from .util import read_ace_output
-from .gold_extract import export_to_visko
-from .gold_extract import read_gold_sents
-from .model import Document
-from .dao.textcorpus import RawCollection
+from coolisf.morph import Transformer
+from coolisf.dao import read_tsdb
+from coolisf.ghub import GrammarHub
+from coolisf.gold_extract import generate_gold_profile
+from coolisf.util import read_ace_output
+from coolisf.gold_extract import export_to_visko
+from coolisf.gold_extract import read_gold_sents
+from coolisf.model import Document
+from coolisf.dao.textcorpus import RawCollection
 
 ########################################################################
 
@@ -75,7 +66,7 @@ OUTPUT_DMRS = 'dmrs'
 OUTPUT_MRS = 'mrs'
 OUTPUT_XML = 'xml'
 OUTPUT_FORMATS = [OUTPUT_DMRS, OUTPUT_MRS, OUTPUT_XML]
-
+WSD_CHOICES = [TagInfo.LELESK, TagInfo.MFS]
 setup_logging('logging.json', 'logs')
 
 
@@ -135,6 +126,19 @@ def extract_tsdb(cli, args):
     else:
         doc = read_tsdb(args.path)
         print("Found sentences: {}".format(len(doc)))
+        if args.isf:
+            # perform ISF transformation
+            transformer = Transformer()
+            total = len(doc)
+            for idx, sent in enumerate(doc):
+                print("Processing {} of {} sentences".format(idx, total))
+                transformer.apply(sent)
+                # perform WSD if required
+                if args.wsd:
+                    sent.tag_xml(method=args.wsd)
+                # break
+                if args.topk and int(args.topk) < idx:
+                    break
         doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
         if args.output:
             if args.output.endswith('.gz'):
@@ -259,6 +263,9 @@ def main():
     tsdb_task.add_argument('output', help='Save extracted sentences to a file', nargs="?", default=None)
     tsdb_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     tsdb_task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
+    tsdb_task.add_argument('--isf', help="Perform ISF transformation", action="store_true")
+    tsdb_task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
+    tsdb_task.add_argument('-n', '--topk', help="Only enhance top k results (for debugging purpose)")
 
     task = app.add_task('export', func=to_visko)
     task.add_argument('-f', '--file', help='MRS file')

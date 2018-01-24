@@ -5,15 +5,8 @@
 ISF Gold Miner
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2016, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -37,15 +30,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2016, ISF"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
 ########################################################################
 
 import argparse
@@ -59,17 +43,21 @@ from coolisf.model import LexUnit, Reading
 from coolisf.dao.ruledb import parse_lexunit
 from coolisf.morph import LEXRULES_DB, LexRuleDB
 
+
 # ---------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------
 
-logger = logging.getLogger(__name__)
 UNK_DOCS = {'n': 'unk_noun', 'v': 'unk_verb', 'a': 'unk_adj', 'r': 'unk_adv', 'x': 'unk_other'}
+
+
+def getLogger():
+    return logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------
 # Funtions
 # ---------------------------------------------------------
-
 
 def mark_unknown_words(lu, ctx):
     for reading in lu:
@@ -232,7 +220,6 @@ def main():
     analyse_job = ruledb_jobs.add_parser('analyse', parents=[ruledb_task])
     analyse_job.add_argument('-n', help="Limit to top n records", default=None)
     analyse_job.set_defaults(func=RuleGenerator().analyse_ruledb)
-
     # Main script
     args = parser.parse_args()
     if args.func:

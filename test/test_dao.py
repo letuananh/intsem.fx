@@ -10,11 +10,9 @@ References:
         https://docs.python.org/
     Python unittest
         https://docs.python.org/3/library/unittest.html
-    --
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
@@ -36,15 +34,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, intsem.fx"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
 ########################################################################
 
 import os
@@ -61,7 +50,7 @@ from coolisf.dao.textcorpus import RawCollection
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-from test.common import TEST_DIR, TEST_DATA
+from test.common import TEST_DATA
 
 
 def getLogger():

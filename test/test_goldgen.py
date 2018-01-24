@@ -10,12 +10,9 @@ References:
         https://docs.python.org/3/library/unittest.html
     Python documentation:
         https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 0257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -38,18 +35,8 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, coolisf"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
-__credits__ = []
-
 ########################################################################
 
-import os
 import unittest
 import logging
 from collections import defaultdict as dd
@@ -71,7 +58,6 @@ from coolisf import GrammarHub
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-from test.common import TEST_DIR, TEST_DATA
 TEST_GOLD_DIR = 'data'
 ghub = GrammarHub()
 ERG = ghub.ERG
@@ -246,8 +232,6 @@ class TestGoldData(unittest.TestCase):
         for s in sents:
             tagged = doc.sent_map[str(s.ident)]
             self.assertEqual(tagged.text, s.text)
-            # if tagged.text != s.text:
-            #     getLogger().debug("UPDATE sent SET sent = '{}' WHERE sid = {};".format(s.text.replace("'", "''"), s.ident))
 
     def test_tag_one_sent(self):
         getLogger().debug("Test tagging one sentence")

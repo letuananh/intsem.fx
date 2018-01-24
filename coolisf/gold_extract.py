@@ -13,6 +13,7 @@ References:
         https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -35,15 +36,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
 ########################################################################
 
 import os
@@ -62,12 +54,11 @@ from chirptext.texttaglib import TaggedDoc, TagInfo
 
 from coolisf.dao import read_tsdb
 from coolisf.model import Document, Sentence
+from coolisf.lexsem import tag_gold
 
-from .lexsem import tag_gold
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
-
 # -----------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)

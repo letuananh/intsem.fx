@@ -2,7 +2,8 @@
 
 '''
 TSDB DAO
-@author: Le Tuan Anh
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -30,23 +31,11 @@ TSDB DAO
 import os
 import os.path
 import logging
-import json
 
 from delphin import itsdb
-from puchikarui import Schema, with_ctx
 
 from coolisf.model import Document, Sentence
 
-########################################################################
-
-__author__ = "Le Tuan Anh"
-__copyright__ = "Copyright 2017, intsem.fx"
-__credits__ = []
-__license__ = "GPL"
-__version__ = "0.2"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "tuananh.ke@gmail.com"
-__status__ = "Prototype"
 
 # ----------------------------------------------------------------------
 # Configuration
@@ -62,7 +51,7 @@ MY_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def read_tsdb(path):
     prof = itsdb.ItsdbProfile(path)
-    doc = Document(name=os.path.dirname(path))
+    doc = Document(name=os.path.basename(path))
     # Read all sentences
     tbl_item = prof.read_table('item')
     for row in tbl_item:

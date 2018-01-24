@@ -2,7 +2,8 @@
 
 '''
 Rule DB for Optimus Engine
-@author: Le Tuan Anh
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -36,16 +37,6 @@ from puchikarui import with_ctx
 from coolisf.dao import CorpusDAOSQLite
 from coolisf.model import LexUnit, RuleInfo
 
-########################################################################
-
-__author__ = "Le Tuan Anh"
-__copyright__ = "Copyright 2017, intsem.fx"
-__credits__ = []
-__license__ = "GPL"
-__version__ = "0.2"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "tuananh.ke@gmail.com"
-__status__ = "Prototype"
 
 # ----------------------------------------------------------------------
 # Configuration

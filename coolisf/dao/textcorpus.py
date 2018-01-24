@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 '''
-Text Corpus manager
-@author: Le Tuan Anh
+Raw Text Corpus manager
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -32,17 +33,6 @@ import json
 
 from chirptext import FileHelper
 from chirptext.io import CSV
-
-########################################################################
-
-__author__ = "Le Tuan Anh"
-__copyright__ = "Copyright 2017, intsem.fx"
-__credits__ = []
-__license__ = "GPL"
-__version__ = "0.2"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "tuananh.ke@gmail.com"
-__status__ = "Prototype"
 
 
 # ----------------------------------------------------------------------

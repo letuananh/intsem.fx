@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
 '''
-Cache DAO
-@author: Le Tuan Anh
+Cache DAO - Caching ACE and ISF parse results
+
+Latest version can be found at https://github.com/letuananh/intsem.fx
+
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -36,16 +40,6 @@ from puchikarui import Schema, with_ctx
 
 from coolisf.model import Sentence
 
-########################################################################
-
-__author__ = "Le Tuan Anh"
-__copyright__ = "Copyright 2017, intsem.fx"
-__credits__ = []
-__license__ = "GPL"
-__version__ = "0.2"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "tuananh.ke@gmail.com"
-__status__ = "Prototype"
 
 # ----------------------------------------------------------------------
 # Configuration

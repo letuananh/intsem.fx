@@ -5,15 +5,8 @@ Basic Japanese processors
 
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    ACE:
-        http://moin.delph-in.net/AceOptions
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -36,19 +29,9 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
 ########################################################################
 
 import logging
-
 
 from coolisf.shallow import EnglishAnalyser
 from coolisf.model import Sentence
@@ -56,15 +39,17 @@ from coolisf.morph import Transformer
 from .base import Processor
 
 
-##########################################
-# CONFIGURATION
-##########################################
+# ----------------------------------------------------------------------
+# Configuration
+# ----------------------------------------------------------------------
 
 def getLogger():
     return logging.getLogger(__name__)
 
 
-########################################################################
+# ----------------------------------------------------------------------
+# Classes
+# ----------------------------------------------------------------------
 
 class PostISF(Processor):
 
