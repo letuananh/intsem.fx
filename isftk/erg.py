@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
-Script for processing gold datasets
+Script for analysing ERG
 
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
@@ -33,22 +33,18 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 
 import logging
 
-from chirptext import TextReport
+from chirptext import TextReport, Counter
 from chirptext.cli import CLIApp, setup_logging
-from chirptext.texttaglib import TaggedDoc
 
-from coolisf.gold_extract import read_gold_mrs
+from coolisf.ergex import read_erg_lex
+from coolisf.model import Predicate
 
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
 
-UPDATE_QUERY = """
-UPDATE sent SET sent = '{ntext}'
-WHERE           sent = '{otext}'
-                AND sid = '{sid}';"""
-
 setup_logging('logging.json', 'logs')
+TRIVIAL_POS = 'navj'
 
 
 def getLogger():
@@ -59,26 +55,33 @@ def getLogger():
 # Functions
 # ------------------------------------------------------------------------------
 
-def fix_gold(cli, args):
-    sents = read_gold_mrs()
-    doc = TaggedDoc('data', 'gold').read()
-    patches = []
-    for s in sents:
-        tagged = doc.sent_map[str(s.ident)]
-        if tagged.text != s.text:
-            new_text = s.text.replace("'", "''")
-            old_text = tagged.text.replace("'", "''")
-            patch = UPDATE_QUERY.format(ntext=new_text, sid=s.ident, otext=old_text)
-            patches.append(patch)
-
-    # generate patch
-    if patches:
-        with TextReport(args.output) as outfile:
-            for patch in patches:
-                outfile.print(patch)
-        print("-- Patch has been written to {}".format(outfile.path))
-    else:
-        print("Nothing to patch")
+def list_preds(cli, args):
+    rp = TextReport(args.output)
+    lexdb = read_erg_lex()
+    keyrels = set(l.keyrel for l in lexdb if l.keyrel)
+    preds = [Predicate.from_string(p) for p in keyrels]
+    sorted_preds = sorted(preds, key=lambda x: x.pos or '')
+    # All preds
+    with open('data/erg_preds_sorted.txt', 'w') as outfile:
+        for pred in sorted_preds:
+            outfile.write('{}\n'.format(pred))
+    poses = set(p.pos for p in preds)
+    trivial_preds = [p for p in preds if p.pos and p.pos in TRIVIAL_POS]
+    if not args.trivial:
+        preds = [p for p in preds if not p.pos or p.pos not in TRIVIAL_POS]
+    interesting_poses = set(p.pos for p in preds)
+    # write interesting preds to file
+    c = Counter()
+    with open('data/erg_preds_interesting.txt', 'w') as outfile:
+        for pred in sorted(preds, key=lambda x: "cqpx".index(x.pos) if x.pos else 0):
+            c.count(pred.pos if pred.pos else 'NONE')
+            outfile.write('{}\n'.format(pred))
+    # report
+    rp.print("Interesting preds: {}".format(len(preds)))
+    rp.print("Trivial preds: {}".format(len(trivial_preds)))
+    rp.print("POS: {}".format(poses))
+    rp.print("Interesting POS: {}".format(interesting_poses))
+    c.summarise(rp)
 
 
 # ------------------------------------------------------------------------------
@@ -86,11 +89,12 @@ def fix_gold(cli, args):
 # ------------------------------------------------------------------------------
 
 def main():
-    ''' ISF Gold miner '''
-    app = CLIApp(desc='ISF Gold mining Toolkit', logger=__name__)
+    ''' ISF ERG Analyser  '''
+    app = CLIApp(desc='ISF ERG Toolkit', logger=__name__)
     # add tasks
-    task = app.add_task('fix', func=fix_gold)
-    task.add_argument('-o', '--output', help='Output file', default=None)
+    task = app.add_task('preds', func=list_preds)
+    task.add_argument('-o', '--output', help="Output")
+    task.add_argument('-t', '--trivial', help="Don't remove trivial preds", action="store_true")
     # run app
     app.run()
 
