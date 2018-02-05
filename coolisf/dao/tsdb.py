@@ -49,9 +49,13 @@ MY_DIR = os.path.dirname(os.path.realpath(__file__))
 # Configuration
 # ----------------------------------------------------------------------
 
-def read_tsdb(path):
+def read_tsdb(path, name=None, title=None):
     prof = itsdb.ItsdbProfile(path)
-    doc = Document(name=os.path.basename(path))
+    if name is None:
+        name = os.path.basename(path)
+    if title is None:
+        title = name
+    doc = Document(name=name, title=title)
     # Read all sentences
     tbl_item = prof.read_table('item')
     for row in tbl_item:
