@@ -1,0 +1,430 @@
+1743@1@root_strict@4@1@0@5@@(1724)@@
+1724@1@sb-hd_mc_c@3@1@0@5@@(1634 1660)@@
+1634@1@sp-hd_n_c@3@1@0@2@@(192 1495)@@
+192@1@my@1@1@0@1@@(112)@@
+1495@1@hdn_optcmp_c@3@1@1@2@@(327)@@
+327@1@n_sg_ilr@2@1@1@2@@(154)@@
+154@1@name_n1@1@1@1@2@@(106)@@
+1660@1@hd-cmp_u_c@3@1@2@5@@(168 1653)@@
+168@1@be_id_is@1@1@2@3@@(108)@@
+1653@1@hdn_bnp-pn_c@3@1@3@5@@(1628)@@
+1628@1@np-hdn_nme-cpd_c@3@1@3@5@@(1533 372)@@
+1533@1@hdn_bnp-pn_c@3@1@3@4@@(350)@@
+350@1@n_sg_ilr@2@1@3@4@@(188)@@
+188@1@sherlock_n1@1@1@3@4@@(110)@@
+372@1@w_period_plr@2@1@4@5@@(351)@@
+351@1@n_sg_ilr@2@1@4@5@@(196)@@
+196@1@holmes_n1@1@1@4@5@@(114)@@
+95@1@token [ +FORM "Sherlock" +FROM "11" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NNP" +PRB "1.0" ] ] +CLASS proper_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Sherlock" +TICK - ]@0@0@3@4@@@@
+96@1@token [ +FORM "Holmes." +FROM "20" +TO "27" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NNP" +PRB "1.0" ] ] +CLASS proper_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:27>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Holmes" +TICK - ]@0@0@4@5@@@@
+99@1@token [ +FORM "Sherlock" +FROM "11" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NNP" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NNP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_sherlock/NNP_u_unknown_rel" +CARG "Sherlock" +TICK - ]@0@0@3@4@@@@
+100@1@token [ +FORM "name" +FROM "3" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<3:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_name/NN_u_unknown_rel" +CARG "name" +TICK - ]@0@0@1@2@@@@
+101@1@token [ +FORM "is" +FROM "8" +TO "10" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBZ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:10>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_is/VBZ_u_unknown_rel" +CARG "is" +TICK - ]@0@0@2@3@@@@
+102@1@token [ +FORM "Holmes." +FROM "20" +TO "27" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NNP" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NNP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:27>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_holmes/NNP_u_unknown_rel" +CARG "Holmes" +TICK - ]@0@0@4@5@@@@
+106@1@token [ +FORM "name" +FROM "3" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<3:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "name" +TICK + ]@0@0@1@2@@@@
+107@1@token [ +FORM "name" +FROM "3" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<3:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "name" +TICK bool ]@0@0@1@2@@@@
+108@1@token [ +FORM "is" +FROM "8" +TO "10" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:10>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK + ]@0@0@2@3@@@@
+109@1@token [ +FORM "is" +FROM "8" +TO "10" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:10>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK bool ]@0@0@2@3@@@@
+110@1@token [ +FORM "sherlock" +FROM "11" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NNP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Sherlock" +TICK + ]@0@0@3@4@@@@
+111@1@token [ +FORM "sherlock" +FROM "11" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Sherlock" +TICK bool ]@0@0@3@4@@@@
+112@1@token [ +FORM "my" +FROM "0" +TO "2" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "PRP$" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL + ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:2>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "My" +TICK + ]@0@0@0@1@@@@
+113@1@token [ +FORM "my" +FROM "0" +TO "2" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:2>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "My" +TICK bool ]@0@0@0@1@@@@
+114@1@token [ +FORM "holmes." +FROM "20" +TO "27" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NNP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:27>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Holmes" +TICK + ]@0@0@4@5@@@@
+115@1@token [ +FORM "holmes." +FROM "20" +TO "27" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:27>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Holmes" +TICK bool ]@0@0@4@5@@@@
+2233@2@root_inffrag@4@1@0@6@@(2231)@@
+2231@2@cl_rel-frg_c@3@1@0@6@@(2207)@@
+2207@2@flr-hd_rel-fin_c@3@1@0@6@@(1782 2201)@@
+1782@2@hdn_bnp-qnt_c@3@1@0@1@@(204)@@
+204@2@that_r@1@1@0@1@@(119)@@
+2201@2@hd_xsb-fin_c@3@1@1@6@@(2127)@@
+2127@2@hd-cmp_u_c@3@1@1@6@@(153 2122)@@
+153@2@be_id_is@1@1@1@2@@(109)@@
+2122@2@sp-hd_n_c@3@1@2@6@@(174 2034)@@
+174@2@the_1@1@1@2@3@@(111)@@
+2034@2@aj-hdn_adjn_c@3@1@3@6@@(178 1986)@@
+178@2@big_a1@1@1@3@4@@(113)@@
+1986@2@aj-hdn_norm_c@3@1@4@6@@(375 399)@@
+375@2@j_att_dlr@2@1@4@5@@(185)@@
+185@2@bad_a1@1@1@4@5@@(115)@@
+399@2@w_period_plr@2@1@5@6@@(379)@@
+379@2@n_sg_ilr@2@1@5@6@@(193)@@
+193@2@wolf_n1@1@1@5@6@@(117)@@
+2234@2@root_strict@4@1@0@6@@(2205)@@
+2205@2@sb-hd_mc_c@3@1@0@6@@(1953 2127)@@
+1953@2@hdn_bnp-qnt_c@3@1@0@1@@(1792)@@
+1792@2@hdn_optcmp_c@3@1@0@1@@(211)@@
+211@2@that_deix@1@1@0@1@@(119)@@
+2235@2@root_inffrag@4@1@0@6@@(2141)@@
+2141@2@aj-hd_scp_c@3@1@0@6@@(202 2133)@@
+202@2@that_is_root_pre@1@1@0@2@@(119 109)@@
+2133@2@np_frg_c@3@1@2@6@@(2122)@@
+2236@2@root_inffrag@4@1@0@6@@(2140)@@
+2140@2@aj-np_frg_c@3@1@0@6@@(202 2122)@@
+2237@2@root_inffrag@4@1@0@6@@(2232)@@
+2232@2@np_frg_c@3@1@0@6@@(2123)@@
+2123@2@aj-hd_scp_c@3@1@0@6@@(208 2122)@@
+208@2@that_is_disc_adv@1@1@0@2@@(119 109)@@
+104@2@token [ +FORM "is" +FROM "5" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBZ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<5:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_is/VBZ_u_unknown_rel" +CARG "is" +TICK - ]@0@0@1@2@@@@
+105@2@token [ +FORM "big" +FROM "12" +TO "15" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "JJ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<12:15>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_big/JJ_u_unknown_rel" +CARG "big" +TICK - ]@0@0@3@4@@@@
+106@2@token [ +FORM "bad" +FROM "16" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "JJ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<16:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_bad/JJ_u_unknown_rel" +CARG "bad" +TICK - ]@0@0@4@5@@@@
+107@2@token [ +FORM "wolf." +FROM "20" +TO "25" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:25>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_wolf/NN_u_unknown_rel" +CARG "wolf" +TICK - ]@0@0@5@6@@@@
+109@2@token [ +FORM "is" +FROM "5" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<5:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK + ]@0@0@1@2@@@@
+110@2@token [ +FORM "is" +FROM "5" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<5:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK bool ]@0@0@1@2@@@@
+111@2@token [ +FORM "the" +FROM "8" +TO "11" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:11>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "the" +TICK + ]@0@0@2@3@@@@
+112@2@token [ +FORM "the" +FROM "8" +TO "11" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:11>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "the" +TICK bool ]@0@0@2@3@@@@
+113@2@token [ +FORM "big" +FROM "12" +TO "15" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<12:15>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "big" +TICK + ]@0@0@3@4@@@@
+114@2@token [ +FORM "big" +FROM "12" +TO "15" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<12:15>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "big" +TICK bool ]@0@0@3@4@@@@
+115@2@token [ +FORM "bad" +FROM "16" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<16:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "bad" +TICK + ]@0@0@4@5@@@@
+116@2@token [ +FORM "bad" +FROM "16" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<16:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "bad" +TICK bool ]@0@0@4@5@@@@
+117@2@token [ +FORM "wolf." +FROM "20" +TO "25" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:25>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "wolf" +TICK + ]@0@0@5@6@@@@
+118@2@token [ +FORM "wolf." +FROM "20" +TO "25" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:25>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "wolf" +TICK bool ]@0@0@5@6@@@@
+119@2@token [ +FORM "that" +FROM "0" +TO "4" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL + ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:4>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "That" +TICK + ]@0@0@0@1@@@@
+120@2@token [ +FORM "that" +FROM "0" +TO "4" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:4>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "That" +TICK bool ]@0@0@0@1@@@@
+1710@3@root_strict@4@1@0@5@@(1685)@@
+1685@3@sb-hd_mc_c@3@1@0@5@@(1427 1667)@@
+1427@3@hdn_bnp-qnt_c@3@1@0@1@@(187)@@
+187@3@i@1@1@0@1@@(104)@@
+1667@3@hd-cmp_u_c@3@1@1@5@@(322 1588)@@
+322@3@v_n3s-bse_ilr@2@1@1@2@@(143)@@
+143@3@have-poss@1@1@1@2@@(96)@@
+1588@3@sp-hd_n_c@3@1@2@5@@(167 1563)@@
+167@3@a_det@1@1@2@3@@(98)@@
+1563@3@n-hdn_cpd_c@3@1@3@5@@(178 336)@@
+178@3@tea_n1@1@1@3@4@@(100)@@
+336@3@w_period_plr@2@1@4@5@@(324)@@
+324@3@n_sg_ilr@2@1@4@5@@(181)@@
+181@3@chest_n1@1@1@4@5@@(102)@@
+87@3@token [ +FORM "I" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "PRP" +PRB "1.0" ] ] +CLASS proper_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "I" +TICK - ]@0@0@0@1@@@@
+92@3@token [ +FORM "have" +FROM "2" +TO "6" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBP" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:6>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_have/VBP_u_unknown_rel" +CARG "have" +TICK - ]@0@0@1@2@@@@
+93@3@token [ +FORM "tea" +FROM "9" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<9:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_tea/NN_u_unknown_rel" +CARG "tea" +TICK - ]@0@0@3@4@@@@
+94@3@token [ +FORM "chest." +FROM "13" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<13:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_chest/NN_u_unknown_rel" +CARG "chest" +TICK - ]@0@0@4@5@@@@
+96@3@token [ +FORM "have" +FROM "2" +TO "6" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:6>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "have" +TICK + ]@0@0@1@2@@@@
+97@3@token [ +FORM "have" +FROM "2" +TO "6" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:6>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "have" +TICK bool ]@0@0@1@2@@@@
+98@3@token [ +FORM "a" +FROM "7" +TO "8" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<7:8>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK + ]@0@0@2@3@@@@
+99@3@token [ +FORM "a" +FROM "7" +TO "8" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<7:8>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK bool ]@0@0@2@3@@@@
+100@3@token [ +FORM "tea" +FROM "9" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<9:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "tea" +TICK + ]@0@0@3@4@@@@
+101@3@token [ +FORM "tea" +FROM "9" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<9:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "tea" +TICK bool ]@0@0@3@4@@@@
+102@3@token [ +FORM "chest." +FROM "13" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<13:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "chest" +TICK + ]@0@0@4@5@@@@
+103@3@token [ +FORM "chest." +FROM "13" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<13:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "chest" +TICK bool ]@0@0@4@5@@@@
+104@3@token [ +FORM "i" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "PRP" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+non_mixed +INITIAL + ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "I" +TICK + ]@0@0@0@1@@@@
+105@3@token [ +FORM "i" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "I" +TICK bool ]@0@0@0@1@@@@
+2776@4@root_strict@4@1@0@7@@(2753)@@
+2753@4@sb-hd_mc_c@3@1@0@7@@(2358 2636)@@
+2358@4@sp-hd_n_c@3@1@0@2@@(332 472)@@
+332@4@a_det@1@1@0@1@@(139)@@
+472@4@n_sg_ilr@2@1@1@2@@(206)@@
+206@4@panda_n1@1@1@1@2@@(127)@@
+2636@4@hd-cmp_u_c@3@1@2@7@@(217 2613)@@
+217@4@be_c_is@1@1@2@3@@(129)@@
+2613@4@hd-cmp_u_c@3@1@3@7@@(520 2565)@@
+520@4@v_prp_olr@2@1@3@4@@(248)@@
+248@4@pull_v1@1@1@3@4@@(131)@@
+2565@4@sp-hd_n_c@3@1@4@7@@(297 2555)@@
+297@4@a_det@1@1@4@5@@(133)@@
+2555@4@xp_brck-pr_c@3@1@5@7@@(2412)@@
+2412@4@n-hdn_cpd_c@3@1@5@7@@(545 603)@@
+545@4@w_hyphen_plr@2@1@5@6@@(308)@@
+308@4@dog_n1@1@1@5@6@@(135)@@
+603@4@w_period_plr@2@1@6@7@@(550)@@
+550@4@n_sg_ilr@2@1@6@7@@(315)@@
+315@4@cart_n1@1@1@6@7@@(137)@@
+2777@4@root_strict@4@1@0@7@@(2730)@@
+2730@4@sb-hd_mc_c@3@1@0@7@@(2358 2657)@@
+2657@4@hd-aj_scp_c@3@1@2@7@@(490 2640)@@
+490@4@v_aux-ell-ref_dlr@2@1@2@3@@(217)@@
+2640@4@vp_sbrd-prd-prp_c@3@1@3@7@@(2613)@@
+114@4@token [ +FORM "A" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS proper_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "A" +TICK - ]@0@0@0@1@@@@
+121@4@token [ +FORM "panda" +FROM "2" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_panda/NN_u_unknown_rel" +CARG "panda" +TICK - ]@0@0@1@2@@@@
+122@4@token [ +FORM "is" +FROM "8" +TO "10" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBZ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:10>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_is/VBZ_u_unknown_rel" +CARG "is" +TICK - ]@0@0@2@3@@@@
+123@4@token [ +FORM "pulling" +FROM "11" +TO "18" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBG" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBG" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:18>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_pulling/VBG_u_unknown_rel" +CARG "pulling" +TICK - ]@0@0@3@4@@@@
+124@4@token [ +FORM "dog-" +FROM "21" +TO "25" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphanumeric [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_nonnull [ LIST *cons* [ FIRST n REST *list* ] LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<21:29>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_dog-/NN_u_unknown_rel" +CARG "dog-" +TICK - ]@0@0@5@6@@@@
+125@4@token [ +FORM "cart." +FROM "25" +TO "30" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_nonnull [ LIST *cons* [ FIRST n REST *list* ] LAST *list* ] +HD token_head [ +TI "<21:30>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_cart/NN_u_unknown_rel" +CARG "cart" +TICK - ]@0@0@6@7@@@@
+127@4@token [ +FORM "panda" +FROM "2" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "panda" +TICK + ]@0@0@1@2@@@@
+128@4@token [ +FORM "panda" +FROM "2" +TO "7" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:7>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "panda" +TICK bool ]@0@0@1@2@@@@
+129@4@token [ +FORM "is" +FROM "8" +TO "10" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:10>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK + ]@0@0@2@3@@@@
+130@4@token [ +FORM "is" +FROM "8" +TO "10" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<8:10>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK bool ]@0@0@2@3@@@@
+131@4@token [ +FORM "pulling" +FROM "11" +TO "18" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBG" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:18>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "pulling" +TICK + ]@0@0@3@4@@@@
+132@4@token [ +FORM "pulling" +FROM "11" +TO "18" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<11:18>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "pulling" +TICK bool ]@0@0@3@4@@@@
+133@4@token [ +FORM "a" +FROM "19" +TO "20" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<19:20>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK + ]@0@0@4@5@@@@
+134@4@token [ +FORM "a" +FROM "19" +TO "20" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<19:20>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK bool ]@0@0@4@5@@@@
+135@4@token [ +FORM "dog-" +FROM "21" +TO "25" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphanumeric [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_nonnull [ LIST *cons* [ FIRST n REST *list* ] LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<21:29>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "dog-" +TICK + ]@0@0@5@6@@@@
+136@4@token [ +FORM "dog-" +FROM "21" +TO "25" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_nonnull [ LIST *cons* [ FIRST n REST *list* ] LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<21:29>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "dog-" +TICK bool ]@0@0@5@6@@@@
+137@4@token [ +FORM "cart." +FROM "25" +TO "30" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_nonnull [ LIST *cons* [ FIRST n REST *list* ] LAST *list* ] +HD token_head [ +TI "<21:30>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "cart" +TICK + ]@0@0@6@7@@@@
+138@4@token [ +FORM "cart." +FROM "25" +TO "30" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_nonnull [ LIST *cons* [ FIRST n REST *list* ] LAST *list* ] +HD token_head [ +TI "<21:30>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "cart" +TICK bool ]@0@0@6@7@@@@
+139@4@token [ +FORM "a" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+non_mixed +INITIAL + ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "A" +TICK + ]@0@0@0@1@@@@
+140@4@token [ +FORM "a" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "A" +TICK bool ]@0@0@0@1@@@@
+5780@5@root_inffrag@4@1@0@7@@(5762)@@
+5762@5@np_frg_c@3@1@0@7@@(5733)@@(5763 5764 5765 5766 5767 5768 5769)
+5763@5@np_frg_c@3@5@0@7@@(5703)@@
+5703@5@sp-hd_n_c@3@1@0@7@@(253 4217)@@
+253@5@the_1@1@1@0@1@@(143)@@
+4217@5@hdn-aj_redrel_c@3@1@1@7@@(2187 3010)@@
+2187@5@aj-hdn_norm_c@3@1@1@3@@(247 2039)@@
+247@5@japanese_a1@1@1@1@2@@(141)@@
+2039@5@hdn_optcmp_c@3@1@2@3@@(375)@@
+375@5@n_ms-cnt_ilr@2@1@2@3@@(173)@@
+173@5@love_n2@1@1@2@3@@(131)@@
+3010@5@hd-cmp_u_c@3@1@3@7@@(196 2997)@@
+196@5@to_nmod@1@1@3@4@@(133)@@
+2997@5@hdn_bnp_c@3@1@4@7@@(2851)@@(2965)
+2965@5@hdn_bnp_c@3@5@4@7@@(2882)@@
+2882@5@n-hdn_cpd_c@3@1@4@7@@(226 2159)@@(2883)
+2883@5@n-hdn_j-n-cpd_c@3@5@4@7@@(226 2159)@@
+226@5@drink_n1@1@1@4@5@@(135)@@
+2159@5@aj-hdn_norm_c@3@1@5@7@@(234 398)@@
+234@5@green_a1@1@1@5@6@@(137)@@
+398@5@w_period_plr@2@1@6@7@@(389)@@
+389@5@n_ms-cnt_ilr@2@1@6@7@@(241)@@
+241@5@tea_n1@1@1@6@7@@(139)@@
+2851@5@aj-hdn_norm_c@3@1@4@7@@(2160 398)@@
+2160@5@n-j_j-cpd_c@3@1@4@6@@(226 234)@@
+5764@5@np_frg_c@3@5@0@7@@(5682)@@
+5682@5@sp-hd_n_c@3@1@0@7@@(253 4265)@@
+4265@5@hdn-aj_rc_c@3@1@1@7@@(2320 4245)@@(4250)
+4250@5@hdn-aj_rc_c@3@5@1@7@@(2320 4246)@@
+2320@5@np-hdn_cpd_c@3@1@1@3@@(2103 2039)@@
+2103@5@hdn_bnp-pn_c@3@1@1@2@@(391)@@
+391@5@n_sg_ilr@2@1@1@2@@(245)@@
+245@5@japanese_n1@1@1@1@2@@(141)@@
+4246@5@cl_rc-inf-nwh-sb_c@3@1@3@7@@(2919)@@
+2919@5@hd-cmp_u_c@3@1@3@7@@(202 2884)@@
+202@5@to_c_prop@1@1@3@4@@(133)@@
+2884@5@hd-cmp_u_c@3@1@4@7@@(384 2871)@@
+384@5@v_n3s-bse_ilr@2@1@4@5@@(225)@@
+225@5@drink_v1@1@1@4@5@@(135)@@
+2871@5@hdn_bnp_c@3@1@5@7@@(2159)@@
+4245@5@cl_rc-instr_c@3@1@3@7@@(2919)@@
+5765@5@np_frg_c@3@5@0@7@@(5652)@@
+5652@5@sp-hd_n_c@3@1@0@7@@(253 4271)@@
+4271@5@hdn-aj_rc_c@3@1@1@7@@(2187 4245)@@(4256)
+4256@5@hdn-aj_rc_c@3@5@1@7@@(2187 4246)@@
+5766@5@np_frg_c@3@5@0@7@@(5613)@@
+5613@5@sp-hd_n_c@3@1@0@7@@(253 4377)@@(5439)
+5439@5@sp-hd_n_c@3@5@0@7@@(253 5387)@@
+5387@5@aj-hdn_adjn_c@3@1@1@7@@(247 2914)@@(5165)
+5165@5@aj-hdn_adjn_c@3@5@1@7@@(247 3762)@@
+3762@5@n-hdn_cpd_c@3@1@2@7@@(3635 398)@@
+3635@5@sp-hd_hc_c@3@1@2@6@@(2039 2470)@@(3634)
+3634@5@sp-hd_hc_c@3@5@2@6@@(1935 2470)@@
+1935@5@hdn_optcmp_c@3@1@2@3@@(173)@@
+2470@5@hd-cmp_u_c@3@1@3@6@@(188 2303)@@
+188@5@x_to_y_nbar_to@1@1@3@4@@(133)@@
+2303@5@n-hdn_cpd_c@3@1@4@6@@(226 1996)@@
+1996@5@hdn_color_c@3@1@5@6@@(234)@@
+2914@5@n-hdn_cpd_c@3@1@2@7@@(2911 2159)@@(2915)
+2915@5@n-hdn_j-n-cpd_c@3@5@2@7@@(2911 2159)@@
+2911@5@sp-hd_hc_c@3@1@2@5@@(2039 2130)@@(2910)
+2910@5@sp-hd_hc_c@3@5@2@5@@(1935 2130)@@
+2130@5@hd-cmp_u_c@3@1@3@5@@(188 385)@@
+385@5@n_ms-cnt_ilr@2@1@4@5@@(226)@@
+4377@5@n-hdn_cpd_c@3@1@1@7@@(2907 2159)@@(4378 4374 4373 4346 4345 4344 4343 4337 4336)
+4378@5@n-hdn_j-n-cpd_c@3@5@1@7@@(2907 2159)@@
+2907@5@sp-hd_hc_c@3@1@1@5@@(2291 2130)@@(2906)
+2906@5@sp-hd_hc_c@3@5@1@5@@(2320 2130)@@
+2291@5@np-hdn_cpd_c@3@1@1@3@@(2103 1935)@@
+4374@5@n-hdn_j-n-cpd_c@3@5@1@7@@(2909 2159)@@
+2909@5@sp-hd_hc_c@3@1@1@5@@(2182 2130)@@(2908)
+2908@5@sp-hd_hc_c@3@5@1@5@@(2187 2130)@@
+2182@5@aj-hdn_norm_c@3@1@1@3@@(247 1935)@@
+4373@5@n-hdn_cpd_c@3@5@1@7@@(2909 2159)@@
+4346@5@n-hdn_cpd-pl-nlx_c@3@5@1@7@@(2916 2159)@@
+2916@5@np-hdn_num-cpd_c@3@1@1@5@@(246 2911)@@
+246@5@japanese_n2@1@1@1@2@@(141)@@
+4345@5@n-hdn_cpd-pl_c@3@5@1@7@@(2916 2159)@@
+4344@5@n-hdn_j-n-cpd_c@3@5@1@7@@(2916 2159)@@
+4343@5@n-hdn_cpd_c@3@5@1@7@@(2916 2159)@@
+4337@5@n-hdn_j-n-cpd_c@3@5@1@7@@(2917 2159)@@
+2917@5@np-hdn_num-cpd_c@3@1@1@5@@(391 2911)@@
+4336@5@n-hdn_cpd_c@3@5@1@7@@(2917 2159)@@
+5767@5@np_frg_c@3@5@0@7@@(5493)@@
+5493@5@sp-hd_n_c@3@1@0@7@@(253 5175)@@
+5175@5@np-hdn_cpd_c@3@1@1@7@@(2103 3762)@@
+5768@5@np_frg_c@3@5@0@7@@(5473)@@
+5473@5@sp-hd_n_c@3@1@0@7@@(253 5214)@@
+5214@5@n-hdn_cpd_c@3@1@1@7@@(3631 398)@@(5212 5164 5163 5160)
+5212@5@n-hdn_cpd_c@3@5@1@7@@(3633 398)@@
+3633@5@sp-hd_hc_c@3@1@1@6@@(2182 2470)@@(3632)
+3632@5@sp-hd_hc_c@3@5@1@6@@(2187 2470)@@
+5164@5@n-hdn_cpd_c@3@5@1@7@@(3763 398)@@
+3763@5@np-hdn_num-cpd_c@3@1@1@6@@(246 3635)@@
+5163@5@n-hdn_cpd-pl_c@3@5@1@7@@(3763 398)@@
+5160@5@n-hdn_cpd_c@3@5@1@7@@(3764 398)@@
+3764@5@np-hdn_num-cpd_c@3@1@1@6@@(391 3635)@@
+3631@5@sp-hd_hc_c@3@1@1@6@@(2291 2470)@@(3630)
+3630@5@sp-hd_hc_c@3@5@1@6@@(2320 2470)@@
+5769@5@np_frg_c@3@5@0@7@@(5415)@@
+5415@5@sp-hd_n_c@3@1@0@7@@(253 5397)@@
+5397@5@np-hdn_cpd_c@3@1@1@7@@(2103 2914)@@
+5733@5@sp-hd_n_c@3@1@0@7@@(253 4213)@@
+4213@5@hdn-aj_redrel_c@3@1@1@7@@(2320 3010)@@
+5781@5@root_strict@4@1@0@7@@(5113)@@
+5113@5@sb-hd_mc_c@3@1@0@7@@(2171 3905)@@
+2171@5@sp-hd_n_c@3@1@0@2@@(253 246)@@
+3905@5@hd-cmp_u_c@3@1@2@7@@(395 3538)@@(4278 4200 4614)
+4278@5@hd-cmp_u_c@3@5@2@7@@(395 4244)@@
+395@5@v_n3s-bse_ilr@2@1@2@3@@(380)@@
+380@5@v_cp-frag_dlr@2@1@2@3@@(177)@@
+177@5@love_v4@1@1@2@3@@(131)@@
+4244@5@vp_nfin-frg_c@3@1@3@7@@(2919)@@
+4200@5@hd-cmp_u_c@3@5@2@7@@(395 4179)@@
+4179@5@pp_frg_c@3@1@3@7@@(3011)@@(4204 4228 4290)
+4204@5@pp_frg_c@3@5@3@7@@(3010)@@
+4228@5@r_cl-frg_c@3@5@3@7@@(3008)@@
+3008@5@hd-cmp_u_c@3@1@3@7@@(193 2997)@@
+193@5@to_s_init@1@1@3@4@@(133)@@
+4290@5@r_cl-frg_c@3@5@3@7@@(2918)@@
+2918@5@hd-cmp_u_c@3@1@3@7@@(192 2884)@@
+192@5@to_subord@1@1@3@4@@(133)@@
+3011@5@hd-cmp_u_c@3@1@3@7@@(203 2997)@@
+203@5@to@1@1@3@4@@(133)@@
+4614@5@hd-cmp_u_c@3@5@2@7@@(395 4593)@@
+4593@5@vp_fin-frg_c@3@1@3@7@@(2727)@@
+2727@5@aj-hd_scp-xp_c@3@1@3@7@@(2228 2282)@@
+2228@5@hd-cmp_u_c@3@1@3@5@@(192 2075)@@
+2075@5@hd_optcmp_c@3@1@4@5@@(384)@@
+2282@5@hd-cmp_u_c@3@1@5@7@@(387 2115)@@
+387@5@v_n3s-bse_ilr@2@1@5@6@@(235)@@
+235@5@green_v1@1@1@5@6@@(137)@@
+2115@5@hdn_bnp_c@3@1@6@7@@(398)@@
+3538@5@aj-np_frg_c@3@1@3@7@@(2500 2115)@@(2893)
+2893@5@aj-np_frg_c@3@5@3@7@@(2228 2871)@@
+2500@5@hd-cmp_u_c@3@1@3@6@@(192 2293)@@(2447)
+2447@5@hd-cmp_u_c@3@5@3@6@@(192 2305)@@
+2305@5@hd-aj_scp_c@3@1@4@6@@(2075 1998)@@
+1998@5@vp_sbrd-prd-aj_c@3@1@5@6@@(234)@@
+2293@5@hd-cmp_u_c@3@1@4@6@@(384 2142)@@
+2142@5@hdn_bnp_c@3@1@5@6@@(1996)@@
+5782@5@root_informal@4@1@0@7@@(5094)@@
+5094@5@sb-hd_mc_c@3@1@0@7@@(2171 3918)@@
+3918@5@hd-cmp_u_c@3@1@2@7@@(3524 2115)@@(3913 3265 3259 3258)
+3913@5@hd-cmp_u_c@3@5@2@7@@(3528 2283)@@
+3528@5@hd-aj_vmod-s_c@3@1@2@6@@(395 2500)@@(3583)
+3583@5@hd-aj_vmod_c@3@5@2@6@@(395 2487)@@
+2487@5@hd-cmp_u_c@3@1@3@6@@(203 2475)@@
+2475@5@hdn_bnp_c@3@1@4@6@@(2303)@@
+2283@5@np_frg_c@3@1@6@7@@(2115)@@
+3265@5@hd-cmp_u_c@3@5@2@7@@(2685 2871)@@
+2685@5@hd-aj_vmod-s_c@3@1@2@5@@(376 2228)@@(2598)
+2598@5@hd-aj_vmod_c@3@5@2@5@@(376 2244)@@
+376@5@v_n3s-bse_ilr@2@1@2@3@@(174)@@
+174@5@love_v1@1@1@2@3@@(131)@@
+2244@5@hd-cmp_u_c@3@1@3@5@@(203 2079)@@
+2079@5@hdn_bnp_c@3@1@4@5@@(385)@@
+3259@5@hd-cmp_u_c@3@5@2@7@@(2689 2885)@@
+2689@5@hd-aj_vmod-s_c@3@1@2@5@@(395 2228)@@(2603)
+2603@5@hd-aj_vmod_c@3@5@2@5@@(395 2244)@@
+2885@5@np_frg_c@3@1@5@7@@(2871)@@
+3258@5@hd-cmp_u_c@3@5@2@7@@(2689 2531)@@
+2531@5@vp_fin-frg_c@3@1@5@7@@(2282)@@
+3524@5@hd-aj_vmod-s_c@3@1@2@6@@(376 2500)@@(3578)
+3578@5@hd-aj_vmod_c@3@5@2@6@@(376 2487)@@
+5783@5@root_strict@4@1@0@7@@(5031)@@
+5031@5@sb-hd_mc_c@3@1@0@7@@(2171 4188)@@
+4188@5@hd-aj_int-unsl_c@3@1@2@7@@(2049 3011)@@
+2049@5@hd_optcmp_c@3@1@2@3@@(376)@@
+5784@5@root_strict@4@1@0@7@@(4955)@@
+4955@5@sb-hd_mc_c@3@1@0@7@@(2171 4243)@@
+4243@5@hd-cmp_u_c@3@1@2@7@@(377 2919)@@
+377@5@v_n3s-bse_ilr@2@1@2@3@@(175)@@
+175@5@love_v2@1@1@2@3@@(131)@@
+5785@5@root_strict@4@1@0@7@@(4903)@@
+4903@5@sb-hd_mc_c@3@1@0@7@@(2171 4325)@@
+4325@5@hd-aj_scp_c@3@1@2@7@@(2049 2918)@@
+5786@5@root_strict@4@1@0@7@@(4301)@@
+4301@5@hd-aj_scp_c@3@1@0@7@@(2831 2918)@@
+2831@5@sb-hd_mc_c@3@1@0@3@@(2171 2049)@@
+5787@5@root_inffrag@4@1@0@7@@(4169)@@
+4169@5@np-aj_rorp-frg_c@3@1@0@7@@(2434 3011)@@(4168)
+4168@5@np-aj_rorp-frg_c@3@5@0@7@@(2797 3011)@@
+2797@5@sp-hd_n_c@3@1@0@3@@(253 2187)@@
+2434@5@sp-hd_n_c@3@1@0@3@@(253 2320)@@
+118@5@token [ +FORM "Japanese" +FROM "4" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS proper_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<4:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Japanese" +TICK - ]@0@0@1@2@@@@
+124@5@token [ +FORM "Japanese" +FROM "4" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "JJ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<4:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_japanese/JJ_u_unknown_rel" +CARG "Japanese" +TICK - ]@0@0@1@2@@@@
+125@5@token [ +FORM "love" +FROM "13" +TO "17" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<13:17>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_love/NN_u_unknown_rel" +CARG "love" +TICK - ]@0@0@2@3@@@@
+126@5@token [ +FORM "drink" +FROM "21" +TO "26" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VB" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VB" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<21:26>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_drink/VB_u_unknown_rel" +CARG "drink" +TICK - ]@0@0@4@5@@@@
+127@5@token [ +FORM "green" +FROM "27" +TO "32" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "JJ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<27:32>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_green/JJ_u_unknown_rel" +CARG "green" +TICK - ]@0@0@5@6@@@@
+128@5@token [ +FORM "tea." +FROM "33" +TO "37" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<33:37>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_tea/NN_u_unknown_rel" +CARG "tea" +TICK - ]@0@0@6@7@@@@
+131@5@token [ +FORM "love" +FROM "13" +TO "17" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<13:17>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "love" +TICK + ]@0@0@2@3@@@@
+132@5@token [ +FORM "love" +FROM "13" +TO "17" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<13:17>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "love" +TICK bool ]@0@0@2@3@@@@
+133@5@token [ +FORM "to" +FROM "18" +TO "20" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "TO" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<18:20>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "to" +TICK + ]@0@0@3@4@@@@
+134@5@token [ +FORM "to" +FROM "18" +TO "20" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<18:20>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "to" +TICK bool ]@0@0@3@4@@@@
+135@5@token [ +FORM "drink" +FROM "21" +TO "26" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VB" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<21:26>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "drink" +TICK + ]@0@0@4@5@@@@
+136@5@token [ +FORM "drink" +FROM "21" +TO "26" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<21:26>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "drink" +TICK bool ]@0@0@4@5@@@@
+137@5@token [ +FORM "green" +FROM "27" +TO "32" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<27:32>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "green" +TICK + ]@0@0@5@6@@@@
+138@5@token [ +FORM "green" +FROM "27" +TO "32" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<27:32>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "green" +TICK bool ]@0@0@5@6@@@@
+139@5@token [ +FORM "tea." +FROM "33" +TO "37" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<33:37>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "tea" +TICK + ]@0@0@6@7@@@@
+140@5@token [ +FORM "tea." +FROM "33" +TO "37" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<33:37>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "tea" +TICK bool ]@0@0@6@7@@@@
+141@5@token [ +FORM "japanese" +FROM "4" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<4:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Japanese" +TICK + ]@0@0@1@2@@@@
+142@5@token [ +FORM "japanese" +FROM "4" +TO "12" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<4:12>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "Japanese" +TICK bool ]@0@0@1@2@@@@
+143@5@token [ +FORM "the" +FROM "0" +TO "3" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+lower +INITIAL + ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:3>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "The" +TICK + ]@0@0@0@1@@@@
+144@5@token [ +FORM "the" +FROM "0" +TO "3" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:3>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "The" +TICK bool ]@0@0@0@1@@@@
+4113@6@root_strict@4@1@0@11@@(4105)@@
+4105@6@sb-hd_mc_c@3@1@0@11@@(3616 3829)@@
+3616@6@sp-hd_n_c@3@1@0@3@@(378 3387)@@
+378@6@a_det@1@1@0@1@@(212)@@
+3387@6@aj-hdn_norm_c@3@1@1@3@@(260 519)@@
+260@6@dark_isect@1@1@1@2@@(192)@@
+519@6@n_sg_ilr@2@1@2@3@@(267)@@
+267@6@lantern_n1@1@1@2@3@@(194)@@
+3829@6@hd-aj_int-unsl_c@3@1@3@11@@(3695 3728)@@(3830)
+3830@6@hd-aj_int-unsl_c@3@5@3@11@@(3695 3714)@@
+3695@6@hd-cmp_u_c@3@1@3@7@@(276 3559)@@
+276@6@be_id_is@1@1@3@4@@(196)@@
+3559@6@sp-hd_n_c@3@1@4@7@@(304 3430)@@
+304@6@a_det@1@1@4@5@@(198)@@
+3430@6@n-hdn_cpd_c@3@1@5@7@@(315 543)@@
+315@6@candle_n1@1@1@5@6@@(200)@@
+543@6@n_sg_ilr@2@1@6@7@@(318)@@
+318@6@lantern_n1@1@1@6@7@@(202)@@
+3714@6@hd-cmp_u_c@3@1@7@11@@(321 3541)@@
+321@6@with_p@1@1@7@8@@(204)@@
+3541@6@sp-hd_n_c@3@1@8@11@@(340 3469)@@
+340@6@a_det@1@1@8@9@@(206)@@
+3469@6@aj-hdn_norm_c@3@1@9@11@@(574 576)@@
+574@6@v_j-nb-prp-tr_dlr@2@1@9@10@@(546)@@
+546@6@v_prp_olr@2@1@9@10@@(352)@@
+352@6@slide_v2@1@1@9@10@@(208)@@
+576@6@w_period_plr@2@1@10@11@@(553)@@
+553@6@n_sg_ilr@2@1@10@11@@(364)@@
+364@6@shutter_n1@1@1@10@11@@(210)@@
+3728@6@hd-cmp_u_c@3@1@7@11@@(321 3530)@@
+3530@6@sp-hd_n_c@3@1@8@11@@(340 3470)@@
+3470@6@n-hdn_cpd_c@3@1@9@11@@(3347 576)@@
+3347@6@hdn_optcmp_c@3@1@9@10@@(573)@@
+573@6@v_nger-pp_dlr@2@1@9@10@@(546)@@
+4114@6@root_strict@4@1@0@11@@(4054)@@
+4054@6@sb-hd_mc_c@3@1@0@11@@(3616 3939)@@
+3939@6@hd-cmp_u_c@3@1@3@11@@(276 3934)@@
+3934@6@sp-hd_n_c@3@1@4@11@@(304 3774)@@
+3774@6@hdn-aj_redrel_c@3@1@5@11@@(3430 3728)@@(3791)
+3791@6@hdn-aj_redrel_c@3@5@5@11@@(3430 3714)@@
+173@6@token [ +FORM "A" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS proper_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "A" +TICK - ]@0@0@0@1@@@@
+184@6@token [ +FORM "dark" +FROM "2" +TO "6" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "JJ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:6>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_dark/JJ_u_unknown_rel" +CARG "dark" +TICK - ]@0@0@1@2@@@@
+185@6@token [ +FORM "lantern" +FROM "7" +TO "14" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<7:14>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_lantern/NN_u_unknown_rel" +CARG "lantern" +TICK - ]@0@0@2@3@@@@
+186@6@token [ +FORM "is" +FROM "15" +TO "17" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBZ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<15:17>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_is/VBZ_u_unknown_rel" +CARG "is" +TICK - ]@0@0@3@4@@@@
+187@6@token [ +FORM "candle" +FROM "20" +TO "26" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:26>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_candle/NN_u_unknown_rel" +CARG "candle" +TICK - ]@0@0@5@6@@@@
+188@6@token [ +FORM "lantern" +FROM "27" +TO "34" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<27:34>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_lantern/NN_u_unknown_rel" +CARG "lantern" +TICK - ]@0@0@6@7@@@@
+189@6@token [ +FORM "sliding" +FROM "42" +TO "49" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "VBG" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "VBG" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<42:49>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_sliding/VBG_u_unknown_rel" +CARG "sliding" +TICK - ]@0@0@9@10@@@@
+190@6@token [ +FORM "shutter." +FROM "50" +TO "58" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "NN" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<50:58>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED "_shutter/NN_u_unknown_rel" +CARG "shutter" +TICK - ]@0@0@10@11@@@@
+192@6@token [ +FORM "dark" +FROM "2" +TO "6" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "JJ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:6>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "dark" +TICK + ]@0@0@1@2@@@@
+193@6@token [ +FORM "dark" +FROM "2" +TO "6" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<2:6>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "dark" +TICK bool ]@0@0@1@2@@@@
+194@6@token [ +FORM "lantern" +FROM "7" +TO "14" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<7:14>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "lantern" +TICK + ]@0@0@2@3@@@@
+195@6@token [ +FORM "lantern" +FROM "7" +TO "14" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<7:14>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "lantern" +TICK bool ]@0@0@2@3@@@@
+196@6@token [ +FORM "is" +FROM "15" +TO "17" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBZ" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<15:17>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK + ]@0@0@3@4@@@@
+197@6@token [ +FORM "is" +FROM "15" +TO "17" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<15:17>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "is" +TICK bool ]@0@0@3@4@@@@
+198@6@token [ +FORM "a" +FROM "18" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<18:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK + ]@0@0@4@5@@@@
+199@6@token [ +FORM "a" +FROM "18" +TO "19" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<18:19>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK bool ]@0@0@4@5@@@@
+200@6@token [ +FORM "candle" +FROM "20" +TO "26" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:26>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "candle" +TICK + ]@0@0@5@6@@@@
+201@6@token [ +FORM "candle" +FROM "20" +TO "26" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<20:26>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "candle" +TICK bool ]@0@0@5@6@@@@
+202@6@token [ +FORM "lantern" +FROM "27" +TO "34" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<27:34>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "lantern" +TICK + ]@0@0@6@7@@@@
+203@6@token [ +FORM "lantern" +FROM "27" +TO "34" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<27:34>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "lantern" +TICK bool ]@0@0@6@7@@@@
+204@6@token [ +FORM "with" +FROM "35" +TO "39" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "IN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<35:39>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "with" +TICK + ]@0@0@7@8@@@@
+205@6@token [ +FORM "with" +FROM "35" +TO "39" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<35:39>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "with" +TICK bool ]@0@0@7@8@@@@
+206@6@token [ +FORM "a" +FROM "40" +TO "41" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<40:41>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK + ]@0@0@8@9@@@@
+207@6@token [ +FORM "a" +FROM "40" +TO "41" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<40:41>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "a" +TICK bool ]@0@0@8@9@@@@
+208@6@token [ +FORM "sliding" +FROM "42" +TO "49" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "VBG" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<42:49>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "sliding" +TICK + ]@0@0@9@10@@@@
+209@6@token [ +FORM "sliding" +FROM "42" +TO "49" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<42:49>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "sliding" +TICK bool ]@0@0@9@10@@@@
+210@6@token [ +FORM "shutter." +FROM "50" +TO "58" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "NN" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE non_capitalized+lower +INITIAL - ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<50:58>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "shutter" +TICK + ]@0@0@10@11@@@@
+211@6@token [ +FORM "shutter." +FROM "50" +TO "58" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<50:58>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "shutter" +TICK bool ]@0@0@10@11@@@@
+212@6@token [ +FORM "a" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT null_tnt [ +TAGS *null* +PRBS *null* +MAIN tnt_main [ +TAG "DT" +PRB "1.0" ] ] +CLASS alphabetic [ +CASE capitalized+non_mixed +INITIAL + ] +TRAIT token_trait [ +UW - +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "A" +TICK + ]@0@0@0@1@@@@
+213@6@token [ +FORM "a" +FROM "0" +TO "1" +ID *diff-list* [ LIST *list* LAST *list* ] +TNT tnt [ +TAGS *cons* [ FIRST "GQ" REST *null* ] +PRBS *cons* [ FIRST "1.0" REST *null* ] +MAIN tnt_main [ +TAG string +PRB string ] ] +CLASS ital_ne +TRAIT token_trait [ +UW + +IT italics +LB bracket_null [ LIST *list* LAST *list* ] +RB bracket_null [ LIST *list* LAST *list* ] +LD bracket_null [ LIST *list* LAST *list* ] +RD bracket_null [ LIST *list* LAST *list* ] +HD token_head [ +TI "<0:1>" +LL ctype [ -CTYPE- string ] +TG string ] ] +PRED predsort +CARG "A" +TICK bool ]@0@0@0@1@@@@
