@@ -41,6 +41,8 @@ import unittest
 import logging
 
 from chirptext import header
+import chirptext.texttaglib as ttl
+from chirptext.texttaglib import TaggedSentence
 from coolisf import GrammarHub
 from coolisf.dao import CorpusDAOSQLite
 
@@ -98,6 +100,16 @@ class TestGrammarHub(unittest.TestCase):
             sent = db.get_sent(s.ID, ctx=ctx)
             self.assertIsNotNone(sent)
             self.assertTrue(len(sent))
+
+    def test_prep(self):
+        deko = self.ghub.preps['deko']
+        sent_ttl = deko.process('猫がすきです。').shallow
+        doc_ttl = ttl.TaggedDoc('~/tmp/', 'neko')
+        doc_ttl.sents.append(sent_ttl)
+        sent_ttl.ID = 1
+        doc_ttl.sent_map[sent_ttl] = sent_ttl
+        doc_ttl.write_ttl()
+        self.assertIsInstance(sent_ttl, TaggedSentence)
 
     def test_all_grammars(self):
         header("Verify available grammars (JACY/VRG/ERG)")

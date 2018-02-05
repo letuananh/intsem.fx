@@ -164,7 +164,7 @@ class TestRuleDB(unittest.TestCase):
                         rinfo = RuleInfo(lu.ID, r.ID, head.predstr)
                         self.rdb.ruleinfo.save(rinfo, ctx=ctx)
             # verification
-            tea_rules = self.rdb.find_rule('_tea_n_1', ctx=ctx)
+            tea_rules = self.rdb.find_rule('_tea_n_1', restricted=False, ctx=ctx)
             self.assertTrue(len(tea_rules))
             for rinfo in tea_rules:
                 self.assertTrue(rinfo.lid)

@@ -42,12 +42,14 @@ from chirptext.texttaglib import TagInfo, Concept
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 SPECIAL_CHARS = '''?!"'$-_&|.,;:'''
 # TODO: Move this to chirptext
 PREPS = ['aboard', 'about', 'above', 'across', 'after', 'against', 'along', 'amid', 'among', 'anti', 'around', 'as', 'at', 'before', 'behind', 'below', 'beneath', 'beside', 'besides', 'between', 'beyond', 'but', 'by', 'concerning', 'considering', 'despite', 'down', 'during', 'except', 'excepting', 'excluding', 'following', 'for', 'from', 'in', 'inside', 'into', 'like', 'minus', 'near', 'of', 'off', 'on', 'onto', 'opposite', 'outside', 'over', 'past', 'per', 'plus', 'regarding', 'round', 'save', 'since', 'than', 'through', 'to', 'toward', 'towards', 'under', 'underneath', 'unlike', 'until', 'up', 'upon', 'versus', 'via', 'with', 'within', 'without']
 PREPS_PLUS = PREPS + ['a']
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------
@@ -113,7 +115,7 @@ def match(concept, ep, sent_text):
             return True
         # match by ignoring the last part ...
         elif tagged_words == pred_bits[:-1]:
-            print(tagged_words, pred_bits)
+            getLogger().debug("Robust candidates: {} - {}".format(tagged_words, pred_bits))
             # TODO: mark this as ROBUST
             return True
         # no more to try ...

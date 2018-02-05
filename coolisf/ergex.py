@@ -287,7 +287,7 @@ def extract_mwe():
     mwe_found = []
     mwe_notfound = []
     for mwe in mwe_list:
-        logger.debug("Looking for [%s]" % (mwe[0],))
+        getLogger().debug("Looking for [%s]" % (mwe[0],))
         if mwe[0] in all_senses:
             candidates = all_senses[mwe[0]]
             mwe_found.append(',"%s"' % (mwe[1],) + ': [' + ', '.join(('"%s"' % (x.sid) for x in candidates)) + "] # " + mwe[0])

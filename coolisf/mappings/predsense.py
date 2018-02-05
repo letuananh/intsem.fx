@@ -199,6 +199,11 @@ class PredSense(object):
         if not pred:
             raise Exception("Predicate cannot be empty")
 
+        # ignore some predicates
+        if pred in ('named', 'a_q'):
+            # don't map anything
+            return SynsetCollection()
+
         lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
         pos = pred.pos
         # FIXME

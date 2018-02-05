@@ -46,7 +46,7 @@ from chirptext.texttaglib import TagInfo
 from coolisf import GrammarHub
 from coolisf.util import is_valid_name, sent2json
 from coolisf.model import Corpus, Document, Sentence, Reading
-from coolisf.model import DMRSLayout, Node, Link, Predicate, Pred, Triplet
+from coolisf.model import DMRSLayout, Node, Link, Predicate, Pred, Triplet, Synset, SenseTag
 
 
 # -------------------------------------------------------------------------------
@@ -60,6 +60,16 @@ def getLogger():
 # -------------------------------------------------------------------------------
 # TEST SCRIPTS
 # -------------------------------------------------------------------------------
+
+class TestModels(unittest.TestCase):
+
+    def test_sensetag_objects(self):
+        tag1 = SenseTag(Synset("00001740-n"), TagInfo.LELESK)
+        tag2 = SenseTag(Synset("00001740-n"), TagInfo.LELESK)
+        l = [tag1]
+        print(tag1 == tag2)
+        print(tag2 in l)
+
 
 class TestSentenceModel(unittest.TestCase):
 

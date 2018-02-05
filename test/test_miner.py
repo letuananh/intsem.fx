@@ -160,6 +160,11 @@ class TestMiningPred(unittest.TestCase):
                 print(lu)
                 # dump(lu)
 
+    def test_gold_rules(self):
+        s = ERG.parse('smash', extra_args=['-r', 'root_wn_v'])
+        for r in s:
+            print(r)
+
     def mark_noun_concepts(self):
         with self.db.ctx() as ctx:
             lus = self.db.find_lexunits(flag=LexUnit.PROCESSED, pos='n', ctx=ctx)

@@ -48,7 +48,7 @@ import logging
 
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper, Counter
-from chirptext.texttaglib import TagInfo
+from chirptext.texttaglib import TagInfo, TaggedDoc
 
 from coolisf.morph import Transformer
 from coolisf.dao import read_tsdb
@@ -133,10 +133,12 @@ def extract_tsdb(cli, args):
             for idx, sent in enumerate(doc):
                 print("Processing {} of {} sentences".format(idx, total))
                 transformer.apply(sent)
-                # perform WSD if required
-                if args.wsd:
-                    sent.tag_xml(method=args.wsd)
-                # break
+                if args.topk and int(args.topk) < idx:
+                    break
+        # perform WSD if required
+        if args.wsd:
+            for idx, sent in enumerate(doc):
+                sent.tag_xml(method=args.wsd)
                 if args.topk and int(args.topk) < idx:
                     break
         doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
@@ -213,6 +215,38 @@ def parse_bib(cli, args):
     c.summarise()
 
 
+def export_ttl(cli, args):
+    ''' Export ISF document to TTL '''
+    if not os.path.isfile(args.path):
+        raise Exception("ISF input file not found")
+    doc = Document.from_xml_str(FileHelper.read(args.path))
+    print("Found {} sentences".format(len(doc)))
+    if args.output:
+        out_path = os.path.dirname(args.output)
+        out_name = os.path.basename(args.output)
+    else:
+        out_path = 'data'
+        out_name = 'ttl_output'
+    ttl = TaggedDoc(out_path, out_name)
+    for sent in doc:
+        tsent = ttl.add_sent(sent.text, sent.ident)
+        if not len(sent):
+            continue
+        dmrs = sent[0].dmrs()  # only support the first reading for now
+        tags = dmrs.find_tags()
+        tags = dmrs.find_tags()
+        for nid, ss in tags.items():
+            node = dmrs.layout[nid]
+            synsets = {(s.ID, tuple(s.lemmas), m) for s, m in ss}
+            for synsetid, lemmas, method in synsets:
+                tsent.add_tag(synsetid, node.cfrom, node.cto, tagtype='WN')
+                if args.with_lemmas:
+                    tsent.add_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
+            print(sent.ident, node.cfrom, node.cto, synsets)
+    ttl.write_ttl()
+    pass
+
+
 def isf_config_logging(args):
     if args.quiet:
         logging.getLogger().setLevel(logging.CRITICAL)
@@ -267,6 +301,13 @@ def main():
     tsdb_task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
     tsdb_task.add_argument('-n', '--topk', help="Only enhance top k results (for debugging purpose)")
 
+    # ISF to TTL
+    task = app.add_task('ttl', func=export_ttl)
+    task.add_argument('path', help='Path to XML doc')
+    task.add_argument('-o', '--output', help='Path to output TTL doc')
+    task.add_argument('--with-lemmas', help='Add lemmas to sentences', action="store_true")
+
+    # Export to visko
     task = app.add_task('export', func=to_visko)
     task.add_argument('-f', '--file', help='MRS file')
     task.add_argument('biblioteca')

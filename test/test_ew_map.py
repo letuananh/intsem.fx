@@ -48,6 +48,7 @@ import logging
 
 from coolisf.ergex import read_erg_lex, find_mwe
 from coolisf.mappings import PredSense
+from coolisf.model import Predicate
 from coolisf import GrammarHub
 
 # ------------------------------------------------------------------------------
@@ -96,6 +97,12 @@ class TestMain(unittest.TestCase):
         ss = PredSense.search_sense({'above all'}, 'r')
         self.assertEqual({'00150671-r', '00158190-r'}, {s.ID for s in ss})
 
+    def test_special_preds(self):
+        self.assertFalse(PredSense.search_pred_string('a_q'))
+        self.assertFalse(PredSense.search_pred_string('named_rel'))
+        self.assertFalse(PredSense.search_pred(Predicate.from_string('named_rel').to_pred()))
+        self.assertFalse(PredSense.search_pred(Predicate.from_string('_a_q_rel').to_pred()))
+
     def test_known_concepts(self):
         ctx = PredSense.wn.ctx()
         # test verb
@@ -127,7 +134,7 @@ class TestMain(unittest.TestCase):
         self.assertTrue(synsets)
         preds = ["_above-mentioned_a_1_rel", "_allright_a_for_rel", "_abrasive_a_1_rel",
                  "_squeak_n_1_rel", "_abbreviation_n_1_rel", "_abandon_n_1_rel", "_bitter_a_1_rel",
-                 '"_abbreviate_v_1_rel"', '"_acrolect_n_1_rel"']
+                 '"_abbreviate_v_1_rel"', '"_acrolect_n_1_rel"', '_co-opt_v_1_rel']
         for p in preds:
             ss = PredSense.search_pred_string(p, ctx=ctx)
             getLogger().debug("{}: {}".format(p, ss))

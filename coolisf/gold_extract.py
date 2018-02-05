@@ -44,16 +44,12 @@ import gzip
 import logging
 from lxml import etree
 
-from fuzzywuzzy import fuzz
 
 from chirptext.leutile import FileHelper
-from chirptext.leutile import header
-from chirptext.leutile import Counter
-from chirptext.io import CSV
-from chirptext.texttaglib import TaggedDoc, TagInfo
+from chirptext.texttaglib import TaggedDoc
 
 from coolisf.dao import read_tsdb
-from coolisf.model import Document, Sentence
+from coolisf.model import Sentence
 from coolisf.lexsem import tag_gold
 
 
@@ -61,55 +57,69 @@ from coolisf.lexsem import tag_gold
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
 DATA_DIR = FileHelper.abspath('./data')
-GOLD_PROFILE = os.path.join(DATA_DIR, 'gold')
-GOLD_MRS_FILE = 'data/gold.out.txt'
-tagdoc = TaggedDoc(DATA_DIR, 'gold')
+GOLD_PATH = os.path.join(DATA_DIR, 'gold')
 OUTPUT_ISF = 'data/spec-isf.xml'
 
 MY_DIR = os.path.dirname(os.path.realpath(__file__))
 LICENSE_TEMPLATE_LOC = os.path.join(MY_DIR, 'CCBY30_template.txt')
 LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
 
+
+def getLogger():
+    return logging.getLogger(__name__)
+
+
 # -----------------------------------------------------------------------
 
+def match_sents(isf_doc, ttl_doc):
+    ''' Match TSDB profile sentences with TTL sentences '''
+    for isf_sent, ttl_sent in zip(isf_doc, ttl_doc):
+        if isf_sent.text != ttl_sent.text:
+            return None
+    # only import when everything could be matched
+    for isf_sent, ttl_sent in zip(isf_doc, ttl_doc):
+        isf_sent.shallow = ttl_sent
+    return isf_doc
 
-def get_mrs(s, default=''):
-    ''' Get top MRS in a sentense if available else return default value '''
-    return s[0].mrs().tostring(pretty_print=False) if len(s) else default
+
+def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=None, use_ttl_sid=True):
+    ''' Combine TSDB profile and TTL profile to create ISF document (shallow + deep)
+    This function return an instance of coolisf.model.Document
+    '''
+    tsdb_doc = read_tsdb(tsdb_path, name=name, title=title)
+    if ttl_path is None:
+        ttl_path = tsdb_path
+    ttl_doc = TaggedDoc.read_ttl(ttl_path)
+    isf_doc = match_sents(tsdb_doc, ttl_doc)
+    not_matched = []
+    for sent in isf_doc:
+        if use_ttl_sid:
+            sent.ident = sent.shallow.ID
+        for reading in sent:
+            if wsd_method:
+                sent.tag(method=wsd_method)
+            m, n = tag_gold(reading.dmrs(), sent.shallow, sent.text)
+            # getLogger().debug("Matched: {}".format(m))
+            if n:
+                not_matched.append(sent.ident)
+                sent.flag = Sentence.ERROR
+            # update XML
+            reading.dmrs().tag_xml(method=None, update_back=True)
+        sent.tag_xml()
+    if not_matched:
+        getLogger().warning("Not matched sentences: {}".format(not_matched))
+    return isf_doc
 
 
-def extract_tsdb_gold():
-    # read NTUMC
-    tagged_doc = TaggedDoc(DATA_DIR, 'gold').read()
-    # read Itsdb
-    doc = read_tsdb(GOLD_PROFILE)
+def read_gold_mrs():
+    ''' Read gold MRS only (without TTL) '''
+    return read_tsdb(GOLD_PATH, name="speckled", title="The Adventure of the Speckled Band")
 
-    header("Extracting gold data from itsdb profile at {}".format(GOLD_PROFILE))
 
-    # Compare NTUMC to ITSDB
-    c = Counter()
-    for idx, ntumc_sent in enumerate(tagged_doc):
-        tsdb_sent = doc[idx]
-        ratio = fuzz.ratio(tsdb_sent.text, ntumc_sent.text)
-        c.count("TOTAL")
-        if ratio < 95:
-            print("[%s] != [%s]" % (tsdb_sent.text, ntumc_sent.text))
-            c.count('MISMATCH')
-        else:
-            tsdb_sent.ident = ntumc_sent.ID
-            if ratio < 100:
-                c.count("FUZZMATCHED")
-            else:
-                c.count("MATCHED")
-    c.summarise()
-
-    # Write found sentences and parse results to a text file
-    rows = ({'ntuid': s.ident, 'tsdbid': s.ID, 'text': s.text, 'mrs': get_mrs(s)} for s in doc)
-    CSV.write_tsv(GOLD_MRS_FILE, rows, header=['ntuid', 'tsdbid', 'text', 'mrs'])
-    print("Gold profile has been extracted")
-    return doc
+def read_gold_sents(perform_wsd=False):
+    ''' Read gold sentences (TSDB+TTL) '''
+    return read_tsdb_ttl(GOLD_PATH, name="speckled", title="The Adventure of the Speckled Band")
 
 
 def build_root_node():
@@ -169,45 +179,10 @@ def build_root_node():
     return isf_node
 
 
-def read_gold_mrs():
-    # Generate INPUT_MRS file (gold.out.txt) from itsdb if needed
-    if not os.path.isfile(GOLD_MRS_FILE):
-        extract_tsdb_gold()
-    doc = Document(name="speckled", title="The Adventure of the Speckled Band")
-    for line in CSV.read(GOLD_MRS_FILE, dialect='excel-tab', header=True):
-        sent = doc.new(text=line['text'], ident=int(line['ntuid']))
-        mrs = line['mrs']
-        if mrs and len(mrs.strip()) > 0:
-            sent.add(mrs_str=mrs)
-    return doc
-
-
-def read_gold_sents(perform_wsd=False):
-    tagdoc.read()
-    filter_wrong_senses(tagdoc)
-    doc = read_gold_mrs()
-    not_matched = []
-    # sense tagging
-    for sent in doc:
-        if len(sent) == 0:
-            logger.warning("Empty sentence #{}: {}".format(sent.ident, sent.text))
-            continue
-        dmrs = sent[0].dmrs()
-        logger.info("Processing sentence #{}".format(sent))
-        sent.shallow = tagdoc.sent_map[str(sent.ident)]
-        m, n = tag_gold(dmrs, sent.shallow, sent.text)
-        if n:
-            not_matched.append(sent.ident)
-            sent.flag = Sentence.ERROR
-        if perform_wsd:
-            sent.tag(method=TagInfo.MFS)
-        sent.tag_xml()
-    logger.info("Not matched:", not_matched)
-    return doc
-
-
 def generate_gold_profile():
-    doc = read_gold_sents()
+    # doc = read_gold_sents()
+    print("Reading TSDB/TTL data")
+    doc = read_tsdb_ttl(GOLD_PATH)
     # Process data
     print("Creating XML file ...")
     # build root XML node for data file

@@ -53,6 +53,16 @@
             "handlers": ["console", "file_handler_verbose"],
             "propagate": "no"
         }
+        ,"coolisf.gold_extract": {
+            "level": "INFO",
+            "handlers": ["file_handler_verbose"],
+            "propagate": "no"
+        }
+        ,"coolisf.model": {
+            "level": "INFO",
+            "handlers": ["file_handler_verbose"],
+            "propagate": "no"
+        }
         ,"test": {
             "level": "INFO",
             "propagate": "no"

@@ -523,7 +523,16 @@ class TestMain(unittest.TestCase):
         s = self.ghub.ERG_ISF.parse("Ali Baba didn't drink green tea.")
         d = s[0].dmrs()
         d.tag(method='lelesk')
-        self.assertEqual(len(d.tags.keys()), 3)
+        self.assertEqual(len(d.tags.keys()), 2)
+
+    def test_transforming_special_preds(self):
+        s = self.ghub.ERG_ISF.parse("My name is Sherlock Holmes.")
+        s.tag_xml(method=TagInfo.LELESK, update_back=False)
+        s.tag_xml(method=TagInfo.MFS, update_back=False)
+        s.tag_xml(method=TagInfo.MFS, update_back=False)
+        print(s[0].dmrs().xml_str(pretty_print=True))
+        for k, v in s[0].dmrs().tags.items():
+            print(k, v)
 
     def test_parse_no(self):
         text = "I saw a girl with a big telescope which is nice."

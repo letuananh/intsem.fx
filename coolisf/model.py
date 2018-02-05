@@ -36,6 +36,7 @@ import json
 import gzip
 import codecs
 import logging
+import itertools
 # import threading
 from collections import defaultdict as dd
 from collections import namedtuple
@@ -548,6 +549,7 @@ class DMRS(object):
         # find tags in XML if available
         if self._raw is not None:
             self.find_tags()
+        self.tagged = set()
 
     @property
     def raw(self):
@@ -723,16 +725,26 @@ class DMRS(object):
             # end for
             # tag list is stored esp for JSON
             if tags:
-                self.tags.update(tags)
+                for k, new_tags in tags.items():
+                    for new_tag in new_tags:
+                        if new_tag not in self.tags[k]:
+                            self.tags[k].append(new_tag)
         return self.tags
 
     def tag_xml(self, method=TagInfo.MFS, update_back=False):
         ''' Generate an XML object with available tags
         (perform provided sense-tagging method if required) '''
         # Sense-tagging only if required
-        tags = self.tag(method) if not self.tags else self.tags
+        if method is None or method in self.tagged:
+            # 1 method will only be performed once
+            tags = self.tags
+        else:
+            tags = self.tag(method)
         root = self.xml()
         for node in root.findall('node'):
+            # remove previous tags
+            for child in itertools.chain(node.findall('sense'), node.findall('sensegold')):
+                node.remove(child)
             if int(node.get('nodeid')) in tags:
                 ntags = tags[int(node.get('nodeid'))]
                 for tag, tagtype in ntags:
@@ -764,7 +776,10 @@ class DMRS(object):
         synset = Synset(synsetid, lemma=lemma)
         if score:
             synset.tagcount = score
-        self.tags[nodeid].append(SenseTag(synset, method))
+        sensetag = SenseTag(synset, method)
+        if sensetag not in self.tags[nodeid]:
+            # getLogger().debug("Tagging {} with {} - current: {}".format(nodeid, sensetag, self.tags[nodeid]))
+            self.tags[nodeid].append(sensetag)
 
     def get_wsd_context(self):
         return (get_ep_lemma(p) for p in self.get_lexical_preds())
@@ -781,12 +796,16 @@ class DMRS(object):
         eps = self.get_lexical_preds()
         wsd = LeLeskWSD(dbcache=LeskCache())
         context = self.get_wsd_context()
+        ctx = PredSense.wn.ctx()  # use 1 context to search for preds
         for ep in eps:
             # taggable eps
             # TODO: Use POS for better sense-tagging?
             lemma = get_ep_lemma(ep)
-            getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
-            candidates = PredSense.search_pred_string(ep.pred.string) if ep.pred != "named" else None
+            # getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
+            candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
+            # getLogger().debug("{} - Candidates for {}: {}".format(method, ep.pred.string, candidates))
+            if not candidates:
+                continue
             if method == TagInfo.LELESK:
                 scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
             elif method == TagInfo.MFS:
@@ -798,6 +817,8 @@ class DMRS(object):
             else:
                 # What should be done here? no tagging at all?
                 pass
+        ctx.close()
+        self.tagged.add(method)
         return self.tags
 
     def edit(self):
@@ -1210,7 +1231,7 @@ class DMRSLayout(object):
         self._links = []
         self._node_map = {}
         self._top = None  # point to a Node object or None
-        self._tags = dd(list)  # map nodeid => a list of (SynsetID(sid, lemma), method)
+        self._tags = dd(set)  # map nodeid => a list of (SynsetID(sid, lemma), method)
         if data is not None:  # JSON data
             for node in data['nodes']:
                 nobj = Node.from_json(node)
@@ -1218,7 +1239,7 @@ class DMRSLayout(object):
                 if 'sense' in node:
                     sense = node['sense']
                     synset = Synset(sense['synsetid'], lemma=sense['lemma'])
-                    self._tags[nobj.nodeid].append((synset, TagInfo.OTHER))
+                    self._tags[nobj.nodeid].add((synset, TagInfo.OTHER))
                     # TODO: proper tagging method and score?
             for link in data['links']:
                 self.add_link(Link.from_json(link))
