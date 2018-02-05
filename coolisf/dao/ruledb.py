@@ -124,9 +124,11 @@ class LexRuleDB(CorpusDAOSQLite):
         ctx.ruleinfo.update((flag,), 'lid=? AND rid=?', (lid, rid), ('flag',))
 
     @with_ctx
-    def find_rule(self, predstr, flag=None, ctx=None):
+    def find_rule(self, predstr, flag=None, ctx=None, restricted=True):
         query = ['pred = ?']
         params = [predstr]
+        if restricted:
+            query.append('lid IN (SELECT lid FROM lexunit WHERE flag > 3)')
         if flag is not None:
             query.append('flag = ?')
             params.append(flag)
