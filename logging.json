@@ -39,7 +39,12 @@
 
     "loggers": {
         "__main__": {
-            "level": "DEBUG",
+            "level": "INFO",
+            "handlers": ["file_handler_verbose"],
+            "propagate": "no"
+        }
+        ,"coolisf.gold_extract": {
+            "level": "INFO",
             "handlers": ["file_handler_verbose"],
             "propagate": "no"
         }

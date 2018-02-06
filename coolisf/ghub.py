@@ -144,7 +144,7 @@ class GrammarHub:
         # make it JSON
         return sent2json(sent, txt, pc, tagger, grm)
 
-    def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False):
+    def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False, wsd=None, ctx=None):
         ''' Parse a sentence using ISF '''
         # validation
         if not txt:
@@ -154,7 +154,7 @@ class GrammarHub:
         sent = self[grm].parse(txt, parse_count=pc, ignore_cache=ignore_cache)
         if tagger:
             getLogger().debug("Sense-tagging sentence using {}".format(tagger))
-            sent.tag(method=tagger)
+            sent.tag(method=tagger, wsd=wsd, ctx=ctx)
         return sent
 
 

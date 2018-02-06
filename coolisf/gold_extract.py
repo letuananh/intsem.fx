@@ -47,11 +47,13 @@ from lxml import etree
 
 from chirptext.leutile import FileHelper
 from chirptext import texttaglib as ttl
+from lelesk import LeLeskWSD
+from lelesk import LeskCache  # WSDResources
 
 from coolisf.dao import read_tsdb
 from coolisf.model import Sentence
 from coolisf.lexsem import tag_gold
-
+from coolisf.mappings import PredSense
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
@@ -83,7 +85,7 @@ def match_sents(isf_doc, ttl_doc):
     return isf_doc
 
 
-def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=None, use_ttl_sid=True):
+def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=None, use_ttl_sid=True, wsd=None, ctx=None):
     ''' Combine TSDB profile and TTL profile to create ISF document (shallow + deep)
     This function return an instance of coolisf.model.Document
     '''
@@ -95,12 +97,14 @@ def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=No
     getLogger().debug("TTL doc {} contains {} sentence(s).".format(ttl_path, len(ttl_doc)))
     getLogger().debug("isf_doc size: {}".format(len(isf_doc)))
     not_matched = []
+    wsd = LeLeskWSD(dbcache=LeskCache())
+    ctx = PredSense.wn.ctx()
     for sent in isf_doc:
         if use_ttl_sid and sent.shallow and sent.shallow.ID:
             sent.ident = sent.shallow.ID
         for reading in sent:
             if wsd_method:
-                sent.tag(method=wsd_method)
+                sent.tag(method=wsd_method, wsd=wsd, ctx=ctx)
             if sent.shallow:
                 m, n = tag_gold(reading.dmrs(), sent.shallow, sent.text)
                 # getLogger().debug("Matched: {}".format(m))
@@ -108,7 +112,7 @@ def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=No
                     not_matched.append(sent.ident)
                     sent.flag = Sentence.ERROR
             # update XML
-            reading.dmrs().tag_xml(method=None, update_back=True)
+            reading.dmrs().tag_xml(method=None, update_back=True, wsd=wsd, ctx=ctx)
         sent.tag_xml()
     if not_matched:
         getLogger().warning("Not matched sentences: {}".format(not_matched))

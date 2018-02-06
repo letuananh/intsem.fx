@@ -316,14 +316,14 @@ class Sentence(object):
     def edit(self, key):
         return self[key].edit()
 
-    def tag(self, method=None):
+    def tag(self, method=None, **kwargs):
         for parse in self:
-            parse.dmrs().tag(method=method)
+            parse.dmrs().tag(method=method, **kwargs)
         return self
 
-    def tag_xml(self, method=None, update_back=True):
+    def tag_xml(self, method=None, update_back=True, **kwargs):
         for parse in self:
-            parse.dmrs().tag_xml(method=method, update_back=update_back)
+            parse.dmrs().tag_xml(method=method, update_back=update_back, **kwargs)
         return self
 
     def to_xml_node(self, doc_node=None, with_raw=True, with_shallow=True, with_dmrs=True, pretty_print=True):
@@ -731,7 +731,44 @@ class DMRS(object):
                             self.tags[k].append(new_tag)
         return self.tags
 
-    def tag_xml(self, method=ttl.Tag.MFS, update_back=False):
+    def tag(self, method=ttl.Tag.MFS, wsd=None, ctx=None):
+        ''' Sense tag this DMRS using a WSD method (by default is most-frequent sense)
+        and then return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
+        '''
+        if method not in (ttl.Tag.LELESK, ttl.Tag.MFS):
+            return {}  # no tag
+        if wsd is None:
+            wsd = LeLeskWSD(dbcache=LeskCache())
+            if ctx is None:
+                with PredSense.wn.ctx() as ctx:
+                    getLogger().warning("Creating a new WSD, this can be optimized further ...")
+                    return self.tag(method=method, wsd=wsd, ctx=ctx)
+        eps = self.get_lexical_preds()
+        context = self.get_wsd_context()
+        for ep in eps:
+            # taggable eps
+            # TODO: Use POS for better sense-tagging?
+            lemma = get_ep_lemma(ep)
+            # getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
+            candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
+            # getLogger().debug("{} - Candidates for {}: {}".format(method, ep.pred.string, candidates))
+            if not candidates:
+                continue
+            if method == ttl.Tag.LELESK:
+                scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
+            elif method == ttl.Tag.MFS:
+                scores = wsd.mfs_wsd(lemma, '', lemmatizing=False, synsets=candidates)
+            if scores:
+                # insert the top one
+                best = scores[0].candidate.synset
+                self.tag_node(ep.nodeid, best.synsetid, ep.pred.lemma, method)
+            else:
+                # What should be done here? no tagging at all?
+                pass
+        self.tagged.add(method)
+        return self.tags
+
+    def tag_xml(self, method=ttl.Tag.MFS, update_back=False, **kwargs):
         ''' Generate an XML object with available tags
         (perform provided sense-tagging method if required) '''
         # Sense-tagging only if required
@@ -739,7 +776,7 @@ class DMRS(object):
             # 1 method will only be performed once
             tags = self.tags
         else:
-            tags = self.tag(method)
+            tags = self.tag(method, **kwargs)
         root = self.xml()
         for node in root.findall('node'):
             # remove previous tags
@@ -786,40 +823,6 @@ class DMRS(object):
 
     def get_lexical_preds(self):
         return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or p.pred == "named")
-
-    def tag(self, method=ttl.Tag.MFS):
-        ''' Sense tag this DMRS using a WSD method (by default is most-frequent sense)
-        and then return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
-        '''
-        if method not in (ttl.Tag.LELESK, ttl.Tag.MFS):
-            return {}  # no tag
-        eps = self.get_lexical_preds()
-        wsd = LeLeskWSD(dbcache=LeskCache())
-        context = self.get_wsd_context()
-        ctx = PredSense.wn.ctx()  # use 1 context to search for preds
-        for ep in eps:
-            # taggable eps
-            # TODO: Use POS for better sense-tagging?
-            lemma = get_ep_lemma(ep)
-            # getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
-            candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
-            # getLogger().debug("{} - Candidates for {}: {}".format(method, ep.pred.string, candidates))
-            if not candidates:
-                continue
-            if method == ttl.Tag.LELESK:
-                scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
-            elif method == ttl.Tag.MFS:
-                scores = wsd.mfs_wsd(lemma, '', lemmatizing=False, synsets=candidates)
-            if scores:
-                # insert the top one
-                best = scores[0].candidate.synset
-                self.tag_node(ep.nodeid, best.synsetid, ep.pred.lemma, method)
-            else:
-                # What should be done here? no tagging at all?
-                pass
-        ctx.close()
-        self.tagged.add(method)
-        return self.tags
 
     def edit(self):
         return DMRSLayout(self.json(), self)

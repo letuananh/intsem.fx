@@ -49,6 +49,8 @@ import logging
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper, Counter
 from chirptext import texttaglib as ttl
+from lelesk import LeLeskWSD
+from lelesk import LeskCache  # WSDResources
 
 from coolisf.morph import Transformer
 from coolisf.ghub import GrammarHub
@@ -60,6 +62,8 @@ from coolisf.gold_extract import export_to_visko
 from coolisf.gold_extract import read_gold_sents
 from coolisf.model import Document
 from coolisf.dao.textcorpus import RawCollection
+from coolisf.mappings import PredSense
+
 
 ########################################################################
 
@@ -114,8 +118,10 @@ def parse_isf(cli, args):
     report = TextReport(args.outfile)
     ghub = GrammarHub()
     lines = FileHelper.read(args.infile).splitlines()
+    wsd = LeLeskWSD(dbcache=LeskCache())
+    ctx = PredSense.wn.ctx()
     for sent in ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.n, ignore_cache=args.nocache):
-        sent.tag_xml(method=args.wsd)
+        sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
         report.writeline(sent.to_xml_str(pretty_print=not args.compact))
         report.writeline("\n\n")
 
@@ -132,7 +138,7 @@ def extract_tsdb(cli, args):
         print("Found sentences: {}".format(len(doc)))
         print("With shallow: {}".format(len(list(s for s in doc if s.shallow))))
         if args.isf:
-            # perform ISF transformation
+            print("performing ISF transformation")
             transformer = Transformer()
             total = len(doc)
             for idx, sent in enumerate(doc):
@@ -142,10 +148,16 @@ def extract_tsdb(cli, args):
                     break
         # perform WSD if required
         if args.wsd:
+            print("Performing WDS ...")
+            wsd = LeLeskWSD(dbcache=LeskCache())
+            ctx = PredSense.wn.ctx()
             for idx, sent in enumerate(doc):
-                sent.tag_xml(method=args.wsd)
+                print("processed {} of {} sentences".format(idx + 1, len(doc)))
+                sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
                 if args.topk and int(args.topk) < idx:
                     break
+            ctx.close()
+        print("Generating output ...")
         doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
         if args.output:
             if args.output.endswith('.gz'):
@@ -162,7 +174,9 @@ def parse_text(cli, args):
     ''' Analyse a text '''
     ghub = GrammarHub()
     text = args.input
-    result = ghub.parse(text, args.grammar, args.n, args.wsd, args.nocache)
+    wsd = LeLeskWSD(dbcache=LeskCache())
+    ctx = PredSense.wn.ctx()
+    result = ghub.parse(text, args.grammar, args.n, args.wsd, args.nocache, wsd=wsd, ctx=ctx)
     if result is not None and len(result) > 0:
         report = TextReport(args.output)
         if args.format == OUTPUT_DMRS:
