@@ -46,7 +46,7 @@ from lxml import etree
 
 
 from chirptext.leutile import FileHelper
-from chirptext.texttaglib import TaggedDoc
+from chirptext import texttaglib as ttl
 
 from coolisf.dao import read_tsdb
 from coolisf.model import Sentence
@@ -90,20 +90,23 @@ def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=No
     tsdb_doc = read_tsdb(tsdb_path, name=name, title=title)
     if ttl_path is None:
         ttl_path = tsdb_path
-    ttl_doc = TaggedDoc.read_ttl(ttl_path)
+    ttl_doc = ttl.Document.read_ttl(ttl_path)
     isf_doc = match_sents(tsdb_doc, ttl_doc)
+    getLogger().debug("TTL doc {} contains {} sentence(s).".format(ttl_path, len(ttl_doc)))
+    getLogger().debug("isf_doc size: {}".format(len(isf_doc)))
     not_matched = []
     for sent in isf_doc:
-        if use_ttl_sid:
+        if use_ttl_sid and sent.shallow and sent.shallow.ID:
             sent.ident = sent.shallow.ID
         for reading in sent:
             if wsd_method:
                 sent.tag(method=wsd_method)
-            m, n = tag_gold(reading.dmrs(), sent.shallow, sent.text)
-            # getLogger().debug("Matched: {}".format(m))
-            if n:
-                not_matched.append(sent.ident)
-                sent.flag = Sentence.ERROR
+            if sent.shallow:
+                m, n = tag_gold(reading.dmrs(), sent.shallow, sent.text)
+                # getLogger().debug("Matched: {}".format(m))
+                if n:
+                    not_matched.append(sent.ident)
+                    sent.flag = Sentence.ERROR
             # update XML
             reading.dmrs().tag_xml(method=None, update_back=True)
         sent.tag_xml()
@@ -217,7 +220,7 @@ def filter_wrong_senses(doc):
             if c.tag in GOLD_WRONG and int(sent.ID) in GOLD_WRONG[c.tag]:
                 to_remove.append(c)
         for c in to_remove:
-            sent.concept_map.pop(c.cid)
+            sent.pop_concept(c.ID)
 
 
 def export_to_visko(sents, doc_path, pretty_print=True):

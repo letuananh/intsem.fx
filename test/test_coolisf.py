@@ -45,7 +45,7 @@ import logging
 from collections import defaultdict as dd
 
 from chirptext import FileHelper, header
-from chirptext.texttaglib import TagInfo
+from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD, LeskCache
 
 from yawlib import YLConfig, WordnetSQL as WSQL
@@ -527,9 +527,9 @@ class TestMain(unittest.TestCase):
 
     def test_transforming_special_preds(self):
         s = self.ghub.ERG_ISF.parse("My name is Sherlock Holmes.")
-        s.tag_xml(method=TagInfo.LELESK, update_back=False)
-        s.tag_xml(method=TagInfo.MFS, update_back=False)
-        s.tag_xml(method=TagInfo.MFS, update_back=False)
+        s.tag_xml(method=ttl.Tag.LELESK, update_back=False)
+        s.tag_xml(method=ttl.Tag.MFS, update_back=False)
+        s.tag_xml(method=ttl.Tag.MFS, update_back=False)
         print(s[0].dmrs().xml_str(pretty_print=True))
         for k, v in s[0].dmrs().tags.items():
             print(k, v)
@@ -590,7 +590,7 @@ class TestMain(unittest.TestCase):
 
     def test_preserve_xml_tag_in_json(self):
         sent = self.ERG.parse('I like hot dog.')
-        sent.tag(TagInfo.MFS)
+        sent.tag(ttl.Tag.MFS)
         d = sent[0].dmrs()
         self.assertIsNotNone(d.json_str())
         self.assertEqual(len(d.tags), 3)

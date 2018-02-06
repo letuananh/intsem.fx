@@ -36,7 +36,7 @@ import os.path
 import logging
 
 from puchikarui import Schema, with_ctx
-from chirptext.texttaglib import TagInfo
+from chirptext import texttaglib as ttl
 
 from coolisf.util import is_valid_name
 from coolisf.model import Corpus, Document, Sentence, Reading
@@ -305,7 +305,7 @@ class CorpusDAOSQLite(RichKopasu):
                 tags = dmrs.tags[node.nodeid]
                 tag = tags[0]
                 for t in tags[1:]:
-                    if t.method == TagInfo.GOLD:
+                    if t.method == ttl.Tag.GOLD:
                         tag = t
                         break
                 node.synsetid = tag.synset.ID.to_canonical()
@@ -356,7 +356,7 @@ class CorpusDAOSQLite(RichKopasu):
                 sense.lemma = a_node.rplemma if a_node.rplemma else ''  # this also?
                 sense.pos = a_node.synsetid[-1]  # Do we really need this?
                 a_node.sense = sense
-                a_dmrs.tag_node(a_node.nodeid, sense.synsetid, sense.lemma, TagInfo.DEFAULT, sense.score)
+                a_dmrs.tag_node(a_node.nodeid, sense.synsetid, sense.lemma, ttl.Tag.DEFAULT, sense.score)
             a_dmrs.layout.add_node(a_node)
             # next node ...
         # retrieve all links

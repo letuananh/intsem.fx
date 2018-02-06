@@ -67,10 +67,10 @@ class TestMain(unittest.TestCase):
         self.assertEqual(words, ['Some', 'dogs', 'barked.'])
         self.assertEqual(lemmas, ['Some', 'dogs', 'barked.'])
         self.assertEqual(tags, [('Some', 'n'), ('dogs', 'n'), ('barked.', 'n')])
-        twords = [t.label for t in tsent]
+        twords = [t.text for t in tsent]
         self.assertEqual(twords, ['Some', 'dogs', 'barked.'])
         for t in tsent:
-            self.assertEqual(t.label, txt[t.cfrom:t.cto])
+            self.assertEqual(t.text, txt[t.cfrom:t.cto])
 
     def test_eng(self):
         a = EnglishAnalyser()
@@ -82,10 +82,10 @@ class TestMain(unittest.TestCase):
         self.assertEqual(words, ['Some', 'dogs', 'barked', '.'])
         self.assertEqual(lemmas, ['Some', 'dog', 'bark', '.'])
         self.assertEqual(tags, [('Some', 'DT'), ('dogs', 'NNS'), ('barked', 'VBD'), ('.', '.')])
-        twords = [t.label for t in tsent]
+        twords = [t.text for t in tsent]
         self.assertEqual(twords, ['Some', 'dogs', 'barked', '.'])
         for tk, lm, tg in zip(tsent, lemmas, tags):
-            self.assertEqual(tk.label, txt[tk.cfrom:tk.cto])
+            self.assertEqual(tk.text, txt[tk.cfrom:tk.cto])
             self.assertEqual(tk.lemma, lm)
             self.assertEqual(tk.pos, tg[1])
 
@@ -100,7 +100,7 @@ class TestMain(unittest.TestCase):
             scores = l.lelesk_wsd(w.lemma, tsent.text, context=context)
             if scores:
                 # take the best one
-                tsent.add_concept(cid, w.lemma, scores[0].candidate.synset.ID, [w])
+                tsent.new_concept(scores[0].candidate.synset.ID, clemma=w.lemma, ID=cid, tokens=[w])
                 cid += 1
         tags = {c.tag for c in tsent.concepts}
         self.assertEqual(tags, {'07376731-n', '02084071-n'})
@@ -115,12 +115,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(words, ['猫', 'が', '好き', 'です', '。'])
         self.assertEqual(lemmas, ['ねこ', 'が', 'すき', 'です', '。'])
         self.assertEqual(tags, [('猫', '名詞-一般'), ('が', '助詞-格助詞-一般'), ('好き', '名詞-形容動詞語幹'), ('です', '助動詞'), ('。', '記号-句点'), ('EOS', '')])
-        twords = [t.label for t in tsent]
+        twords = [t.text for t in tsent]
         self.assertEqual(twords, ['猫', 'が', '好き', 'です', '。'])
-        for tk, lm, tg in zip(tsent, lemmas, tags):
-            self.assertEqual(tk.label, txt[tk.cfrom:tk.cto])
-            self.assertEqual(tk.lemma, lm)
-            self.assertEqual(tk.pos, tg[1])
 
 
 # -------------------------------------------------------------------------------

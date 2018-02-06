@@ -53,7 +53,7 @@ from delphin.mrs.components import normalize_pred_string
 
 from chirptext.anhxa import update_obj
 from chirptext.leutile import StringTool, header
-from chirptext.texttaglib import TagInfo, TaggedSentence, Token
+from chirptext import texttaglib as ttl
 from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
@@ -224,18 +224,18 @@ class Sentence(object):
         elif not self.words:
             return None
         else:
-            tsent = TaggedSentence(self.text)
+            tsent = ttl.Sentence(self.text)
             for word in self.words:
-                tk = tsent.add_token(word.word, word.cfrom, word.cto)
+                tk = tsent.new_token(word.word, word.cfrom, word.cto)
                 if word.lemma:
-                    tk.tag(word.lemma, tagtype=Token.LEMMA)
+                    tk.lemma = word.lemma
                 if word.pos:
-                    tk.tag(word.pos, tagtype=Token.POS)
+                    tk.pos = word.pos
                 if word.comment:
-                    tk.tag(word.comment, tagtype=Token.COMMENT)
+                    tk.comment = word.comment
             for concept in self.concepts:
-                wids = [self.words.index(w) for w in concept.words]
-                c = tsent.tag(concept.clemma, concept.tag, *wids)
+                token_ids = [self.words.index(w) for w in concept.words]
+                c = tsent.new_concept(concept.tag, concept.clemma, tokens=token_ids)
                 if concept.flag:
                     c.flag = concept.flag
                 if concept.comment:
@@ -246,12 +246,12 @@ class Sentence(object):
 
     @shallow.setter
     def shallow(self, tagged_sent):
-        ''' Import a chirptext.texttaglib.TaggedSentence as human annotations '''
+        ''' Import a TTL sentence as human annotations '''
         self._shallow = tagged_sent
         # add words
         word_map = {}
         for idx, w in enumerate(tagged_sent):
-            wobj = Word(widx=idx, word=w.label, lemma=w.lemma, pos=w.pos, cfrom=w.cfrom, cto=w.cto, sent=self)
+            wobj = Word(widx=idx, word=w.text, lemma=w.lemma, pos=w.pos, cfrom=w.cfrom, cto=w.cto, sent=self)
             if w.comment:
                 wobj.comment = w.comment
             word_map[w] = wobj
@@ -263,9 +263,9 @@ class Sentence(object):
             cobj.flag = c.flag if c.flag else ''
             self.concepts.append(cobj)
             # add cwlinks
-            for w in c.words:
-                wobj = word_map[w]
-                cobj.words.append(wobj)
+            for t in c.tokens:
+                tobj = word_map[t]
+                cobj.words.append(tobj)
 
     def is_gold(self):
         return self.flag == Sentence.GOLD
@@ -383,7 +383,7 @@ class Sentence(object):
             sentence.comment = comment_tag.text
         shallow_tag = sent_node.find('shallow')
         if shallow_tag is not None and shallow_tag.text:
-            shallow = TaggedSentence.from_json(json.loads(shallow_tag.text))
+            shallow = ttl.Sentence.from_json(json.loads(shallow_tag.text))
             sentence.shallow = shallow  # import tags
             for c in shallow.concepts:
                 if c.flag == 'E' and sentence.flag is None:
@@ -639,13 +639,13 @@ class DMRS(object):
         # sense-tagging if possible
         # JSON will be tagged with mfs by default
         # [2017-07-26] Don't tag JSON by default
-        tags = self.tags if self.tags else self.tag(method=TagInfo.DEFAULT)
+        tags = self.tags if self.tags else self.tag(method=ttl.Tag.DEFAULT)
         for node in j['nodes']:
             nid = node['nodeid']
             if nid in tags and len(tags[nid]) > 0:
                 node['senses'] = []
                 # sort by WSD method
-                tags[nid].sort(key=lambda x: 1 if x[1] == TagInfo.GOLD else 10 if x[1] == TagInfo.LELESK else 50 if TagInfo.MFS else 100)
+                tags[nid].sort(key=lambda x: 1 if x[1] == ttl.Tag.GOLD else 10 if x[1] == ttl.Tag.LELESK else 50 if ttl.Tag.MFS else 100)
                 for tag, tagtype in tags[nid]:
                     node['senses'].append({'synsetid': str(tag.synsetid), 'lemma': tag.lemma, 'type': tagtype})
         # These are for visko
@@ -714,13 +714,13 @@ class DMRS(object):
                 sg = n.find('sensegold')
                 if sg is not None:
                     sense_nodes.append(sg)
-                    sg.attrib['method'] = TagInfo.GOLD
+                    sg.attrib['method'] = ttl.Tag.GOLD
                 for s in sense_nodes:
                     nodeid = int(n.attrib['nodeid'])
                     sid = s.attrib['synsetid']
                     lemma = s.attrib['lemma']
                     score = s.attrib['score'] if 'score' in s.attrib else None
-                    method = s.attrib['method'] if 'method' in s.attrib else TagInfo.ISF
+                    method = s.attrib['method'] if 'method' in s.attrib else ttl.Tag.ISF
                     self.tag_node(nodeid, sid, lemma, method, score=score)
             # end for
             # tag list is stored esp for JSON
@@ -731,7 +731,7 @@ class DMRS(object):
                             self.tags[k].append(new_tag)
         return self.tags
 
-    def tag_xml(self, method=TagInfo.MFS, update_back=False):
+    def tag_xml(self, method=ttl.Tag.MFS, update_back=False):
         ''' Generate an XML object with available tags
         (perform provided sense-tagging method if required) '''
         # Sense-tagging only if required
@@ -748,7 +748,7 @@ class DMRS(object):
             if int(node.get('nodeid')) in tags:
                 ntags = tags[int(node.get('nodeid'))]
                 for tag, tagtype in ntags:
-                    if tagtype == TagInfo.GOLD:
+                    if tagtype == ttl.Tag.GOLD:
                         gold_node = etree.SubElement(node, 'sensegold')
                         gold_node.set('synsetid', str(tag.synsetid))
                         gold_node.set('lemma', tag.lemma)
@@ -787,11 +787,11 @@ class DMRS(object):
     def get_lexical_preds(self):
         return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or p.pred == "named")
 
-    def tag(self, method=TagInfo.MFS):
+    def tag(self, method=ttl.Tag.MFS):
         ''' Sense tag this DMRS using a WSD method (by default is most-frequent sense)
         and then return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
         '''
-        if method not in (TagInfo.LELESK, TagInfo.MFS):
+        if method not in (ttl.Tag.LELESK, ttl.Tag.MFS):
             return {}  # no tag
         eps = self.get_lexical_preds()
         wsd = LeLeskWSD(dbcache=LeskCache())
@@ -806,9 +806,9 @@ class DMRS(object):
             # getLogger().debug("{} - Candidates for {}: {}".format(method, ep.pred.string, candidates))
             if not candidates:
                 continue
-            if method == TagInfo.LELESK:
+            if method == ttl.Tag.LELESK:
                 scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
-            elif method == TagInfo.MFS:
+            elif method == ttl.Tag.MFS:
                 scores = wsd.mfs_wsd(lemma, '', lemmatizing=False, synsets=candidates)
             if scores:
                 # insert the top one
@@ -1239,7 +1239,7 @@ class DMRSLayout(object):
                 if 'sense' in node:
                     sense = node['sense']
                     synset = Synset(sense['synsetid'], lemma=sense['lemma'])
-                    self._tags[nobj.nodeid].add((synset, TagInfo.OTHER))
+                    self._tags[nobj.nodeid].add((synset, ttl.Tag.OTHER))
                     # TODO: proper tagging method and score?
             for link in data['links']:
                 self.add_link(Link.from_json(link))

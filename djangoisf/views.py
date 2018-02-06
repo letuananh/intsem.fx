@@ -50,7 +50,7 @@ import logging
 import django
 from django.http import HttpResponse, Http404
 
-from chirptext.texttaglib import TagInfo
+from chirptext import texttaglib as ttl
 import coolisf
 from coolisf import GrammarHub
 from coolisf.model import Reading
@@ -62,7 +62,7 @@ from coolisf.model import Reading
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
-TAGGERS = {TagInfo.LELESK: "LeLesk", TagInfo.MFS: "MFS", TagInfo.DEFAULT: "None"}
+TAGGERS = {ttl.Tag.LELESK: "LeLesk", ttl.Tag.MFS: "MFS", ttl.Tag.DEFAULT: "None"}
 ghub = GrammarHub()
 
 

@@ -64,7 +64,7 @@ class PrepDeko(Processor):
     def process(self, sent):
         if isinstance(sent, Sentence):
             sent.shallow = self.parser.analyse(sent.text)
-            sent.text = ' '.join(t.label for t in sent.shallow.tokens)
+            sent.text = ' '.join(t.text for t in sent.shallow.tokens)
             return sent
         else:
             return self.process(Sentence(sent))

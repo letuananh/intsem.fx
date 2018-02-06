@@ -45,7 +45,7 @@ References:
 import unittest
 import logging
 
-from chirptext.texttaglib import TagInfo
+from chirptext import texttaglib as ttl
 from coolisf import GrammarHub
 
 
@@ -66,7 +66,7 @@ class TestLexsem(unittest.TestCase):
     ghub = GrammarHub()
 
     def test_wsd(self):
-        s = self.ghub.parse("I give a book to him.", "ERG_ISF", tagger=TagInfo.MFS, ignore_cache=True)
+        s = self.ghub.parse("I give a book to him.", "ERG_ISF", tagger=ttl.Tag.MFS, ignore_cache=True)
         getLogger().debug(s)
         self.assertTrue(s)
         self.assertTrue(len(s))

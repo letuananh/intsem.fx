@@ -42,8 +42,8 @@ import logging
 
 from chirptext import header
 import chirptext.texttaglib as ttl
-from chirptext.texttaglib import TaggedSentence
 from coolisf import GrammarHub
+from coolisf.model import Document
 from coolisf.dao import CorpusDAOSQLite
 
 
@@ -101,15 +101,27 @@ class TestGrammarHub(unittest.TestCase):
             self.assertIsNotNone(sent)
             self.assertTrue(len(sent))
 
-    def test_prep(self):
+    def test_prep_jp(self):
         deko = self.ghub.preps['deko']
         sent_ttl = deko.process('猫がすきです。').shallow
-        doc_ttl = ttl.TaggedDoc('~/tmp/', 'neko')
-        doc_ttl.sents.append(sent_ttl)
+        doc_ttl = ttl.Document('neko', '~/tmp/')
         sent_ttl.ID = 1
-        doc_ttl.sent_map[sent_ttl] = sent_ttl
+        doc_ttl.add_sent(sent_ttl)
         doc_ttl.write_ttl()
-        self.assertIsInstance(sent_ttl, TaggedSentence)
+        self.assertIsInstance(sent_ttl, ttl.Sentence)
+
+    def test_prep_en(self):
+        np = self.ghub.preps['nltk']
+        doc = Document()
+        doc_ttl = ttl.Document('fun_nltk', 'data')
+        with open('data/tsdb/skeletons/fun.txt') as infile:
+            for idx, l in enumerate(infile):
+                s = doc.new(l, str(idx + 1))
+                print(np.process(s).shallow.to_json())
+                sent_ttl = s.shallow
+                sent_ttl.ID = idx
+                doc_ttl.add_sent(sent_ttl)
+        print(doc[0].shallow.to_json())
 
     def test_all_grammars(self):
         header("Verify available grammars (JACY/VRG/ERG)")

@@ -36,7 +36,7 @@ import logging
 
 from chirptext import TextReport
 from chirptext.cli import CLIApp, setup_logging
-from chirptext.texttaglib import TaggedDoc
+from chirptext import texttaglib as ttl
 
 
 # ------------------------------------------------------------------------------
@@ -55,9 +55,7 @@ def getLogger():
 # ------------------------------------------------------------------------------
 
 def read_ttl(ttl_path):
-    doc_path = os.path.dirname(ttl_path)
-    doc_name = os.path.basename(ttl_path)
-    return TaggedDoc(doc_path, doc_name).read()
+    ttl.Document.read_ttl(ttl_path)
 
 
 def prepare_tags(doc):

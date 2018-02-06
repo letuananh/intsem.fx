@@ -35,7 +35,7 @@ import logging
 
 from delphin.mrs.components import Pred
 
-from chirptext.texttaglib import TagInfo, Concept
+from chirptext import texttaglib as ttl
 
 
 # -------------------------------------------------------------------------------
@@ -80,33 +80,33 @@ def fix_tokenization(ep, sent_text=None):
 def match(concept, ep, sent_text):
     ''' Match concept (idv/MWE) with preds '''
     cfrom, cto, surface = fix_tokenization(ep, sent_text)
-    if len(concept.words) == 1:
+    if len(concept.tokens) == 1:
         pred_bits = list(ep.pred.lemma.split('+'))
-        w0 = concept.words[0]
+        w0 = concept.tokens[0]
         if w0.cfrom == cfrom or w0.cfrom == ep.cfrom:
             if w0.cto == cto or w0.cto == ep.cto:
                 return True
-            elif ep.pred.lemma == w0.label or surface == w0.label:
+            elif ep.pred.lemma == w0.text or surface == w0.text:
                 return True
-            elif len(pred_bits) == 2 and pred_bits[-1] in PREPS_PLUS and pred_bits[0] == w0.label:
+            elif len(pred_bits) == 2 and pred_bits[-1] in PREPS_PLUS and pred_bits[0] == w0.text:
                 return True
-    elif len(concept.words) > 1:
+    elif len(concept.tokens) > 1:
         # MWE
-        tagged_words = tuple(w.label for w in concept.words)
+        tagged_words = tuple(w.text for w in concept.tokens)
         pred_bits = list(ep.pred.lemma.split('+'))
         # try to match using min-cfrom and max-cto first
-        min_cfrom = concept.words[0].cfrom
-        max_cto = concept.words[0].cto
-        for w in concept.words[1:]:
+        min_cfrom = concept.tokens[0].cfrom
+        max_cto = concept.tokens[0].cto
+        for w in concept.tokens[1:]:
             min_cfrom = min(min_cfrom, w.cfrom)
             max_cto = max(max_cto, w.cto)
             if cfrom == min_cfrom and cto == max_cto:
                 return True
         # match by first word and lemma?
-        if concept.words[0].cfrom == cfrom and concept.words[0].cto == cto and surface == concept.words[0].label:
+        if concept.tokens[0].cfrom == cfrom and concept.tokens[0].cto == cto and surface == concept.tokens[0].text:
             return True
-        # match by pred.lemma and concept.words
-        tagged_words = list(w.label for w in concept.words)
+        # match by pred.lemma and concept.tokens
+        tagged_words = list(w.text for w in concept.tokens)
         pred_bits = list(ep.pred.lemma.split('+'))
         if tagged_words == pred_bits:
             return True
@@ -151,27 +151,26 @@ def taggable_eps(eps):
 
 def filter_small_senses(tagged):
     ''' When a word is tagged with a MWE sense and an individual sense, ignore the individual one
-    tagged is an instance of TaggedSentence
+    tagged is an instance of ttl.Sentence
     '''
-    to_be_removed = []
-    msw = tagged.msw
-    wcl = tagged.wclinks
+    to_be_removed = set()
+    msw = tagged.msw()
+    wcl = tagged.tcmap()
     for w in msw:
         maxed_c = wcl[w][0]
-        ln = len(wcl[w][0].words)
+        ln = len(wcl[w][0].tokens)
         for c in wcl[w][1:]:
-            if len(c.words) > ln:
-                to_be_removed.append(maxed_c.cid)
+            if len(c.tokens) > ln:
+                to_be_removed.add(maxed_c.ID)
                 # new max
                 maxed_c = c
-                ln = len(c.words)
-            elif len(c.words) < ln:
+                ln = len(c.tokens)
+            elif len(c.tokens) < ln:
                 # remove this concept instead
-                to_be_removed.append(c.cid)
+                to_be_removed.add(c.ID)
     # remove concepts
     for cid in to_be_removed:
-        if cid in tagged.concept_map:
-            tagged.concept_map.pop(cid)
+        tagged.pop_concept(cid)
 
 
 def import_shallow(isf_sent, mode=Lexsem.ROBUST):
@@ -203,12 +202,12 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
             m = match(c, ep, sent_text)
             if m:
                 matched_preds.append((c, ep.nodeid, ep.pred))
-                dmrs.tag_node(ep.nodeid, c.tag, c.clemma, TagInfo.GOLD)
+                dmrs.tag_node(ep.nodeid, c.tag, c.clemma, ttl.Tag.GOLD)
                 eps.remove(ep)
                 matched = True
                 break
         if not matched:
             # tag concept not matched
-            c.flag = Concept.NOT_MATCHED
+            c.flag = ttl.Concept.NOT_MATCHED
             not_matched.append(c)
     return matched_preds, not_matched

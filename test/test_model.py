@@ -41,7 +41,7 @@ import unittest
 import logging
 
 from chirptext import header
-from chirptext.texttaglib import TagInfo
+from chirptext import texttaglib as ttl
 
 from coolisf import GrammarHub
 from coolisf.util import is_valid_name, sent2json
@@ -64,8 +64,8 @@ def getLogger():
 class TestModels(unittest.TestCase):
 
     def test_sensetag_objects(self):
-        tag1 = SenseTag(Synset("00001740-n"), TagInfo.LELESK)
-        tag2 = SenseTag(Synset("00001740-n"), TagInfo.LELESK)
+        tag1 = SenseTag(Synset("00001740-n"), ttl.Tag.LELESK)
+        tag2 = SenseTag(Synset("00001740-n"), ttl.Tag.LELESK)
         l = [tag1]
         print(tag1 == tag2)
         print(tag2 in l)
@@ -120,7 +120,7 @@ class TestSentenceModel(unittest.TestCase):
         l.add_link(Link(0, 10000, '', 'H'))  # this is top
         l.save()
         # sense tag the DMRS
-        sent.tag(TagInfo.MFS)
+        sent.tag(ttl.Tag.MFS)
         self.assertGreaterEqual(len(dmrs.tags), 1)
         self.assertTrue(sent.to_xml_str())
 
@@ -147,7 +147,7 @@ class TestSentenceModel(unittest.TestCase):
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
   HCONS: < h0 qeq h1 > ]''').dmrs()
-        sent.tag_xml(method=TagInfo.MFS)
+        sent.tag_xml(method=ttl.Tag.MFS)
         full_xml = sent.to_xml_str()
         compact_xml = sent.to_xml_str(pretty_print=False, with_dmrs=False)
         full_sent = Sentence.from_xml_str(full_xml)

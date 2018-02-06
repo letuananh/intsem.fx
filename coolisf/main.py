@@ -48,13 +48,14 @@ import logging
 
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper, Counter
-from chirptext.texttaglib import TagInfo, TaggedDoc
+from chirptext import texttaglib as ttl
 
 from coolisf.morph import Transformer
-from coolisf.dao import read_tsdb
 from coolisf.ghub import GrammarHub
-from coolisf.gold_extract import generate_gold_profile
 from coolisf.util import read_ace_output
+from coolisf.dao import read_tsdb
+from coolisf.gold_extract import read_tsdb_ttl
+from coolisf.gold_extract import generate_gold_profile
 from coolisf.gold_extract import export_to_visko
 from coolisf.gold_extract import read_gold_sents
 from coolisf.model import Document
@@ -66,7 +67,7 @@ OUTPUT_DMRS = 'dmrs'
 OUTPUT_MRS = 'mrs'
 OUTPUT_XML = 'xml'
 OUTPUT_FORMATS = [OUTPUT_DMRS, OUTPUT_MRS, OUTPUT_XML]
-WSD_CHOICES = [TagInfo.LELESK, TagInfo.MFS]
+WSD_CHOICES = [ttl.Tag.LELESK, ttl.Tag.MFS]
 setup_logging('logging.json', 'logs')
 
 
@@ -124,8 +125,12 @@ def extract_tsdb(cli, args):
     if not os.path.isdir(args.path):
         print("TSDB profile does not exist (path: {})".format(args.path))
     else:
-        doc = read_tsdb(args.path)
+        if args.ttl:
+            doc = read_tsdb_ttl(args.path, ttl_path=args.ttl, name=args.name, title=args.title)
+        else:
+            doc = read_tsdb(args.path)
         print("Found sentences: {}".format(len(doc)))
+        print("With shallow: {}".format(len(list(s for s in doc if s.shallow))))
         if args.isf:
             # perform ISF transformation
             transformer = Transformer()
@@ -227,9 +232,9 @@ def export_ttl(cli, args):
     else:
         out_path = 'data'
         out_name = 'ttl_output'
-    ttl = TaggedDoc(out_path, out_name)
+    doc_ttl = ttl.Document(out_name, out_path)
     for sent in doc:
-        tsent = ttl.add_sent(sent.text, sent.ident)
+        tsent = doc_ttl.add_sent(sent.text, sent.ident)
         if not len(sent):
             continue
         dmrs = sent[0].dmrs()  # only support the first reading for now
@@ -243,7 +248,7 @@ def export_ttl(cli, args):
                 if args.with_lemmas:
                     tsent.add_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
             print(sent.ident, node.cfrom, node.cto, synsets)
-    ttl.write_ttl()
+    doc_ttl.write_ttl()
     pass
 
 
@@ -265,14 +270,14 @@ def main():
     task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
     task.add_argument('-n', help='Maximum parse count', default=None)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    task.add_argument('--wsd', help='Word Sense Disambiguator', default=TagInfo.LELESK)
+    task.add_argument('--wsd', help='Word Sense Disambiguator', default=ttl.Tag.LELESK)
     task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
 
     task = app.add_task('text', func=parse_text)
     task.add_argument('input', help='Any text')
     task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
     task.add_argument('-n', help="Only show top n parses", default=None)
-    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=TagInfo.LELESK)
+    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=ttl.Tag.LELESK)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
     task.add_argument('-o', '--output', help="Write output to path")
@@ -283,7 +288,7 @@ def main():
     task.add_argument('input', help='Path to raw biblioteca')
     task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
     task.add_argument('-n', help="Only show top n parses", default=None)
-    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=TagInfo.LELESK)
+    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=ttl.Tag.LELESK)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
     task.add_argument('-o', '--output', help="Write output to path")
@@ -295,6 +300,9 @@ def main():
     tsdb_task = app.add_task('tsdb', func=extract_tsdb)
     tsdb_task.add_argument('path', help='Path to TSDB profile folder')
     tsdb_task.add_argument('output', help='Save extracted sentences to a file', nargs="?", default=None)
+    tsdb_task.add_argument('--ttl', help='Path to TTL files')
+    tsdb_task.add_argument('--name', help='Document canonical name')
+    tsdb_task.add_argument('--title', help='Document title')
     tsdb_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     tsdb_task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
     tsdb_task.add_argument('--isf', help="Perform ISF transformation", action="store_true")

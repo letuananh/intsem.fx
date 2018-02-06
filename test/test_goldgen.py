@@ -45,7 +45,7 @@ from lxml import etree
 from delphin.mrs.components import Pred
 
 from chirptext import header, Counter, TextReport
-from chirptext.texttaglib import TaggedDoc, TagInfo
+from chirptext import texttaglib as ttl
 from coolisf import tag_gold, Lexsem
 from coolisf.lexsem import import_shallow
 from coolisf.gold_extract import build_root_node
@@ -76,7 +76,7 @@ class TestShallowDMRSMapping(unittest.TestCase):
     def test_mapping(self):
         doc_dir = 'data'
         doc_name = 'gold'
-        ttl_doc = TaggedDoc(doc_dir, doc_name).read()
+        ttl_doc = ttl.Document(doc_name, doc_dir).read()
         tsdb_doc = read_tsdb(os.path.join(doc_dir, doc_name))
         isf_doc = match_sents(tsdb_doc, ttl_doc)
         self.assertTrue(isf_doc)
@@ -100,10 +100,11 @@ class TestGoldAccuracy(unittest.TestCase):
     def test_accuracy(self):
         c = Counter()
         sent = self.gold[0]  # gold MRS
-        sent.tag(method=TagInfo.LELESK)  # perfrom WSD using LeLESK
+        sent.tag(method=ttl.Tag.LELESK)  # perfrom WSD using LeLESK
         d = sent[0].dmrs()
         getLogger().debug(d.tags)
         for k, v in d.tags.items():
+            print("v=", v)
             g, l = v
             if g.synset.ID == l.synset.ID:
                 c.count("same")
@@ -133,7 +134,7 @@ class TestGoldData(unittest.TestCase):
         self.assertTrue(sents[0].readings[0].mrs())
 
     def test_read_gold_tags(self):
-        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        doc = ttl.Document('gold', TEST_GOLD_DIR).read()
         self.assertEqual(len(doc), 599)
         self.assertTrue(doc[0].to_json())
 
@@ -164,7 +165,7 @@ class TestGoldData(unittest.TestCase):
 
     def test_lelesk_tagging(self):
         sents = self.gold()
-        sents[0].tag(method=TagInfo.MFS)
+        sents[0].tag(method=ttl.Tag.MFS)
         self.assertTrue(sents[0].to_xml_str())
 
     def test_flag_not_matched_concept(self):
@@ -174,15 +175,15 @@ class TestGoldData(unittest.TestCase):
         smap = {str(s.ident): s for s in sents}
         sent = smap[sid]
         dmrs = sent[0].dmrs()
-        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
-        tagged = doc.sent_map[sid]
+        doc = ttl.Document('gold', TEST_GOLD_DIR).read()
+        tagged = doc.get(sid)
         m, n = tag_gold(dmrs, tagged, sent.text)
         self.assertGreater(len(m), 0)
 
     def test_read_tags(self):
-        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        doc = ttl.Document('gold', TEST_GOLD_DIR).read()
         for tagged in doc:
-            for w, concepts in tagged.wclinks.items():
+            for w, concepts in tagged.tcmap().items():
                 actual = {"{}-{}".format(c.clemma, c.tag) for c in concepts}
                 self.assertEqual(len(actual), len(concepts), "WARNING: duplicate concept (w={} | c={})".format(w, concepts))
 
@@ -192,8 +193,8 @@ class TestGoldData(unittest.TestCase):
         sents = self.gold()
         smap = {str(s.ident): s for s in sents}
         sent = smap[sid]
-        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
-        sent.shallow = doc.sent_map[sid]
+        doc = ttl.Document('gold', TEST_GOLD_DIR).read()
+        sent.shallow = doc.get(sid)
         if sent.text != sent.shallow.text:
             getLogger().debug("WARNING: Inconsistent")
             getLogger().debug(sent.text)
@@ -205,7 +206,7 @@ class TestGoldData(unittest.TestCase):
         getLogger().debug(sent[0].dmrs())
         header('Available concepts')
         for c in sent.shallow.concepts:
-            getLogger().debug("{} {}".format(c, c.words))
+            getLogger().debug("{} {}".format(c, c.tokens))
         header('Matched')
         for con, nid, pred in m:
             getLogger().debug("{}::{} => #{}::{}".format(con.tag, con.clemma, nid, pred))
@@ -215,7 +216,7 @@ class TestGoldData(unittest.TestCase):
                 getLogger().debug(c)
         else:
             getLogger().debug("All was matched.")
-        sent.tag(method=TagInfo.MFS)
+        sent.tag(method=ttl.Tag.MFS)
         xml_str = sent.tag_xml().to_xml_str()
         self.assertTrue(xml_str)
         self.assertIn("<sensegold", xml_str)
@@ -224,11 +225,11 @@ class TestGoldData(unittest.TestCase):
 
     def test_gen_gold(self):
         sents = read_gold_mrs()
-        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        doc = ttl.Document('gold', TEST_GOLD_DIR).read()
         for s in sents[:5]:
             if len(s) > 0:
                 # tag it
-                tagged = doc.sent_map[str(s.ident)]
+                tagged = doc.get(str(s.ident))
                 tag_gold(s[0].dmrs(), tagged, s.text)
 
     def test_generate_from_gold(self):
@@ -251,7 +252,7 @@ class TestGoldData(unittest.TestCase):
         sents = self.gold()
         smap = {str(s.ident): s for s in sents}
         # reag tags
-        doc = TaggedDoc(TEST_GOLD_DIR, 'gold').read()
+        doc = ttl.Document('gold', TEST_GOLD_DIR).read()
         filter_wrong_senses(doc)
         count_good_bad = Counter()
         perfects = []
@@ -266,12 +267,12 @@ class TestGoldData(unittest.TestCase):
         not_matched_report = TextReport('data/gold_notmatched.txt')
         for s in sents[:5]:
             sid = str(s.ident)
-            if sid not in doc.sent_map:
+            if not doc.has_id(sid):
                 raise Exception("Cannot find sentence {}".format(sid))
             elif len(s) == 0:
                 logging.warning("Empty sentence: {}".format(s))
             else:
-                tagged = doc.sent_map[sid]
+                tagged = doc.get(sid)
                 if s.text != tagged.text:
                     fix_texts.append((s.ident, s.text, tagged.text))
                 # try to tag ...
@@ -290,7 +291,7 @@ class TestGoldData(unittest.TestCase):
                     count_good_bad.count("To be checked")
         # report matched
         for sent, m in perfects:
-            tagged = doc.sent_map[str(sent.ident)]
+            tagged = doc.get(str(sent.ident))
             matched_report.header("#{}: {}".format(sent.ident, sent.text), "h0")
             matched_report.writeline(sent[0].dmrs())
             matched_report.header("Concepts")
@@ -309,7 +310,7 @@ class TestGoldData(unittest.TestCase):
         # full details
         for sid, nm in to_be_checked.items():
             sent = smap[str(sid)]
-            tagged = doc.sent_map[str(sid)]
+            tagged = doc.get(str(sid))
             not_matched_report.header("#{}: {}".format(sid, sent.text))
             not_matched_report.writeline(sent[0].dmrs())
             for n in nm:

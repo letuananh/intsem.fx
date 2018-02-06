@@ -40,7 +40,7 @@ References:
 import unittest
 import coolisf
 import logging
-from chirptext.texttaglib import TaggedSentence
+from chirptext import texttaglib as ttl
 from coolisf.model import Reading
 from coolisf import GrammarHub
 from coolisf.processors import ProcessorManager
@@ -96,8 +96,8 @@ class TestPreps(unittest.TestCase):
         prep = man["deko"]
         sent = prep.process("猫が好きです。")
         self.assertIsInstance(sent, coolisf.model.Sentence)
-        self.assertIsInstance(sent.shallow, TaggedSentence)
-        self.assertEqual(sent.shallow[0].label, "猫")
+        self.assertIsInstance(sent.shallow, ttl.Sentence)
+        self.assertEqual(sent.shallow[0].text, "猫")
         self.assertEqual(sent.shallow[0].pos, "名詞-一般")
 
     def test_auto_reg(self):
@@ -106,8 +106,8 @@ class TestPreps(unittest.TestCase):
         sent = ghub.JACYDK.parse("猫が好きです。")
         self.assertIsInstance(sent, coolisf.model.Sentence)
         # verify shallow
-        self.assertIsInstance(sent.shallow, TaggedSentence)
-        self.assertEqual(sent.shallow[0].label, "猫")
+        self.assertIsInstance(sent.shallow, ttl.Sentence)
+        self.assertEqual(sent.shallow[0].text, "猫")
         self.assertEqual(sent.shallow[0].pos, "名詞-一般")
         # verify deep
         self.assertIsNotNone(sent[0].dmrs())

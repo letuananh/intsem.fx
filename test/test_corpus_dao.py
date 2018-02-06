@@ -40,7 +40,7 @@ import os
 import logging
 import unittest
 
-from chirptext.texttaglib import TagInfo, TaggedSentence
+from chirptext import texttaglib as ttl
 from coolisf.util import sent2json
 from coolisf import GrammarHub
 from coolisf.dao import CorpusDAOSQLite
@@ -127,7 +127,7 @@ class TestDAOBase(unittest.TestCase):
   HCONS: < h0 qeq h1 h6 qeq h4 h11 qeq h9 > ]''')
             doc.add(sent)
             dmrs = sent[0].dmrs()
-            dmrs.tag_node(10002, '01775164-v', 'love', TagInfo.OTHER)
+            dmrs.tag_node(10002, '01775164-v', 'love', ttl.Tag.OTHER)
             sent.tag_xml()
             return db.save_sent(sent, ctx=ctx)
 
@@ -301,7 +301,7 @@ class TestCorpusManagement(TestDAOBase):
 
 
 SENT_TEXT = "ロボットの子は猫が好きです。"
-SENT_TAGS = {'tokens': [{'label': 'ロボット', 'cto': 4, 'cfrom': 0}, {'label': 'の', 'cto': 6, 'cfrom': 5}, {'label': '子', 'cto': 8, 'cfrom': 7}, {'label': 'は', 'cto': 10, 'cfrom': 9}, {'label': '猫', 'cto': 12, 'cfrom': 11}, {'label': 'が', 'cto': 14, 'cfrom': 13}, {'label': '好き', 'cto': 17, 'cfrom': 15}, {'label': 'です', 'cto': 20, 'cfrom': 18}, {'label': '。', 'cto': 22, 'cfrom': 21}], 'concepts': [{'clemma': 'ロボット', 'words': [0], 'tag': '02761392-n'}, {'clemma': '猫', 'words': [4], 'tag': '02121620-n'}, {'clemma': '好き', 'words': [6], 'tag': '01292683-a'}, {'clemma': 'ロボットの子', 'words': [0, 1, 2], 'tag': '10285313-n', 'flag': 'E'}], 'text': 'ロボット の 子 は 猫 が 好き です 。 \n'}
+SENT_TAGS = {'tokens': [{'text': 'ロボット', 'cto': 4, 'cfrom': 0}, {'text': 'の', 'cto': 6, 'cfrom': 5}, {'text': '子', 'cto': 8, 'cfrom': 7}, {'text': 'は', 'cto': 10, 'cfrom': 9}, {'text': '猫', 'cto': 12, 'cfrom': 11}, {'text': 'が', 'cto': 14, 'cfrom': 13}, {'text': '好き', 'cto': 17, 'cfrom': 15}, {'text': 'です', 'cto': 20, 'cfrom': 18}, {'text': '。', 'cto': 22, 'cfrom': 21}], 'concepts': [{'clemma': 'ロボット', 'tokens': [0], 'tag': '02761392-n'}, {'clemma': '猫', 'tokens': [4], 'tag': '02121620-n'}, {'clemma': '好き', 'tokens': [6], 'tag': '01292683-a'}, {'clemma': 'ロボットの子', 'tokens': [0, 1, 2], 'tag': '10285313-n', 'flag': 'E'}], 'text': 'ロボット の 子 は 猫 が 好き です 。 \n'}
 
 
 class TestHumanAnnotation(TestDAOBase):
@@ -309,7 +309,7 @@ class TestHumanAnnotation(TestDAOBase):
     def test_human_annotations(self):
         # ISF sentence
         sent = self.ghub.JACYMC.parse(SENT_TEXT, 1)
-        sent.shallow = TaggedSentence.from_json(SENT_TAGS)
+        sent.shallow = ttl.Sentence.from_json(SENT_TAGS)
         with self.db.ctx() as ctx:
             doc = self.ensure_doc(self.db, ctx)
             doc.add(sent)

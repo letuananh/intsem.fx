@@ -35,8 +35,7 @@ import logging
 
 import nltk
 from nltk.stem import WordNetLemmatizer
-
-from chirptext.texttaglib import TaggedSentence, TagInfo, Token
+from chirptext import texttaglib as ttl
 try:
     from chirptext.deko import txt2mecab
 except:
@@ -74,13 +73,13 @@ class Analyser(object):
         return [(w, 'n') for w in words]
 
     def analyse(self, text):
-        tsent = TaggedSentence(text)
+        tsent = ttl.Sentence(text)
         words = self.tokenize(text)
         tsent.import_tokens(words)
         for tk, lm in zip(tsent, self.lemmatize(words)):
-            tk.tag(lm, tagtype=Token.LEMMA, source=TagInfo.DEFAULT)
+            tk.lemma = lm
         for tk, pos in zip(tsent, [pos for w, pos in self.pos_tag(words)]):
-            tk.tag(pos, tagtype=Token.POS, source=TagInfo.DEFAULT)
+            tk.pos = pos
         return tsent
 
 
@@ -97,7 +96,9 @@ class EnglishAnalyser(Analyser):
     def pos2wnpos(self, pos):
         if pos:
             p = pos[0].lower()
-            if p in 'nvrj':
+            if p == 'j':
+                return 'a'
+            if p in 'svarn':
                 return p
         return 'n'  # default is a noun
 
@@ -108,13 +109,12 @@ class EnglishAnalyser(Analyser):
         return nltk.pos_tag(words)
 
     def analyse(self, text):
-        tsent = TaggedSentence(text)
+        tsent = ttl.Sentence(text)
         words = self.tokenize(text)
         tsent.import_tokens(words)
         for tk, pos in zip(tsent, [pos for w, pos in self.pos_tag(words)]):
-            tk.tag(pos, tagtype=Token.POS, source=TagInfo.NLTK)
-            lm = self.wnl.lemmatize(tk.label, pos=self.pos2wnpos(pos))
-            tk.tag(lm, tagtype=Token.LEMMA, source=TagInfo.NLTK)
+            tk.pos = pos
+            tk.lemma = self.wnl.lemmatize(tk.text, pos=self.pos2wnpos(pos))
         return tsent
 
 
@@ -137,10 +137,11 @@ class JapaneseAnalyser(Analyser):
 
     def analyse(self, sent):
         msent = txt2mecab(sent)
-        tsent = TaggedSentence(msent.surface)
+        tsent = ttl.Sentence(msent.surface)
         tsent.import_tokens(msent.words)
         # pos tagging
         for mtk, tk in zip(msent, tsent):
-            tk.tag(mtk.pos3(), tagtype=Token.POS, source=TagInfo.MECAB)
-            tk.tag(mtk.reading_hira(), tagtype=Token.LEMMA, source=TagInfo.MECAB)
+            tk.pos = mtk.pos3()
+            tk.lemma = mtk.root
+            tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
         return tsent

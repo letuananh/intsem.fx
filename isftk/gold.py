@@ -35,7 +35,7 @@ import logging
 
 from chirptext import TextReport
 from chirptext.cli import CLIApp, setup_logging
-from chirptext.texttaglib import TaggedDoc
+from chirptext import texttaglib as ttl
 
 from coolisf.gold_extract import read_gold_mrs
 
@@ -61,7 +61,7 @@ def getLogger():
 
 def fix_gold(cli, args):
     sents = read_gold_mrs()
-    doc = TaggedDoc('data', 'gold').read()
+    doc = ttl.Document('gold', 'data/').read()
     patches = []
     for s in sents:
         tagged = doc.sent_map[str(s.ident)]
