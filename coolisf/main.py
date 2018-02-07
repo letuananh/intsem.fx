@@ -160,6 +160,7 @@ def extract_tsdb(cli, args):
         print("Generating output ...")
         doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
         if args.output:
+            print("Writing ISF output to {}".format(args.output))
             if args.output.endswith('.gz'):
                 with gzip.open(args.output, 'wt') as outfile:
                     outfile.write(doc_xml_str)
@@ -313,7 +314,7 @@ def main():
     # Extract sentences from TSDB profile
     tsdb_task = app.add_task('tsdb', func=extract_tsdb)
     tsdb_task.add_argument('path', help='Path to TSDB profile folder')
-    tsdb_task.add_argument('output', help='Save extracted sentences to a file', nargs="?", default=None)
+    tsdb_task.add_argument('-o', '--output', help='Save extracted sentences to a file', default=None)
     tsdb_task.add_argument('--ttl', help='Path to TTL files')
     tsdb_task.add_argument('--name', help='Document canonical name')
     tsdb_task.add_argument('--title', help='Document title')
