@@ -1,29 +1,15 @@
-data/bm.txt
-data/bib.mrs.txt.skipped.txt
-data/lexdb.rev
-data/lexicon.tdl
-data/lexrules*
-data/chunks*
-data/*.dat
-data/*.db
-data/*.out
-build/*
-release/*
+/build/*
+/release/*
+/chirptext
+/lelesk
+/puchikarui
+/yawlib
+/mapping
+/test/logs
 *~
 *_flymake.py
 # intsem.fx
 *.*#
-data/*.db
-data/speckled*
-data/erg*
-data/mwe*
-data/semcor*
-data/gold*
-data/spec*
-bs4
-
-delphin
-nltk
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
