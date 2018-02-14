@@ -42,7 +42,7 @@ import unittest
 
 from coolisf import GrammarHub
 from coolisf.dao import read_tsdb
-from coolisf.dao.ruledb import LexRuleDB, parse_lexunit
+from coolisf.dao.ruledb import LexRuleDB, parse_lexunit, PredInfo, RulePred
 from coolisf.model import LexUnit, RuleInfo
 from coolisf.dao.textcorpus import RawCollection
 
@@ -142,7 +142,20 @@ class TestRuleDB(unittest.TestCase):
                 LexUnit(lemma='green tea', pos='n', synsetid='07935152-n'),
                 LexUnit(lemma='look up', pos='v', synsetid='00877083-v'),
                 LexUnit(lemma='emergent', pos='a', synsetid='00003553-a'),
+                LexUnit(lemma='Sherlock Holmes', pos='n', synsetid='09604451-n'),
+                LexUnit(lemma='Robin Hood', pos='n', synsetid='10535047-n'),
+                LexUnit(lemma='Sinbad the Sailor', pos='n', synsetid='09604706-n'),
+                LexUnit(lemma='Olympian Games', pos='n', synsetid='00516720-n'),
+                LexUnit(lemma='Nemean Games', pos='n', synsetid='00516559-n'),
                 LexUnit(lemma='quickly', pos='r', synsetid='00085811-r')]
+
+    def generate_rdb(self, ctx):
+        constructions = self.get_constructions()
+        # generate rules
+        self.rdb.generate_rules(constructions, lambda x: parse_lexunit(x, self.ghub.ERG), ctx=ctx)
+        # generate rule head
+        for lu in ctx.lexunit.select():
+            self.rdb.get_lexunit(lu, ctx=ctx)
 
     def test_add_lexunit(self):
         lu = LexUnit(lemma='emergence', pos='n', synsetid='00044455-n')
@@ -153,23 +166,14 @@ class TestRuleDB(unittest.TestCase):
     def test_add_stuff(self):
         constructions = self.get_constructions()
         with self.rdb.ctx() as ctx:
-            # generate rules
-            self.rdb.generate_rules(constructions, lambda x: parse_lexunit(x, self.ghub.ERG), ctx=ctx)
-            # generate rule head
-            for lu in ctx.lexunit.select():
-                self.rdb.get_lexunit(lu, ctx=ctx)
-                for r in lu.parses:
-                    head = r.dmrs().layout.head()
-                    if head is not None:
-                        rinfo = RuleInfo(lu.ID, r.ID, head.predstr)
-                        self.rdb.ruleinfo.save(rinfo, ctx=ctx)
+            self.generate_rdb(ctx)
             # verification
-            tea_rules = self.rdb.find_rule('_tea_n_1', restricted=False, ctx=ctx)
+            tea_rules = self.rdb.find_ruleinfo_by_head('_tea_n_1', restricted=False, ctx=ctx)
             self.assertTrue(len(tea_rules))
             for rinfo in tea_rules:
                 self.assertTrue(rinfo.lid)
                 self.assertTrue(rinfo.rid)
-                self.assertEqual(rinfo.pred, '_tea_n_1')
+                self.assertEqual(rinfo.head, '_tea_n_1')
                 rule = self.rdb.get_rule(rinfo.lid, rinfo.rid, ctx=ctx)
                 self.assertEqual(len(rule), 1)
             for c in constructions:
@@ -183,6 +187,20 @@ class TestRuleDB(unittest.TestCase):
                 # test select a specific reading
                 rule = self.rdb.get_rule(lu.ID, lu[0].ID, ctx=ctx)
                 self.assertEqual(len(rule), 1)
+
+    def test_find_rule_smart(self):
+        with self.rdb.ctx() as ctx:
+            self.generate_rdb(ctx)
+            s = self.ghub.ERG.parse('Sherlock Holmes drink green tea.')
+            print(s)
+            layout = s[0].dmrs().layout
+            getLogger().debug("Nodes: {}".format([str(n.pred) for n in layout.nodes]))
+            ruleinfos = self.rdb.find_ruleinfo(layout.nodes, restricted=False, ctx=ctx)
+            getLogger().debug("Found {} rules".format(len(ruleinfos)))
+            for ri in ruleinfos:
+                lu = ctx.lexunit.by_id(ri.lid)
+                lu = self.rdb.get_lexunit(lu, ctx=ctx)
+                print("Potential: {} -> {}".format(ri, lu))
 
     def test_get_rule(self):
         rdb = LexRuleDB(':memory:')

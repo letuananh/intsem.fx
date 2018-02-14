@@ -54,9 +54,13 @@ class PredSense(object):
     wn = get_wn()
 
     MODAL_VERBS = ('would', 'could', 'may', 'must', 'should', 'might', 'going+to', 'ought')
-
+    PREPOSITIONS = ['of', 'to', 'on', 'as']
+    IGNORED_GPREDS = ('named', 'a_q',
+                      'time_n_rel', 'person_n_rel', 'place_n_rel', 'thing_n_rel', 'manner_n_rel',
+                      'reason_n_rel')
     REPLACE_TEMPLATES = [['-', ' '],
                          ['-', ''],
+                         ['-', '_'],
                          ['-', '+'],
                          ['_', ' '],
                          ['_', ''],
@@ -65,64 +69,7 @@ class PredSense(object):
                          ['+', ''],
                          [' ', '-'],
                          [' ', '']]
-
-    AUTO_EXTEND = {
-        ('children',): ('child',),
-        ('childrens',): ('child',),
-        ('trapdoor',): ('trap door',),
-        ('declining',): ('decline',),
-        ('allright',): ('alright',),
-        ('a+couple',): ('a couple of',),
-        ('diagnostic',): ('diagnostics',),
-        ('had+better',): ('better',),
-        ('suburbian',): ('suburban',),
-        ('little-few',): ('few',),
-        ('much-many',): ('many',),
-        ('or+not',): ('not',),
-        ('undoubted',): ('undoubtedly',),
-        ('st', 'n'): (('saint', 'n'),),
-        ('used+to', 'v'): (('used to', 'a'),),
-    }
-
-    # [TODO]:
-    # significantly: x vs r
-    # _along_p_rel
-    # if pos ==  x or p => ignore POS
-    #
-    # slurp        : n vs v (in WN)
-    # _add_v_up-to_rel >>> add up
-    # _make_v_up-for_rel
-    # _come_v_up_rel
-    # _duck_v_out_rel
-    # _crumble_n_1_rel >>> checked a but v in WN
-
-    # [DONE]
-    #   cut off is adj in wn but n in ERG???
-    #   no dole as a verb in Wordnet
-    #   direct should not be a noun
-    #   ,['church-goer','churchgoer']
-    #       #,['line+up','lineup']
-    #       #,['the+same','same']
-    #   downstairs_n not in WN
-    #   # droppings vs dropping?
-    #   # east+west => direction?
-    #   # intermediary (n in WN) but a???
-    #   # no solar_n in WN but there are a lot of [solar x]
-    #   # trapdoor => trap door (WN)
-    #   #thanks a ? (is n in WN)
-    #   # Not in WN:
-    #       # attracted_a_to_rel    attracted   a   to  1
-    #       # childrens_a_1_rel childrens   a   1   1
-    #       # caribbean (a)
-    #   # all modals
-    #   # other_n
-    #       #re-_a_again_rel    re- a   again   124
-    #       #un-_a_rvrs_rel un- a   rvrs    104
-    #       #
-    #   # else_a_1_rel
-    #   # oh_a_1_rel
-    #   # colon_v_id_rel
-    #   # own_n_1_rel
+    MANUAL_MAP = {'neg_rel': ('00024073-r',)}
 
     @staticmethod
     def extend_lemma(lemma):
@@ -130,23 +77,22 @@ class PredSense(object):
         potential = set()
         potential.add(lemma)
         for rfrom, rto in PredSense.REPLACE_TEMPLATES:
-            if rfrom in lemma:
-                potential.add(lemma.replace(rfrom, rto))
+            potential.add(lemma.replace(rfrom, rto))
         # add lower case
         potential.add(lemma.lower())
-        potential.add(lemma.replace('+', ' '))
-        potential.add(lemma.replace('+', '-'))
-        potential.add(lemma.replace('-', ' '))
-        potential.add(lemma.replace('-', '_'))
-        potential.add(lemma.replace('_', ' '))
-        potential.add(lemma.replace(' ', ''))
-        # add +/-
-        # potential.add(lemma + '+')
-        # potential.add(lemma + '-')
         # negations & determiners
         if lemma.startswith('not+') or lemma.startswith('the+'):
             potential.add(lemma[4:])
         getLogger().debug("Potential for `{}': {}".format(lemma, potential))
+        # remove prepositions as well
+        no_preps = set()
+        for p in potential:
+            parts = p.split()
+            if parts[-1] in PredSense.PREPOSITIONS:
+                parts = parts[:-1]
+                if parts:
+                    no_preps.add(' '.join(parts))
+        potential.update(no_preps)
         return potential
 
     singleton_sm = None
@@ -191,6 +137,7 @@ class PredSense(object):
 
     @staticmethod
     def search_pred(pred, auto_expand=True, ctx=None):
+        ''' Retrieve suitable synsets for a given predicate, return a SynsetCollection '''
         # ensure not null ctx
         if ctx is None:
             with PredSense.wn.ctx() as ctx:
@@ -198,21 +145,27 @@ class PredSense(object):
         # ctx will never be null
         if not pred:
             raise Exception("Predicate cannot be empty")
-
         # ignore some predicates
-        if pred in ('named', 'a_q'):
+        if pred in PredSense.IGNORED_GPREDS:
             # don't map anything
             return SynsetCollection()
+        pred_str = str(pred)
+        if not pred_str.endswith('_rel'):
+            pred_str += "_rel"
+        if pred_str in PredSense.MANUAL_MAP:
+            return PredSense.wn.get_synsets(PredSense.MANUAL_MAP[pred_str], ctx=ctx)
+        elif pred.pos == 'x' and pred.sense == 'subord':
+                return SynsetCollection()
+        # elif (pred.pos == 'x' and pred.sense == 'deg') or pred.pos in 'pq':
+        elif pred.pos and pred.pos in 'xpq':
+            lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
+            ssa = PredSense.search_sense(lemmata, 'a', ctx=ctx)
+            ssr = PredSense.search_sense(lemmata, 'r', ctx=ctx)
+            ssa = ssa.merge(ssr)
+            return ssa
 
         lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
         pos = pred.pos
-        # FIXME
-        # potentials = {(l, pos) for l in lemmata}
-        # for l in lemmata:
-        #     if (l, pos) in PredSense.AUTO_EXTEND:
-        #         potentials.extend(PredSense.AUTO_EXTEND[(l, pos)])
-        #     elif (l,) in PredSense.AUTO_EXTEND:
-        #         potentials.extend((el, pos) for el in PredSense.AUTO_EXTEND[(l,)])
 
         ss = PredSense.search_sense(lemmata, pos, ctx=ctx)
         # hardcode: try to match noun & adj/v

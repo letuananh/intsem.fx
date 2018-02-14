@@ -160,14 +160,21 @@ class Compound(object):
         for node in dmrs.nodes:
             if node.predstr == self.sign:
                 sub = dmrs.subgraph(node, constraints=self.construction)
+                getLogger().debug("matching {} to {}: sub={}".format(node.predstr, self.sign, sub.to_dmrs()))
                 if len(sub.nodes) == len(self.construction.nodes) and sub.top.to_graph() == self.graph:
                     if self.adjacent and self.adjacent_nodes != sub.adjacent_nodes():
+                        getLogger().debug("Oh no, not adjacent - {} v.s {}".format(self.adjacent_nodes, sub.adjacent_nodes()))
                         continue
                     found.append(sub)
+                else:
+                    getLogger().debug("Not exactly matching")
         return found
 
     def apply(self, dmrs):
-        for sub in self.match(dmrs):
+        matches = self.match(dmrs)
+        if not matches:
+            getLogger().debug("No subgraph matched for {}".format(self))
+        for sub in matches:
             getLogger().debug("applying rule [lemma={}]: {} => {}".format(self.lemma, self.dmrs(), sub.to_dmrs()))
             self.transform(dmrs, sub)
         return dmrs
@@ -202,6 +209,15 @@ class SimpleHeadedCompound(Compound):
                     to_del.add(l.from_node)
             self.construction.delete(*to_del)
 
+    def __eq__(self, other):
+        if not other or not isinstance(other, Compound):
+            return False
+        else:
+            return (self.construction, self.lemma, self.adjacent) == (other.construction, other.lemma, other.adjacent)
+
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         return "SHComp(lemma={}, construction={})".format(repr(self.lemma), repr(self.construction.to_dmrs().to_mrs().tostring(False)))
 
@@ -213,7 +229,9 @@ class Transformer(object):
         self.rules = [self.get_guard_dog(),
                       self.get_green_tea(),
                       self.get_big_bad_wolf()]
+        self.loaded = set()
         self.rule_map = dd(list)
+        self.rule_cache = {}
         if ruledb_path and os.path.isfile(ruledb_path):
             self.rdb = LexRuleDB(ruledb_path)
         else:
@@ -233,35 +251,26 @@ class Transformer(object):
     def to_hcmp_rule(self, layout, lemma, adjacent=True):
         return SimpleHeadedCompound(layout, lemma, adjacent)
 
-    def find_rules(self, nodes):
+    def find_rules(self, nodes, limit=None):
         applicable_rules = []
-        # use manual rules
-        # [TODO] Fix this
+        for node in nodes:
+            applicable_rules.extend(self.rule_map[node.predstr])
         if self.rdb is None:
-            # There is no ruledb
-            for node in nodes:
-                applicable_rules.extend(self.rule_map[node.predstr])
             return applicable_rules
         with self.rdb.ctx() as ctx:
-            for node in nodes:
-                # getLogger().debug("Looking for {} in cache".format(node.predstr))
-                if node.predstr in self.rule_map:
-                    # predstr in rule_map
-                    cached_rules = self.rule_map[node.predstr]
-                    # getLogger().debug("Using {} cached rules for node {}".format(len(cached_rules), node))
-                    applicable_rules.extend(cached_rules)
-                else:
-                    getLogger().debug("locating rules for {}".format(node))
-                    rulesigs = self.rdb.find_rule(node.predstr, flag=RuleInfo.COMPOUND, ctx=ctx)
-                    getLogger().debug("Found {} rules for {}".format(len(rulesigs), node))
-                    for rulesig in rulesigs:
-                        ruleinfo = self.rdb.get_rule(rulesig.lid, rulesig.rid, ctx=ctx)
-                        if ruleinfo is not None:
-                            lemma = ruleinfo.lemma.replace(' ', '+')
-                            rule = self.to_hcmp_rule(ruleinfo[0].edit(), lemma)
-                            self.add_rule(rule)
-                            # getLogger().debug("{} vs {}".format(rule.sign, node.predstr))
-                            applicable_rules.append(rule)
+            getLogger().debug("Searching for applicable rules for {} nodes: {}".format(len(nodes), nodes))
+            ruleinfos = self.rdb.find_ruleinfo(nodes, limit=limit, ctx=None)
+            getLogger().debug("Found {} rules".format(len(ruleinfos)))
+            for ruleinfo in ruleinfos:
+                ruleinfo = self.rdb.get_rule(ruleinfo.lid, ruleinfo.rid, ctx=ctx)
+                if ruleinfo is not None:
+                    lemma = ruleinfo.lemma.replace(' ', '+')
+                    rule = self.to_hcmp_rule(ruleinfo[0].edit(), lemma)
+                    if ruleinfo.ID not in self.loaded:
+                        self.loaded.add(ruleinfo.ID)
+                        self.add_rule(rule)
+                    # getLogger().debug("{} vs {}".format(rule.sign, node.predstr))
+                    applicable_rules.append(rule)
         getLogger().debug("Found {} rules in total".format(len(applicable_rules)))
         return applicable_rules
 
@@ -305,7 +314,7 @@ class Transformer(object):
             getLogger().debug("locating rules for nodes {}".format(target.nodes))
             applicable_rules = self.find_rules(target.nodes)
             # apply MWE rules
-            getLogger().debug("Applying {} rules".format(len(applicable_rules)))
+            getLogger().debug("Applying {} rules to {}".format(len(applicable_rules), target.nodes))
             for rule in applicable_rules:
                 rule.apply(target)
             return target
@@ -314,7 +323,7 @@ class Transformer(object):
         if isinstance(target, Sentence):
             for parse in target:
                 self.apply(parse)
-                return target
+            return target
         else:
             result = self.process(target)
             result.save()

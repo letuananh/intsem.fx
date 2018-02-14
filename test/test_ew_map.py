@@ -92,6 +92,12 @@ class TestMain(unittest.TestCase):
     def test_extend_lemma(self):
         self.assertEqual(PredSense.extend_lemma('night bird'), {'night-bird', 'night bird', 'nightbird'})
         self.assertEqual(PredSense.extend_lemma('above+all'), {'above-all', 'above+all', 'aboveall', 'above all'})
+        predstrs = ['_independently+of_p', '_with+respect+to_p', '_counter+to_p', '_such+as_p', '_nomore_a_1']
+        preds = [Predicate.from_string(p) for p in predstrs]
+        for p in preds:
+            lemmas = PredSense.extend_lemma(p.lemma)
+            getLogger().debug("{}: {}".format(p, lemmas))
+            self.assertTrue(lemmas)
 
     def test_lemma_searching(self):
         ss = PredSense.search_sense({'above all'}, 'r')
@@ -102,6 +108,26 @@ class TestMain(unittest.TestCase):
         self.assertFalse(PredSense.search_pred_string('named_rel'))
         self.assertFalse(PredSense.search_pred(Predicate.from_string('named_rel').to_pred()))
         self.assertFalse(PredSense.search_pred(Predicate.from_string('_a_q_rel').to_pred()))
+        self.assertTrue(PredSense.search_pred_string('neg_rel'))
+        self.assertTrue(PredSense.search_pred_string('neg'))
+
+    def test_x_deg(self):
+        ss = PredSense.search_pred_string('_well_x_deg')
+        print(ss)
+        for s in ss:
+            self.assertIn(s.ID.pos, 'ar')
+
+    def test_subord(self):
+        ss = PredSense.search_pred_string('_as_x_subord')
+        self.assertFalse(ss)
+
+    def test_time(self):
+        ss = PredSense.search_pred_string('_time_n_of_rel')
+        self.assertTrue(ss)
+
+    def test_mwe_lemma_sense(self):
+        ss = PredSense.search_pred_string('_squeeze_v_in')
+        print(ss)
 
     def test_known_concepts(self):
         ctx = PredSense.wn.ctx()

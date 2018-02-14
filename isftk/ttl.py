@@ -34,9 +34,12 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 import os
 import logging
 
-from chirptext import TextReport
+from chirptext import TextReport, Counter
 from chirptext.cli import CLIApp, setup_logging
+from chirptext.io import CSV
 from chirptext import texttaglib as ttl
+
+from yawlib.helpers import get_omw
 
 
 # ------------------------------------------------------------------------------
@@ -55,16 +58,18 @@ def getLogger():
 # ------------------------------------------------------------------------------
 
 def read_ttl(ttl_path):
-    ttl.Document.read_ttl(ttl_path)
+    return ttl.Document.read_ttl(ttl_path)
 
 
-def prepare_tags(doc):
+def prepare_tags(doc, args=None, with_cfrom_cto=True):
     tags = set()
     for s in doc:
         for tag in s.tags:
+            cfrom = tag.cfrom if with_cfrom_cto else -1
+            cto = tag.cto if with_cfrom_cto else -1
             if tag.tagtype == 'WN':
-                tags.add((s.ID, tag.cfrom, tag.cto, tag.label))
-            else:
+                tags.add((s.ID, cfrom, cto, tag.label))
+            elif args and not args.quiet:
                 getLogger().warning("Unknown label: {} in sentence #{}".format(tag.tagtype, s.ID))
     return tags
 
@@ -72,28 +77,53 @@ def prepare_tags(doc):
 def compare_ttls(cli, args):
     ''' Compare TTL to gold '''
     rp = TextReport()
+    omw = get_omw()
+    ctx = omw.ctx()
     gold = None
     profile = None
     if args.gold_profile:
         gold = read_ttl(args.gold_profile)
         rp.header("Gold sentences: {}".format(len(gold)))
-        for s in gold:
-            rp.print("Sent #{}: {} tags".format(s.ID, len(s.tags)))
+        if args.verbose:
+            for s in gold:
+                rp.print("Sent #{}: {} tags".format(s.ID, len(s.tags)))
     else:
         print("Oops, no gold!")
     # read profile
     if args.profile:
         profile = read_ttl(args.profile)
         rp.header("Profile sentences: {}".format(len(profile)))
-        for s in profile:
-            rp.print("Sent #{}: {} tags".format(s.ID, len(s.tags)))
+        if args.verbose:
+            for s in profile:
+                getLogger().debug("Profile/Sent #{}: {} tags".format(s.ID, len(s.tags)))
     else:
         print("Oops, no profile to evaluate")
     # calculate precision and recall
     if gold and profile:
-        gold_tags = prepare_tags(gold)
-        profile_tags = prepare_tags(profile)
+        gold_tags = prepare_tags(gold, args=args, with_cfrom_cto=not args.relax)
+        profile_tags = prepare_tags(profile, args=args, with_cfrom_cto=not args.relax)
         true_positive = gold_tags.intersection(profile_tags)
+        if args.debug:
+            print("Debug file: {}".format(args.debug))
+            false_positive = gold_tags.difference(profile_tags)
+            rows = []
+            ss_map = {}
+            for sid, cfrom, cto, label in sorted(false_positive):
+                if label not in ss_map:
+                    ss = omw.get_synset(label, ctx=ctx)
+                    ss_map[label] = ss
+                else:
+                    ss = ss_map[label]
+                rows.append((sid, cfrom, cto, label, ss.definition, ss.lemmas))
+            CSV.write_tsv(args.debug, rows, quoting=CSV.QUOTE_MINIMAL)
+            # by classes
+            c = Counter()
+            c.update(label for sid, cfrom, cto, label in false_positive)
+            with TextReport(args.debug, mode='a') as outfile:
+                outfile.header("By classes")
+                for sid, freq in c.most_common():
+                    ss = ss_map[sid]
+                    outfile.print("{}: {} | {} - {}".format(sid, freq, ss.definition, ss.lemmas))
         precision = len(true_positive) / len(profile_tags)
         recall = len(true_positive) / len(gold_tags)
         f1 = 2 * precision * recall / (precision + recall)
@@ -103,6 +133,7 @@ def compare_ttls(cli, args):
         rp.print("Precision: {:.2f}%".format(precision * 100))
         rp.print("Recall   : {:.2f}%".format(recall * 100))
         rp.print("F1       : {:.2f}%".format(f1 * 100))
+    ctx.close()
 
 
 # ------------------------------------------------------------------------------
@@ -116,6 +147,8 @@ def main():
     task = app.add_task('cmp', func=compare_ttls)
     task.add_argument('-g', '--gold_profile', help='Gold Profile', default=None)
     task.add_argument('-p', '--profile', help='Profile for evaluation', default=None)
+    task.add_argument('--debug', help='Debug file')
+    task.add_argument('--relax', help='Dont use exact matching', action="store_true")
     # run app
     app.run()
 

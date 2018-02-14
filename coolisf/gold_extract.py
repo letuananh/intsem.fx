@@ -115,7 +115,7 @@ def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=No
             reading.dmrs().tag_xml(method=None, update_back=True, wsd=wsd, ctx=ctx)
         sent.tag_xml()
     if not_matched:
-        getLogger().warning("Not matched sentences: {}".format(not_matched))
+        getLogger().warning("TSDB/IMI mismatched sentences: {}".format(not_matched))
     return isf_doc
 
 

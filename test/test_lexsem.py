@@ -66,10 +66,14 @@ class TestLexsem(unittest.TestCase):
     ghub = GrammarHub()
 
     def test_wsd(self):
-        s = self.ghub.parse("I give a book to him.", "ERG_ISF", tagger=ttl.Tag.MFS, ignore_cache=True)
-        getLogger().debug(s)
+        s = self.ghub.parse("John gives Mary a book.", "ERG_ISF", tagger=ttl.Tag.MFS, ignore_cache=True)
+        getLogger().debug("Sentence: {}".format(s))
         self.assertTrue(s)
         self.assertTrue(len(s))
+
+    def test_neg(self):
+        s = self.ghub.parse("Certainly not.", "ERG_ISF", tagger=ttl.Tag.MFS, ignore_cache=True)
+        getLogger().debug(s[0].dmrs().tags)
 
 
 ########################################################################

@@ -44,7 +44,7 @@ import unittest
 import logging
 from collections import defaultdict as dd
 
-from chirptext import FileHelper, header
+from chirptext import FileHelper, header, TextReport
 from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD, LeskCache
 
@@ -192,6 +192,14 @@ class TestRuleGenerator(unittest.TestCase):
             self.assertIsInstance(rule, HCMP)
             self.assertIsNotNone(rule.dmrs())
 
+    def test_link_rulepred(self):
+        rdb = self.rdb
+        with rdb.ctx() as ctx:
+            ruleinfos = ctx.ruleinfo.select('ID not in (SELECT ruleid FROM rulepred)')
+            for rinfo in ruleinfos:
+                print(rinfo.ID, rinfo)
+                rdb.generate_rulepred(rinfo, ctx=ctx)
+
 
 class TestTransformer(unittest.TestCase):
 
@@ -312,12 +320,21 @@ class TestTransformer(unittest.TestCase):
         self.assertEqual(adj_list, expected)
 
     def test_big_bad_wolf(self):
-        p = self.ERG.parse('He is a big bad wolf.').edit(0)
-        optimus = Transformer(ruledb_path=None)
+        sent = self.ERG.parse('He is a big bad wolf.')
+        p = sent.edit(0)
+        p2 = sent.edit(0)
+        optimus = Transformer(ruledb_path=None)  # only manual rule
         optimus.apply(p)
         nodes = {n.predstr for n in p.nodes}
         expected = {'pron', 'pronoun_q', '_be_v_id', '_a_q', '_big+bad+wolf_n_1'}
+        getLogger().debug("Output: {}".format(expected))
         self.assertEqual(nodes, expected)
+        getLogger().debug("Optimus 2")
+        optimus2 = Transformer()  # with ruleDB
+        optimus2.apply(p2)
+        getLogger().debug("p2 actual: {}".format(p2.nodes))
+        p2_actual = {n.predstr for n in p2.nodes}
+        self.assertEqual(p2_actual, expected)
 
     def test_load_rule_db(self):
         sent = self.ERG.parse('He is a bell ringer.')
@@ -326,7 +343,7 @@ class TestTransformer(unittest.TestCase):
         self.assertEqual(ringer.predstr, "_ringer_n_1")
         # Load a rule from optimus
         optimus = Transformer()
-        rules = optimus.find_rules((ringer,))
+        rules = optimus.find_rules(p.nodes)
         self.assertTrue(rules)
         lemmas = [r.lemma for r in rules]
         self.assertIn('bell+ringer', lemmas)
@@ -344,12 +361,22 @@ class TestTransformer(unittest.TestCase):
         expected = ['pron_rel', 'pronoun_q_rel', '_be_v_id_rel', '_a_q_rel', '_bell+ringer_n_1_rel']
         self.assertEqual(p.source.preds(), expected)
 
+    def test_smart_rule_search(self):
+        sent = self.ERG.parse('His name is John.')
+        p = sent.edit(0)
+        john = p.head()['ARG2']
+        print(john)
+        # Load a rule from optimus
+        optimus = Transformer()
+        rules = optimus.find_rules((john,))
+        print(len(rules))
+
     def test_finding_rules(self):
         optimus = Transformer()
-        rules = optimus.rdb.find_rule('_contact_n_1')
+        rules = optimus.rdb.find_ruleinfo_by_head('_contact_n_1')
         signs = [optimus.rdb.get_rule(rule.lid, rule.rid).lemma for rule in rules]
         self.assertIn('eye contact', signs)
-        rules = optimus.rdb.find_rule('_chest_n_1')
+        rules = optimus.rdb.find_ruleinfo_by_head('_chest_n_1')
         signs = [optimus.rdb.get_rule(rule.lid, rule.rid).lemma for rule in rules]
         self.assertIn('tea chest', signs)
 
@@ -379,9 +406,83 @@ class TestTransformer(unittest.TestCase):
         sent = self.ERG.parse('We made eye contact.')
         optimus.apply(sent)
         expected = ['pron_rel', 'pronoun_q_rel', '_make_v_1_rel', 'udef_q_rel', '_eye+contact_n_1_rel']
-        actual = sent[0].dmrs().preds()
-        print(actual)
+        actual = [str(p) for p in sent[0].dmrs().preds()]
+        getLogger().debug("Expected: {}".format(expected))
+        getLogger().debug("Actual: {}".format(actual))
         self.assertEqual(actual, expected)
+
+    def test_transform_darklantern(self):
+        r = Reading('''[ TOP: h0
+  RELS: < [ person<0:7> LBL: h1 ARG0: x8 [ x NUM: sg PERS: 3 ] ]
+          [ _some_q<0:7> LBL: h2 ARG0: x8 RSTR: h15 ]
+          [ _in_p_loc<8:10> LBL: h1 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x8 ARG2: x11 [ x NUM: sg PERS: 3 IND: + ] ]
+          [ _the_q<11:14> LBL: h3 ARG0: x11 RSTR: h16 ]
+          [ _next_a_1<15:19> LBL: h4 ARG0: e10 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x11 ]
+          [ _room_n_unit<20:24> LBL: h4 ARG0: x11 ]
+          [ _light_v_cause<29:32> LBL: h5 ARG0: e12 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: + ] ARG1: x8 ARG2: x14 [ x NUM: sg PERS: 3 IND: + ] ]
+          [ _a_q<33:34> LBL: h6 ARG0: x14 RSTR: h17 ]
+          [ _dark_a_1<35:40> LBL: h7 ARG0: e13 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x14 ]
+          [ _lantern_n_1<40:48> LBL: h7 ARG0: x14 ] >
+  HCONS: < h0 qeq h5 h15 qeq h1 h16 qeq h4 h17 qeq h7 > ]''')
+        getLogger().debug("Adjacent: {}".format(r.dmrs().layout.adjacent_nodes()))
+        optimus = Transformer()
+        # test matching preds
+        rules = optimus.find_rules(r.dmrs().layout.nodes)
+        print(r.dmrs())
+        for rule in rules:
+            print("MATCHING {}: {} -> {}".format(rule.lemma, rule.construction.to_dmrs(), rule.match(r.dmrs().layout)))
+        optimus.apply(r)
+        print("Final: {}".format(r.dmrs().layout.nodes))
+
+    def test_long_sentence(self):
+        r = Reading('''[ TOP: h0
+  RELS: < [ part_of<3:6> LBL: h1 ARG0: x25 [ x NUM: pl PERS: 3 ] ARG1: x27 [ x NUM: pl PERS: 3 IND: + ] ]
+          [ _all_q<3:6> LBL: h2 ARG0: x25 RSTR: h49 ]
+          [ _these_q_dem<7:12> LBL: h3 ARG0: x27 RSTR: h50 ]
+          [ _vary_v_cause<13:19> LBL: h4 ARG0: e26 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG2: x27 ]
+          [ _case_n_of<20:26> LBL: h4 ARG0: x27 ]
+          [ _however_a_1<27:35> LBL: h5 ARG0: i28 ARG1: h51 ]
+          [ pron<36:37> LBL: h6 ARG0: x29 [ x NUM: sg PERS: 1 IND: + PT: std ] ]
+          [ pronoun_q<36:37> LBL: h7 ARG0: x29 RSTR: h52 ]
+          [ neg<38:44> LBL: h8 ARG0: e30 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: h53 ]
+          [ _can_v_modal<38:44> LBL: h9 ARG0: e31 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: h54 ]
+          [ _recall_v_1<45:51> LBL: h10 ARG0: e32 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x29 ARG2: x33 [ x NUM: pl PERS: 3 ] ]
+          [ _any_q<52:55> LBL: h11 ARG0: x33 RSTR: h55 ]
+          [ part_of<52:55> LBL: h12 ARG0: x33 ARG1: x25 ]
+          [ _present_v_to<62:71> LBL: h12 ARG0: e34 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x33 ARG2: x37 [ x NUM: pl PERS: 3 IND: + ] ]
+          [ udef_q<72:191> LBL: h13 ARG0: x37 RSTR: h56 ]
+          [ _more_x_comp<72:76> LBL: h14 ARG0: e35 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: e36 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG2: x38 [ x NUM: sg PERS: 3 GEND: n ] ]
+          [ _singular_a_1<77:85> LBL: h14 ARG0: e36 ARG1: x37 ]
+          [ _feature_n_1<86:94> LBL: h14 ARG0: x37 ]
+          [ generic_entity<100:104> LBL: h15 ARG0: x38 ]
+          [ _that_q_dem<100:104> LBL: h16 ARG0: x38 RSTR: h57 ]
+          [ _associate_v_with<115:125> LBL: h15 ARG0: e39 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG2: x38 ARG3: x44 [ x NUM: sg PERS: 3 IND: + ] ]
+          [ _the_q<131:134> LBL: h17 ARG0: x44 RSTR: h58 ]
+          [ _well_x_deg<135:140> LBL: h18 ARG0: e40 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: e41 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ]
+          [ _know_v_1<140:145> LBL: h18 ARG0: e41 ARG2: x44 ]
+          [ compound<146:159> LBL: h18 ARG0: e42 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x44 ARG2: x43 [ x NUM: sg PERS: 3 IND: + PT: notpro ] ]
+          [ proper_q<146:152> LBL: h19 ARG0: x43 RSTR: h59 ]
+          [ named<146:152> LBL: h20 ARG0: x43 CARG: "Surrey" ]
+          [ _family_n_of<153:159> LBL: h18 ARG0: x44 ]
+          [ _of_p<160:162> LBL: h18 ARG0: e45 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x44 ARG2: x46 [ x NUM: pl PERS: 3 IND: + ] ]
+          [ _the_q<163:166> LBL: h21 ARG0: x46 RSTR: h60 ]
+          [ named<167:175> LBL: h22 ARG0: x46 CARG: "Roylotts" ]
+          [ _of_p<176:178> LBL: h22 ARG0: e47 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x46 ARG2: x48 [ x NUM: sg PERS: 3 IND: + ] ]
+          [ proper_q<179:191> LBL: h23 ARG0: x48 RSTR: h61 ]
+          [ named<179:191> LBL: h24 ARG0: x48 CARG: "Stoke Moran" ] >
+  HCONS: < h0 qeq h5 h49 qeq h1 h50 qeq h4 h51 qeq h8 h52 qeq h6 h53 qeq h9 h54 qeq h10 h55 qeq h12 h56 qeq h14 h57 qeq h15 h58 qeq h18 h59 qeq h20 h60 qeq h22 h61 qeq h24 > ]
+''')
+        optimus = Transformer()
+        rules = optimus.find_rules(r.dmrs().layout.nodes, limit=100)
+        with TextReport() as outfile:
+            for rule in rules:
+                outfile.print(rule.lemma, rule.head(), rule.construction.to_dmrs())
+
+    def test_named_rel_ruledb(self):
+        optimus = Transformer()
+        sent = self.ERG.parse('It is called Nemean Games.')
+        optimus.apply(sent)
+        print(sent[0].dmrs().preds())
 
 
 class TestERGISF(unittest.TestCase):
@@ -399,6 +500,11 @@ class TestERGISF(unittest.TestCase):
     def test_tea_chest(self):
         sent = self.EI.parse("I have a tea chest.")
         self.assertEqual(sent[0].edit().preds(), ['pron', 'pronoun_q', '_have_v_1', '_a_q', '_tea+chest_n_1'])
+
+    def test_named_rel(self):
+        sent = self.EI.parse("My name is Sherlock Holmes.")
+        sent.tag_xml(ttl.Tag.LELESK)
+        print(sent[0].dmrs().xml_str(pretty_print=True))
 
 
 class TestMain(unittest.TestCase):
@@ -450,28 +556,28 @@ class TestMain(unittest.TestCase):
             self.assertGreater(len(senses), 0)
 
     def test_sensetag_in_json(self):
-        text = "Some dogs chases a cat."
+        text = "Some dogs chase a cat."
         a_sent = self.ERG.parse(text)
         p = a_sent[0]
         # check json
         self.assertEqual(type(p.dmrs().json()), dict)
         self.assertEqual(type(p.dmrs().json_str()), str)
         # check sense tagging
-        tags = p.dmrs().tag()
+        tags = p.dmrs().tag(method=ttl.Tag.MFS)
         j = p.dmrs().json()
+        getLogger().debug("{} -> {}".format(text, j))
         nodes = j['nodes']
-        self.assertGreaterEqual(len(nodes), 8)
+        self.assertGreaterEqual(len(nodes), 5)
         self.assertGreaterEqual(len(tags), 4)
         for node in nodes:
-            nid = node['nodeid']
-            if nid in (10004, 10005, 10006, 10008):
+            if node['predicate'] in ('_some_q', '_dog_n_1', '_cat_n_1'):
                 self.assertEqual(len(node['senses']), 1)
-            if nid == 10001:
+            if node['predicate'] == '_chase_v_1':
+                self.assertEqual(node['pos'], 'v')
+            if node['predicate'].startswith('_'):
                 self.assertEqual(node['type'], 'realpred')
-            if nid == 10002:
+            else:
                 self.assertEqual(node['type'], 'gpred')
-            if nid == 10008:
-                self.assertEqual(node['pos'], 'n')
 
     def test_mrs_formats(self):
         text = "Some dogs chase some cats."
@@ -523,7 +629,9 @@ class TestMain(unittest.TestCase):
         s = self.ghub.ERG_ISF.parse("Ali Baba didn't drink green tea.")
         d = s[0].dmrs()
         d.tag(method='lelesk')
-        self.assertEqual(len(d.tags.keys()), 2)
+        getLogger().debug(d.layout.nodes)
+        getLogger().debug("tags: {}".format(d.tags))
+        self.assertGreaterEqual(len(d.tags.keys()), 3)
 
     def test_transforming_special_preds(self):
         s = self.ghub.ERG_ISF.parse("My name is Sherlock Holmes.")

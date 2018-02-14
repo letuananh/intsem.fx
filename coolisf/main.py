@@ -47,7 +47,7 @@ import gzip
 import logging
 
 from chirptext.cli import CLIApp, setup_logging
-from chirptext import header, confirm, TextReport, FileHelper, Counter
+from chirptext import header, confirm, TextReport, FileHelper, Counter, Timer
 from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
@@ -76,6 +76,30 @@ setup_logging('logging.json', 'logs')
 
 
 ########################################################################
+
+
+def read_file(file_path):
+    if not os.path.isfile(file_path):
+        raise Exception("Input file not found: {}".format(file_path))
+    if file_path.endswith('.gz'):
+        with gzip.open(file_path, 'r') as infile:
+            return infile.read()
+    else:
+        return FileHelper.read(file_path)
+
+
+def write_file(content, outpath=None):
+    if outpath:
+        print("Writing ISF document to {}".format(outpath))
+        if outpath.endswith('.gz'):
+            with gzip.open(outpath, 'wt') as outfile:
+                outfile.write(content)
+        else:
+            with open(outpath, 'wt') as outfile:
+                outfile.write(content)
+    else:
+        print(content)
+
 
 def to_visko(cli, args):
     ''' Export MRS to VISKO '''
@@ -109,21 +133,51 @@ def parse_isf(cli, args):
     # verification
     if not os.path.isfile(args.infile):
         print("Error. File does not exist. (provided: {})".format(args.infile))
-    if args.outfile and os.path.exists(args.outfile):
+    if args.output and os.path.exists(args.output):
         if not confirm("Output file exists. Do you want to continue (Y/N)? "):
             print("Program aborted.")
             return
     # process
     header("Processing file: {}".format(args.infile))
-    report = TextReport(args.outfile)
+    report = TextReport(args.output)
     ghub = GrammarHub()
     lines = FileHelper.read(args.infile).splitlines()
     wsd = LeLeskWSD(dbcache=LeskCache())
     ctx = PredSense.wn.ctx()
-    for sent in ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.n, ignore_cache=args.nocache):
+    timer = Timer(cli.logger)
+    timer.start("Parsing {} sentences".format(len(lines)))
+    for idx, sent in enumerate(ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.n, ignore_cache=args.nocache)):
+        print("Processing sentence {} of {}".format(idx + 1, len(lines)))
         sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
         report.writeline(sent.to_xml_str(pretty_print=not args.compact))
         report.writeline("\n\n")
+    timer.stop("Finished")
+
+
+def retag_doc(cli, args):
+    ''' Re-tag an ISF document '''
+    # verification
+    if args.output and os.path.exists(args.output):
+        if not confirm("Output file exists. Do you want to continue (Y/N)? "):
+            print("Program aborted.")
+            return
+    # process
+    header("Processing file: {}".format(args.path))
+    xml_str = read_file(args.path)
+    doc = Document.from_xml_str(xml_str)
+    print("Document size: {}".format(len(doc)))
+    if not args.wsd:
+        print("Nothing to do")
+        return
+    print("Retagging document using {}".format(args.wsd))
+    wsd = LeLeskWSD(dbcache=LeskCache())
+    ctx = PredSense.wn.ctx()
+    for idx, sent in enumerate(doc):
+        print("Tagging sentence #{}/{}".format(idx + 1, len(doc)))
+        sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
+    ctx.close()
+    doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
+    write_file(doc_xml_str, args.output)
 
 
 def extract_tsdb(cli, args):
@@ -137,12 +191,19 @@ def extract_tsdb(cli, args):
             doc = read_tsdb(args.path)
         print("Found sentences: {}".format(len(doc)))
         print("With shallow: {}".format(len(list(s for s in doc if s.shallow))))
+        if args.ident:
+            print("Idents: {}".format(args.ident))
+            doc_new = Document(name=doc.name, title=doc.title)
+            for sent in doc:
+                if sent.ident in args.ident:
+                    doc_new.add(sent)
+            doc = doc_new
         if args.isf:
             print("performing ISF transformation")
             transformer = Transformer()
             total = len(doc)
             for idx, sent in enumerate(doc):
-                print("Processing {} of {} sentences".format(idx, total))
+                print("Processing {} of {} sentences".format(idx + 1, total))
                 transformer.apply(sent)
                 if args.topk and int(args.topk) < idx:
                     break
@@ -159,16 +220,7 @@ def extract_tsdb(cli, args):
             ctx.close()
         print("Generating output ...")
         doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
-        if args.output:
-            print("Writing ISF output to {}".format(args.output))
-            if args.output.endswith('.gz'):
-                with gzip.open(args.output, 'wt') as outfile:
-                    outfile.write(doc_xml_str)
-            else:
-                with open(args.output, 'wt') as outfile:
-                    outfile.write(doc_xml_str)
-        else:
-            print(doc_xml_str)
+        write_file(doc_xml_str, args.output)
 
 
 def parse_text(cli, args):
@@ -177,6 +229,8 @@ def parse_text(cli, args):
     text = args.input
     wsd = LeLeskWSD(dbcache=LeskCache())
     ctx = PredSense.wn.ctx()
+    timer = Timer(logger=cli.logger)
+    timer.start("Parsing {}".format(text))
     result = ghub.parse(text, args.grammar, args.n, args.wsd, args.nocache, wsd=wsd, ctx=ctx)
     if result is not None and len(result) > 0:
         report = TextReport(args.output)
@@ -193,6 +247,7 @@ def parse_text(cli, args):
             for reading in result:
                 report.writeline(reading.mrs().tostring(pretty_print=not args.compact))
                 report.writeline()
+    timer.stop("Text: {} | Parses: {}".format(text, len(result)))
 
 
 def parse_bib(cli, args):
@@ -237,9 +292,8 @@ def parse_bib(cli, args):
 
 def export_ttl(cli, args):
     ''' Export ISF document to TTL '''
-    if not os.path.isfile(args.path):
-        raise Exception("ISF input file not found")
-    doc = Document.from_xml_str(FileHelper.read(args.path))
+    xml_str = read_file(args.path)
+    doc = Document.from_xml_str(xml_str)
     print("Found {} sentences".format(len(doc)))
     if args.output:
         out_path = os.path.dirname(args.output)
@@ -249,7 +303,7 @@ def export_ttl(cli, args):
         out_name = 'ttl_output'
     doc_ttl = ttl.Document(out_name, out_path)
     for sent in doc:
-        tsent = doc_ttl.add_sent(sent.text, sent.ident)
+        tsent = doc_ttl.new_sent(sent.text, sent.ident)
         if not len(sent):
             continue
         dmrs = sent[0].dmrs()  # only support the first reading for now
@@ -259,10 +313,10 @@ def export_ttl(cli, args):
             node = dmrs.layout[nid]
             synsets = {(s.ID, tuple(s.lemmas), m) for s, m in ss}
             for synsetid, lemmas, method in synsets:
-                tsent.add_tag(synsetid, node.cfrom, node.cto, tagtype='WN')
+                tsent.new_tag(synsetid, node.cfrom, node.cto, tagtype='WN')
                 if args.with_lemmas:
-                    tsent.add_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
-            print(sent.ident, node.cfrom, node.cto, synsets)
+                    tsent.new_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
+            # print(sent.ident, node.cfrom, node.cto, synsets)
     doc_ttl.write_ttl()
     pass
 
@@ -282,7 +336,7 @@ def main():
 
     task = app.add_task('parse', func=parse_isf)
     task.add_argument('infile', help='Path to input text file')
-    task.add_argument('outfile', help='Path to store results', nargs="?", default=None)
+    task.add_argument('-o', '--output', help='Path to store results')
     task.add_argument('-n', help='Maximum parse count', default=None)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
     task.add_argument('--wsd', help='Word Sense Disambiguator', default=ttl.Tag.LELESK)
@@ -312,17 +366,26 @@ def main():
     task = app.add_task('gold', lambda cli, args: generate_gold_profile(), help='Extract gold profile')
 
     # Extract sentences from TSDB profile
-    tsdb_task = app.add_task('tsdb', func=extract_tsdb)
-    tsdb_task.add_argument('path', help='Path to TSDB profile folder')
-    tsdb_task.add_argument('-o', '--output', help='Save extracted sentences to a file', default=None)
-    tsdb_task.add_argument('--ttl', help='Path to TTL files')
-    tsdb_task.add_argument('--name', help='Document canonical name')
-    tsdb_task.add_argument('--title', help='Document title')
-    tsdb_task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
-    tsdb_task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
-    tsdb_task.add_argument('--isf', help="Perform ISF transformation", action="store_true")
-    tsdb_task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
-    tsdb_task.add_argument('-n', '--topk', help="Only enhance top k results (for debugging purpose)")
+    task = app.add_task('tsdb', func=extract_tsdb)
+    task.add_argument('path', help='Path to TSDB profile folder')
+    task.add_argument('-o', '--output', help='Save extracted sentences to a file', default=None)
+    task.add_argument('--ttl', help='Path to TTL files')
+    task.add_argument('--name', help='Document canonical name')
+    task.add_argument('--title', help='Document title')
+    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
+    task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
+    task.add_argument('--isf', help="Perform ISF transformation", action="store_true")
+    task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
+    task.add_argument('-n', '--topk', help="Only enhance top k results (for debugging purpose)")
+    task.add_argument('--ident', nargs='*')
+
+    # re-tag a document
+    task = app.add_task('tag', func=retag_doc)
+    task.add_argument('path', help='Path to document file (xml or xml.gz)')
+    task.add_argument('-o', '--output', help='Write output to a file', default=None)
+    task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
+    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
+    task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
 
     # ISF to TTL
     task = app.add_task('ttl', func=export_ttl)

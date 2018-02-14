@@ -638,8 +638,9 @@ class DMRS(object):
         j = Dmrs.to_dict(self.obj(), properties=True)
         # sense-tagging if possible
         # JSON will be tagged with mfs by default
-        # [2017-07-26] Don't tag JSON by default
+        # [2017-07-26] Don't tag JSON by default, it's slow
         tags = self.tags if self.tags else self.tag(method=ttl.Tag.DEFAULT)
+        # getLogger().debug("Tagging JSON with {}".format(tags))
         for node in j['nodes']:
             nid = node['nodeid']
             if nid in tags and len(tags[nid]) > 0:
@@ -751,6 +752,9 @@ class DMRS(object):
             lemma = get_ep_lemma(ep)
             # getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
             candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
+            if not candidates and ep.carg:
+                candidates = PredSense.search_sense((ep.carg,), ctx=ctx)
+                getLogger().debug("candidates for [{} [CARG '{}']]: {}".format(ep.pred.string, ep.carg, [(c, c.lemmas) for c in candidates]))
             # getLogger().debug("{} - Candidates for {}: {}".format(method, ep.pred.string, candidates))
             if not candidates:
                 continue
@@ -1350,6 +1354,8 @@ class DMRSLayout(object):
                 continue
             adj_list[n.cfrom].append(n)
             adj_list[n.cto + 1].append(n)
+            adj_list[n.cto].append(n)
+        getLogger().debug("adjacent dict: {}".format(adj_list))
         return {frozenset(n.predstr for n in v) for k, v in adj_list.items() if len(v) > 1}
 
     def subgraph(self, headid, constraints=None, ignore_rstr=True):
@@ -1648,17 +1654,45 @@ class RuleInfo(object):
     SINGLE_PRED = 1
     COMPOUND = 2
 
-    def __init__(self, lid=None, rid=None, pred=None, flag=None):
+    def __init__(self, ID=None, lid=None, rid=None, head=None, flag=None):
+        self.ID = ID
         self.lid = lid
         self.rid = rid
-        self.pred = pred
+        self.head = head
         self.flag = flag
 
     def __repr__(self):
-        return "#{}-{}:{}".format(self.lid, self.rid, self.pred)
+        return "#{}-{}:{}".format(self.lid, self.rid, self.head)
 
     def __str__(self):
         return repr(self)
+
+
+class PredInfo(object):
+
+    def __init__(self, ID=None, pred=None, predtype=None, lemma=None, pos=None, sense=None):
+        self.ID = ID
+        self.pred = pred
+        self.predtype = predtype
+        self.lemma = lemma
+        self.pos = pos
+        self.sense = sense
+
+    @staticmethod
+    def from_string(pred_str):
+        pred = Predicate.from_string(pred_str)
+        return PredInfo(pred=pred_str, predtype=pred.ptype, lemma=pred.lemma, pos=pred.pos, sense=pred.sense)
+
+
+class RulePred(object):
+
+    def __init__(self, ruleid=None, predid=None, carg=None):
+        self.ruleid = ruleid
+        self.predid = predid
+        self.carg = carg
+
+    def __repr__(self):
+        return "RulePred(ruleid={}, predid={}, carg={})".format(self.ruleid, self.predid, self.carg)
 
 
 # ----------------

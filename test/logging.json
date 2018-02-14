@@ -38,39 +38,16 @@
     },
 
     "loggers": {
-        "__main__": {
-            "level": "INFO",
-            "handlers": ["console", "file_handler_verbose"],
-            "propagate": "no"
-        }
-        ,"coolisf.mappings": {
-            "level": "INFO",
-            "handlers": ["console", "file_handler_verbose"],
-            "propagate": "no"
-         }
-        ,"coolisf.ghub": {
-            "level": "INFO",
-            "handlers": ["console", "file_handler_verbose"],
-            "propagate": "no"
-        }
-        ,"coolisf.gold_extract": {
-            "level": "INFO",
-            "handlers": ["file_handler_verbose"],
-            "propagate": "no"
-        }
-        ,"coolisf.model": {
-            "level": "INFO",
-            "handlers": ["file_handler_verbose"],
-            "propagate": "no"
-        }
-        ,"test": {
-            "level": "INFO",
-            "propagate": "no"
-         }
-        ,"puchikarui": {
-            "level": "INFO",
-            "propagate": "no"
-         }
+        "__main__": {"level": "INFO"}
+        ,"coolisf.mappings": {"level": "INFO"}
+        ,"coolisf.ghub": {"level": "INFO"}
+        ,"coolisf.gold_extract": {"level": "INFO"}
+        ,"coolisf.model": {"level": "INFO"}
+        ,"coolisf.dao": {"level": "INFO"}
+        ,"coolisf.dao.ruledb": {"level": "INFO"}
+        ,"coolisf.morph": {"level": "INFO"}
+        ,"test": {"level": "INFO"}
+        ,"puchikarui": {"level": "INFO"}
     },
 
     "root": {
