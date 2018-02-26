@@ -55,14 +55,22 @@ from coolisf.dao import read_tsdb
 from coolisf.model import Sentence
 from coolisf.lexsem import tag_gold
 from coolisf.mappings import PredSense
+from coolisf.common import write_file
+from coolisf.config import read_config
+
 
 # -----------------------------------------------------------------------
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-DATA_DIR = FileHelper.abspath('./data')
+cfg = read_config()
+if cfg and 'data_root' in cfg:
+    DATA_DIR = FileHelper.abspath(cfg['data_root'])
+else:
+    DATA_DIR = FileHelper.abspath('./data')
 GOLD_PATH = os.path.join(DATA_DIR, 'gold')
-OUTPUT_ISF = 'data/spec-isf.xml'
+GOLD_TTL_PATH = os.path.join(DATA_DIR, 'gold')
+OUTPUT_ISF = os.path.join(DATA_DIR, 'speckled_tsdb_imi.xml.gz')
 
 
 def getLogger():
@@ -146,7 +154,7 @@ def read_gold_sents(perform_wsd=False):
     return read_tsdb_ttl(GOLD_PATH, name="speckled", title="The Adventure of the Speckled Band")
 
 
-def build_root_node():
+def build_root_node(filename='spec-isf.xml'):
     isf_node = etree.Element('rootisf')
     isf_node.set('version', '0.1')
     isf_node.set('lang', 'eng')
@@ -155,7 +163,7 @@ def build_root_node():
     filedesc_node = etree.SubElement(header_node, 'description')
     filedesc_node.set("title", "The Adventure of the Speckled Band")
     filedesc_node.set("author", "Arthur Conan Doyle")
-    filedesc_node.set("filename", "spec-isf.xml")
+    filedesc_node.set("filename", filename)
     filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
     # License text
     license_node = etree.SubElement(filedesc_node, "license")
@@ -206,19 +214,18 @@ def build_root_node():
 def generate_gold_profile():
     # doc = read_gold_sents()
     print("Reading TSDB/TTL data")
-    doc = read_tsdb_ttl(GOLD_PATH)
+    doc = read_tsdb_ttl(GOLD_PATH, ttl_path=GOLD_TTL_PATH)
     # Process data
     print("Creating XML file ...")
     # build root XML node for data file
-    isf_node = build_root_node()
+    isf_node = build_root_node(filename=FileHelper.getfullfilename(OUTPUT_ISF))
     # Add document nodes
     doc.to_xml_node(isf_node)
     # write to file
-    with open(OUTPUT_ISF, 'wb') as output_isf:
-        print("Making it beautiful ...")
-        xml_string = etree.tostring(isf_node, encoding='utf-8', pretty_print=True)
-        print("Saving XML data to file ...")
-        output_isf.write(xml_string)
+    print("Making it beautiful ...")
+    xml_string = etree.tostring(isf_node, encoding='utf-8', pretty_print=True)
+    print("Saving XML data to file ...")
+    write_file(xml_string, OUTPUT_ISF)
     print("ISF gold profile has been written to %s" % (OUTPUT_ISF,))
     print("All done!")
 

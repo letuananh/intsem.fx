@@ -54,26 +54,30 @@ def getLogger():
 # Functions
 # ----------------------------------------------------------------------
 
-def read_file(file_path):
+def read_file(file_path, mode='rt'):
     file_path = FileHelper.abspath(file_path)  # normalize path
     if not os.path.isfile(file_path):
         raise Exception("Input file not found: {}".format(file_path))
     if file_path.endswith('.gz'):
-        with gzip.open(file_path, 'rt') as infile:
+        with gzip.open(file_path, mode) as infile:
             return infile.read()
     else:
-        return FileHelper.read(file_path, 'rt')
+        return FileHelper.read(file_path, mode)
 
 
 def write_file(content, outpath=None):
     ''' Write content to a file, or to console if no path is provided '''
+    if isinstance(content, str):
+        mode = 'wt'
+    else:
+        mode = 'wb'
     if outpath:
         getLogger().debug("Writing content to {}".format(outpath))
         if outpath.endswith('.gz'):
-            with gzip.open(outpath, 'wt') as outfile:
+            with gzip.open(outpath, mode) as outfile:
                 outfile.write(content)
         else:
-            with open(outpath, 'wt') as outfile:
+            with open(outpath, mode) as outfile:
                 outfile.write(content)
     else:
         print(content)
