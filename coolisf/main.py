@@ -43,7 +43,6 @@ References:
 ########################################################################
 
 import os
-import gzip
 import logging
 
 from chirptext.cli import CLIApp, setup_logging
@@ -52,11 +51,12 @@ from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
+from coolisf.common import write_file
 from coolisf.morph import Transformer
 from coolisf.ghub import GrammarHub
 from coolisf.util import read_ace_output
 from coolisf.dao import read_tsdb
-from coolisf.gold_extract import read_tsdb_ttl
+from coolisf.gold_extract import read_tsdb_ttl, tag_doc
 from coolisf.gold_extract import generate_gold_profile
 from coolisf.gold_extract import export_to_visko
 from coolisf.gold_extract import read_gold_sents
@@ -76,29 +76,6 @@ setup_logging('logging.json', 'logs')
 
 
 ########################################################################
-
-
-def read_file(file_path):
-    if not os.path.isfile(file_path):
-        raise Exception("Input file not found: {}".format(file_path))
-    if file_path.endswith('.gz'):
-        with gzip.open(file_path, 'r') as infile:
-            return infile.read()
-    else:
-        return FileHelper.read(file_path)
-
-
-def write_file(content, outpath=None):
-    if outpath:
-        print("Writing ISF document to {}".format(outpath))
-        if outpath.endswith('.gz'):
-            with gzip.open(outpath, 'wt') as outfile:
-                outfile.write(content)
-        else:
-            with open(outpath, 'wt') as outfile:
-                outfile.write(content)
-    else:
-        print(content)
 
 
 def to_visko(cli, args):
@@ -146,7 +123,7 @@ def parse_isf(cli, args):
     ctx = PredSense.wn.ctx()
     timer = Timer(cli.logger)
     timer.start("Parsing {} sentences".format(len(lines)))
-    for idx, sent in enumerate(ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.n, ignore_cache=args.nocache)):
+    for idx, sent in enumerate(ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.topk, ignore_cache=args.nocache)):
         print("Processing sentence {} of {}".format(idx + 1, len(lines)))
         sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
         report.writeline(sent.to_xml_str(pretty_print=not args.compact))
@@ -163,41 +140,61 @@ def retag_doc(cli, args):
             return
     # process
     header("Processing file: {}".format(args.path))
-    xml_str = read_file(args.path)
-    doc = Document.from_xml_str(xml_str)
+    doc = Document.from_file(args.path, idents=args.ident)
     print("Document size: {}".format(len(doc)))
-    if not args.wsd:
+    if not args.wsd and not args.ttl:
         print("Nothing to do")
         return
-    print("Retagging document using {}".format(args.wsd))
-    wsd = LeLeskWSD(dbcache=LeskCache())
-    ctx = PredSense.wn.ctx()
-    for idx, sent in enumerate(doc):
-        print("Tagging sentence #{}/{}".format(idx + 1, len(doc)))
-        sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
-    ctx.close()
+    if args.wsd:
+        print("Retagging document using {}".format(args.wsd))
+        wsd = LeLeskWSD(dbcache=LeskCache())
+        ctx = PredSense.wn.ctx()
+        for idx, sent in enumerate(doc):
+            if args.ident and sent.ident not in args.ident:
+                continue
+            print("Tagging sentence #{}/{}".format(idx + 1, len(doc)))
+            sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
+        ctx.close()
+    if args.ttl:
+        print("Tagging doc {} using TTL doc {}".format(doc.name, args.ttl))
+        ttl_doc = ttl.Document.read_ttl(args.ttl)
+        tag_doc(doc, ttl_doc)
     doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
     write_file(doc_xml_str, args.output)
 
 
 def extract_tsdb(cli, args):
     ''' Read parsed sentences from a TSDB profile '''
-    if not os.path.isdir(args.path):
+    if not os.path.exists(args.path):
         print("TSDB profile does not exist (path: {})".format(args.path))
     else:
-        if args.ttl:
-            doc = read_tsdb_ttl(args.path, ttl_path=args.ttl, name=args.name, title=args.title)
-        else:
-            doc = read_tsdb(args.path)
+        # read document
+        timer = Timer(cli.logger)
+        timer.start("Reading document")
+        if os.path.isdir(args.path):
+            # is TSDB
+            if args.ttl:
+                doc = read_tsdb_ttl(args.path, ttl_path=args.ttl, name=args.name, title=args.title)
+            else:
+                doc = read_tsdb(args.path)
+            if args.ident:
+                print("Idents: {}".format(args.ident))
+                doc_new = Document(name=doc.name, title=doc.title)
+                for sent in doc:
+                    if sent.ident in args.ident:
+                        doc_new.add(sent)
+                doc = doc_new
+        elif os.path.isfile(args.path):
+            # read doc XML
+            doc = Document.from_file(args.path, idents=args.ident)
+            print(len(doc))
+            if args.ttl:
+                ttl_doc = ttl.Document.read_ttl(args.ttl)
+                doc = tag_doc(doc, ttl_doc)
+        # process doc
         print("Found sentences: {}".format(len(doc)))
         print("With shallow: {}".format(len(list(s for s in doc if s.shallow))))
-        if args.ident:
-            print("Idents: {}".format(args.ident))
-            doc_new = Document(name=doc.name, title=doc.title)
-            for sent in doc:
-                if sent.ident in args.ident:
-                    doc_new.add(sent)
-            doc = doc_new
+        timer.stop("Reading document")
         if args.isf:
             print("performing ISF transformation")
             transformer = Transformer()
@@ -207,9 +204,10 @@ def extract_tsdb(cli, args):
                 transformer.apply(sent)
                 if args.topk and int(args.topk) < idx:
                     break
+        timer.stop("ISF transformation")
         # perform WSD if required
         if args.wsd:
-            print("Performing WDS ...")
+            print("Performing WSD using {}...".format(args.wsd))
             wsd = LeLeskWSD(dbcache=LeskCache())
             ctx = PredSense.wn.ctx()
             for idx, sent in enumerate(doc):
@@ -218,9 +216,11 @@ def extract_tsdb(cli, args):
                 if args.topk and int(args.topk) < idx:
                     break
             ctx.close()
+            timer.stop("WSD ({})".format(args.wsd))
         print("Generating output ...")
         doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
         write_file(doc_xml_str, args.output)
+        timer.stop("Finished")
 
 
 def parse_text(cli, args):
@@ -230,14 +230,18 @@ def parse_text(cli, args):
     wsd = LeLeskWSD(dbcache=LeskCache())
     ctx = PredSense.wn.ctx()
     timer = Timer(logger=cli.logger)
-    timer.start("Parsing {}".format(text))
-    result = ghub.parse(text, args.grammar, args.n, args.wsd, args.nocache, wsd=wsd, ctx=ctx)
+    timer.start("Parsing \"{}\"".format(text))
+    result = ghub.parse(text, args.grammar, args.topk, args.wsd, args.nocache, wsd=wsd, ctx=ctx)
     if result is not None and len(result) > 0:
         report = TextReport(args.output)
         if args.format == OUTPUT_DMRS:
             report.header(result)
             for reading in result:
                 report.writeline(reading.dmrs().tostring(pretty_print=not args.compact))
+                if reading.dmrs().tags:
+                    for nodeid, tags in reading.dmrs().tags.items():
+                        tag_str = ', '.join('{}[{}/{}]'.format(s.ID, s.lemma, m) for s, m in tags)
+                        report.writeline("# {} -> {}".format(nodeid, tag_str))
                 report.writeline()
         elif args.format == OUTPUT_XML:
             result.tag_xml()
@@ -251,6 +255,7 @@ def parse_text(cli, args):
 
 
 def parse_bib(cli, args):
+    ''' Parse a complete biblioteca '''
     c = Counter()
     ghub = GrammarHub()
     bib_path = FileHelper.abspath(args.input)
@@ -282,7 +287,7 @@ def parse_bib(cli, args):
             sent_texts = [s.text for s in sents]
             # parse document
             report = TextReport(doc_path)
-            for sent in ghub.ERG_ISF.parse_many_iterative(sent_texts, parse_count=args.n, ignore_cache=args.nocache):
+            for sent in ghub.ERG_ISF.parse_many_iterative(sent_texts, parse_count=args.topk, ignore_cache=args.nocache):
                 sent.tag_xml(method=args.wsd)
                 print("Processed: {}".format(sent.text))
                 doc_isf.add(sent)
@@ -292,8 +297,7 @@ def parse_bib(cli, args):
 
 def export_ttl(cli, args):
     ''' Export ISF document to TTL '''
-    xml_str = read_file(args.path)
-    doc = Document.from_xml_str(xml_str)
+    doc = Document.from_file(args.path)
     print("Found {} sentences".format(len(doc)))
     if args.output:
         out_path = os.path.dirname(args.output)
@@ -331,66 +335,54 @@ def isf_config_logging(args):
         logging.getLogger('coolisf.processors').setLevel(logging.DEBUG)
 
 
-def main():
-    app = CLIApp("CoolISF Main Application", logger=__name__, config_logging=isf_config_logging)
+app = CLIApp("CoolISF Main Application", logger=__name__, config_logging=isf_config_logging)
 
-    task = app.add_task('parse', func=parse_isf)
-    task.add_argument('infile', help='Path to input text file')
-    task.add_argument('-o', '--output', help='Path to store results')
-    task.add_argument('-n', help='Maximum parse count', default=None)
-    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    task.add_argument('--wsd', help='Word Sense Disambiguator', default=ttl.Tag.LELESK)
-    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
 
-    task = app.add_task('text', func=parse_text)
-    task.add_argument('input', help='Any text')
+def make_task(name, func):
+    ''' Add standard ISF options to a cli task '''
+    task = app.add_task(name, func=func)
+    task.add_argument('-o', '--output', help='Output file')
     task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
-    task.add_argument('-n', help="Only show top n parses", default=None)
-    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=ttl.Tag.LELESK)
-    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    task.add_argument('--wsd', help='Word Sense Disambiguator', default=ttl.Tag.LELESK)
     task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
-    task.add_argument('-o', '--output', help="Write output to path")
+    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
+    task.add_argument('-n', '--topk', help="Only process top n items", default=None)
     task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
+    task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
+    return task
+
+
+def main():
+    task = make_task('parse', func=parse_isf)
+    task.add_argument('infile', help='Path to input text file')
+
+    task = make_task('text', func=parse_text)
+    task.add_argument('input', help='Any text')
 
     # batch processing a raw text corpus
-    task = app.add_task('bib', func=parse_bib)
+    task = make_task('bib', func=parse_bib)
     task.add_argument('input', help='Path to raw biblioteca')
-    task.add_argument('-g', '--grammar', help="Grammar name", default="ERG_ISF")
-    task.add_argument('-n', help="Only show top n parses", default=None)
-    task.add_argument('--wsd', help="Word-Sense Disambiguator", default=ttl.Tag.LELESK)
-    task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
-    task.add_argument('-o', '--output', help="Write output to path")
-    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     # Create ISF gold profile
     task = app.add_task('gold', lambda cli, args: generate_gold_profile(), help='Extract gold profile')
 
     # Extract sentences from TSDB profile
-    task = app.add_task('tsdb', func=extract_tsdb)
-    task.add_argument('path', help='Path to TSDB profile folder')
-    task.add_argument('-o', '--output', help='Save extracted sentences to a file', default=None)
+    task = make_task('tsdb', func=extract_tsdb)
+    task.add_argument('path', help='Path to TSDB profile folder or XML doc')
     task.add_argument('--ttl', help='Path to TTL files')
     task.add_argument('--name', help='Document canonical name')
     task.add_argument('--title', help='Document title')
-    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
-    task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
     task.add_argument('--isf', help="Perform ISF transformation", action="store_true")
-    task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
-    task.add_argument('-n', '--topk', help="Only enhance top k results (for debugging purpose)")
     task.add_argument('--ident', nargs='*')
 
     # re-tag a document
-    task = app.add_task('tag', func=retag_doc)
+    task = make_task('tag', func=retag_doc)
     task.add_argument('path', help='Path to document file (xml or xml.gz)')
-    task.add_argument('-o', '--output', help='Write output to a file', default=None)
-    task.add_argument('--wsd', help="Word-Sense Disambiguator", choices=WSD_CHOICES)
-    task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
-    task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
+    task.add_argument('--ttl', help='Path to TTL files')
+    task.add_argument('--ident', nargs='*')
 
     # ISF to TTL
-    task = app.add_task('ttl', func=export_ttl)
+    task = make_task('ttl', func=export_ttl)
     task.add_argument('path', help='Path to XML doc')
-    task.add_argument('-o', '--output', help='Path to output TTL doc')
     task.add_argument('--with-lemmas', help='Add lemmas to sentences', action="store_true")
 
     # Export to visko

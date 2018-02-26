@@ -55,7 +55,7 @@ from coolisf import GrammarHub
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-from test.common import TEST_DATA
+from test import TEST_DATA
 TEST_SENTENCES = os.path.join(TEST_DATA, 'bib.txt')
 ACE_OUTPUT_FILE = os.path.join(TEST_DATA, 'bib.mrs.txt')
 
@@ -124,10 +124,27 @@ class TestMain(unittest.TestCase):
     def test_time(self):
         ss = PredSense.search_pred_string('_time_n_of_rel')
         self.assertTrue(ss)
+        ss = PredSense.search_pred_string('time_n_rel')
+        self.assertFalse(ss)
 
     def test_mwe_lemma_sense(self):
         ss = PredSense.search_pred_string('_squeeze_v_in')
-        print(ss)
+        getLogger().debug(ss)
+
+    def test_unknown_preds(self):
+        preds = ['_ventilator/NN_u_unknown', '_stepfather/NN_u_unknown',
+                 '_soothingly/RB_u_unknown', '_dissolute/JJ_u_unknown']
+        for pred in preds:
+            ss = PredSense.search_pred_string(pred)
+            self.assertTrue(bool(pred.startswith('_')) != bool(not ss))
+            getLogger().debug("Candidates for {}: {}".format(pred, ss))
+
+    def test_known_gpreds(self):
+        preds = ['_be_v_id_rel', 'person_rel', 'person_n_rel', '_person_n_1', 'pronoun_q']
+        for pred in preds:
+            ss = PredSense.search_pred_string(pred)
+            self.assertTrue(bool(pred.startswith('_')) != bool(not ss))
+            getLogger().debug("Candidates for {}: {}".format(pred, ss))
 
     def test_known_concepts(self):
         ctx = PredSense.wn.ctx()

@@ -41,7 +41,7 @@ from yawlib.omwsql import OMWSQL
 from coolisf import GrammarHub
 from coolisf.model import LexUnit, Reading
 from coolisf.dao.ruledb import parse_lexunit
-from coolisf.morph import LEXRULES_DB, LexRuleDB
+from coolisf.morph import LexRuleDB
 
 
 # ---------------------------------------------------------
@@ -208,7 +208,7 @@ def main():
     task_parsers = parser.add_subparsers(help='Task to be done')
 
     ruledb_task = task_parsers.add_parser('ruledb', add_help=False)
-    ruledb_task.add_argument('--dbloc', default=LEXRULES_DB)
+    ruledb_task.add_argument('--dbloc', default='data/lexrules.db')
     ruledb_jobs = ruledb_task.add_subparsers(help='Job to perform on rule DB')
     # generate DB
     gen_job = ruledb_jobs.add_parser('gen', parents=[ruledb_task])

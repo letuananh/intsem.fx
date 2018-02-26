@@ -47,8 +47,7 @@ from yawlib.omwsql import OMWSQL
 import miner
 from coolisf import GrammarHub
 from coolisf.model import LexUnit, Reading, RuleInfo
-from coolisf.dao.ruledb import LexRuleDB
-from coolisf.morph import LEXRULES_DB
+from coolisf.morph import Transformer
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION
@@ -70,7 +69,7 @@ def getLogger():
 
 class TestMiningPred(unittest.TestCase):
 
-    db = LexRuleDB(LEXRULES_DB)
+    db = Transformer().rdb
 
     def test_parsing(self):
         ghub = GrammarHub()

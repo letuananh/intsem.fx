@@ -47,7 +47,8 @@
             "level": "INFO",
             "handlers": ["file_handler_verbose"],
             "propagate": "no"
-        }
+         }
+        ,"isftk": {"level": "INFO"}
     },
 
     "root": {

@@ -49,7 +49,6 @@ from coolisf.model import Sentence
 # ----------------------------------------------------------------------
 
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
 
 
 def getLogger():

@@ -58,6 +58,7 @@ from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
+from coolisf.common import read_file
 from coolisf.parsers import parse_dmrs_str
 from coolisf.mappings import PredSense
 
@@ -174,19 +175,38 @@ class Document(object):
         return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
 
     @staticmethod
-    def from_xml_node(doc_node):
+    def from_xml_node(doc_node, idents=None):
+        ''' Read sentences from an XML node object '''
+        logger = getLogger()
         doc = Document(name=get_attr(doc_node, 'name', ''), title=get_attr(doc_node, 'title', ''))
         doc.ident = get_attr(doc_node, 'ident', None)
         doc.ID = get_attr(doc_node, 'ID', None)
+        logger.debug("Document: name={} | title={} | ident={} | ID={}".format(doc.name, doc.title, doc.ident, doc.ID))
         sent_nodes = doc_node.findall("sentence")
+        getLogger().debug("Found {} sent nodes".format(len(sent_nodes)))
         for sent_node in sent_nodes:
             sent = Sentence.from_xml_node(sent_node)
+            if idents and sent.ident not in idents:
+                getLogger().debug("Skipped sentence #{}".format(sent.ident))
+                continue
             doc.add(sent)
         return doc
 
     @staticmethod
-    def from_xml_str(xml_str):
-        return Document.from_xml_node(etree.XML(xml_str))
+    def from_xml_str(xml_str, *args, **kwargs):
+        doc_root = etree.XML(xml_str)
+        if doc_root.tag == 'rootisf':
+            doc_root = doc_root.find('document')
+        return Document.from_xml_node(doc_root, *args, **kwargs)
+
+    @staticmethod
+    def from_file(file_path, *args, **kwargs):
+        getLogger().info("Reading ISF Document from: {}".format(file_path))
+        doc_str = read_file(file_path)
+        getLogger().debug("Raw doc string size: {}".format(len(doc_str)))
+        doc = Document.from_xml_str(doc_str, *args, **kwargs)
+        getLogger().debug("Doc size: {}".format(len(doc)))
+        return doc
 
 
 class Sentence(object):
@@ -721,7 +741,7 @@ class DMRS(object):
                     sid = s.attrib['synsetid']
                     lemma = s.attrib['lemma']
                     score = s.attrib['score'] if 'score' in s.attrib else None
-                    method = s.attrib['method'] if 'method' in s.attrib else ttl.Tag.ISF
+                    method = s.attrib['type'] if 'type' in s.attrib else ttl.Tag.ISF
                     self.tag_node(nodeid, sid, lemma, method, score=score)
             # end for
             # tag list is stored esp for JSON
@@ -732,7 +752,7 @@ class DMRS(object):
                             self.tags[k].append(new_tag)
         return self.tags
 
-    def tag(self, method=ttl.Tag.MFS, wsd=None, ctx=None):
+    def tag(self, method=ttl.Tag.MFS, wsd=None, strict=False, ctx=None):
         ''' Sense tag this DMRS using a WSD method (by default is most-frequent sense)
         and then return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
         '''
@@ -744,19 +764,22 @@ class DMRS(object):
                 with PredSense.wn.ctx() as ctx:
                     getLogger().warning("Creating a new WSD, this can be optimized further ...")
                     return self.tag(method=method, wsd=wsd, ctx=ctx)
-        eps = self.get_lexical_preds()
+        eps = self.get_lexical_preds() if strict else self.obj().eps()
         context = self.get_wsd_context()
         for ep in eps:
             # taggable eps
             # TODO: Use POS for better sense-tagging?
+            getLogger().debug("processing {}".format(ep))
             lemma = get_ep_lemma(ep)
             # getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
             candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
-            if not candidates and ep.carg:
+            if candidates:
+                getLogger().debug("Candidate for {}: {}".format(ep.pred.string, candidates))
+            elif ep.carg:
                 candidates = PredSense.search_sense((ep.carg,), ctx=ctx)
-                getLogger().debug("candidates for [{} [CARG '{}']]: {}".format(ep.pred.string, ep.carg, [(c, c.lemmas) for c in candidates]))
-            # getLogger().debug("{} - Candidates for {}: {}".format(method, ep.pred.string, candidates))
+                getLogger().debug("Candidates for [{} [CARG '{}']]: {}".format(ep.pred.string, ep.carg, [(c, c.lemmas) for c in candidates]))
             if not candidates:
+                getLogger().debug("No candidate was found for {}".format(ep.pred.string))
                 continue
             if method == ttl.Tag.LELESK:
                 scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
@@ -825,8 +848,11 @@ class DMRS(object):
     def get_wsd_context(self):
         return (get_ep_lemma(p) for p in self.get_lexical_preds())
 
+    def is_known_gpred(self, pred):
+        return pred in ("named", 'superl', '_be_v_id')
+
     def get_lexical_preds(self):
-        return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or p.pred == "named")
+        return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or self.is_known_gpred(p.pred))
 
     def edit(self):
         return DMRSLayout(self.json(), self)

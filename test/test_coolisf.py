@@ -53,15 +53,14 @@ from yawlib import YLConfig, WordnetSQL as WSQL
 from coolisf import GrammarHub
 from coolisf.gold_extract import export_to_visko, read_gold_mrs
 from coolisf.util import read_ace_output
-from coolisf.dao.ruledb import LexRuleDB
-from coolisf.morph import Compound, Integral, Transformer, SimpleHeadedCompound as HCMP, LEXRULES_DB
+from coolisf.morph import Compound, Integral, Transformer, SimpleHeadedCompound as HCMP
 from coolisf.model import Sentence, MRS, Reading
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-from test.common import TEST_DATA
+from test import TEST_DATA
 wsql = WSQL(YLConfig.WNSQL30_PATH)
 TEST_SENTENCES = 'data/bib.txt'
 ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
@@ -165,7 +164,7 @@ class TestData(object):
 class TestRuleGenerator(unittest.TestCase):
 
     optimus = Transformer()
-    rdb = LexRuleDB(LEXRULES_DB)
+    rdb = optimus.rdb
 
     def test_load_rule(self):
         with self.rdb.ctx() as ctx:
@@ -474,9 +473,11 @@ class TestTransformer(unittest.TestCase):
 ''')
         optimus = Transformer()
         rules = optimus.find_rules(r.dmrs().layout.nodes, limit=100)
-        with TextReport() as outfile:
+        with TextReport.null() as outfile:
             for rule in rules:
                 outfile.print(rule.lemma, rule.head(), rule.construction.to_dmrs())
+        optimus.apply(r)
+        getLogger().debug(r.edit().nodes)
 
     def test_named_rel_ruledb(self):
         optimus = Transformer()
@@ -697,13 +698,20 @@ class TestMain(unittest.TestCase):
         export_to_visko([s10044], TEST_DATA)
 
     def test_preserve_xml_tag_in_json(self):
-        sent = self.ERG.parse('I like hot dog.')
+        sent = self.ERG.parse('He likes green tea.')
         sent.tag(ttl.Tag.MFS)
         d = sent[0].dmrs()
         self.assertIsNotNone(d.json_str())
+        tea_node = None
+        for n in d.layout.nodes:
+            if n.predstr == '_tea_n_1':
+                tea_node = n
+        getLogger().debug("Nodes: {}".format(d.layout.nodes))
+        getLogger().debug("Tags: {}".format(d.tags))
+        self.assertIsNotNone(tea_node)
         self.assertEqual(len(d.tags), 3)
-        self.assertEqual(len(d.tags[10006]), 1)
-        ss, method = d.tags[10006][0]
+        self.assertEqual(len(d.tags[tea_node.nodeid]), 1)
+        ss, method = d.tags[tea_node.nodeid][0]
         getLogger().debug("JSON str: {}".format(d.json_str()))
 
     def test_preserve_shallow(self):

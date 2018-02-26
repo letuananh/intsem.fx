@@ -34,16 +34,15 @@ import os
 import logging
 from collections import defaultdict as dd
 
-from coolisf.dao.ruledb import LexRuleDB
-from coolisf.model import Sentence, Reading, DMRS, RuleInfo
+from chirptext import FileHelper
 
+from coolisf.dao.ruledb import LexRuleDB
+from coolisf.config import read_config
+from coolisf.model import Sentence, Reading, DMRS
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION
 # -------------------------------------------------------------------------------
-
-DATA_FOLDER = os.path.abspath(os.path.expanduser('./data'))
-LEXRULES_DB = os.path.join(DATA_FOLDER, "lexrules.db")
 
 
 def getLogger():
@@ -134,7 +133,7 @@ class Compound(object):
 
     def __init__(self, construction, lemma, adjacent=False):
         self.construction = construction
-        self.lemma = lemma
+        self.lemma = self.pred_lemma(lemma)
         self._graph = None
         self._adjacent_nodes = None
         self.adjacent = adjacent
@@ -142,6 +141,9 @@ class Compound(object):
 
     def head(self):
         return self.construction.head()
+
+    def pred_lemma(self, text):
+        return text.replace(' ', '+').replace('-', '+').replace("'", '')
 
     @property
     def graph(self):
@@ -188,6 +190,10 @@ class Compound(object):
         for n in sub.nodes:
             if n.predstr == 'compound':
                 Integral.merge_compound(dmrs[n.nodeid])
+            if n.cfrom < head.cfrom:
+                head.cfrom = n.cfrom
+            if n.cto > head.cto:
+                head.cto = n.cto
         # delete nodes
         dmrs.delete(sub)
 
@@ -224,7 +230,7 @@ class SimpleHeadedCompound(Compound):
 
 class Transformer(object):
 
-    def __init__(self, ruledb_path=LEXRULES_DB):
+    def __init__(self, ruledb_path=None):
         # read rules
         self.rules = [self.get_guard_dog(),
                       self.get_green_tea(),
@@ -232,7 +238,13 @@ class Transformer(object):
         self.loaded = set()
         self.rule_map = dd(list)
         self.rule_cache = {}
+        if not ruledb_path:
+            # read from config file if not provided
+            self.cfg = read_config()
+            if self.cfg and 'lexrule_db' in self.cfg:
+                ruledb_path = self.to_path(self.cfg['lexrule_db'])
         if ruledb_path and os.path.isfile(ruledb_path):
+            getLogger().info("Lexrule DB location: {}".format(ruledb_path))
             self.rdb = LexRuleDB(ruledb_path)
         else:
             getLogger().warning("Rule DB could not be found. Only manual rules will be available.")
@@ -242,6 +254,9 @@ class Transformer(object):
         self.add_rule(self.get_guard_dog())
         self.add_rule(self.get_green_tea())
         self.add_rule(self.get_big_bad_wolf())
+
+    def to_path(self, path):
+        return FileHelper.abspath(path.format(data_root=self.cfg['data_root']))
 
     def add_rule(self, rule):
         # getLogger().debug("Adding rule {}".format(rule.sign))
@@ -314,7 +329,7 @@ class Transformer(object):
             getLogger().debug("locating rules for nodes {}".format(target.nodes))
             applicable_rules = self.find_rules(target.nodes)
             # apply MWE rules
-            getLogger().debug("Applying {} rules to {}".format(len(applicable_rules), target.nodes))
+            getLogger().debug("There are {} applicable rules for {}".format(len(applicable_rules), target.nodes))
             for rule in applicable_rules:
                 rule.apply(target)
             return target

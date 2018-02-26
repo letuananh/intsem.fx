@@ -50,7 +50,7 @@ from coolisf.model import Document, Sentence
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-from test.common import TEST_DATA
+from test import TEST_DATA
 DB_FILE = os.path.join(TEST_DATA, 'test_corpus.db')
 
 

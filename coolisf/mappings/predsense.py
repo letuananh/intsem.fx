@@ -36,6 +36,7 @@ from delphin.mrs.components import Pred
 
 from yawlib import SynsetCollection
 from yawlib.helpers import get_wn
+from coolisf.common import ptpos_to_wn
 from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
 
 
@@ -69,7 +70,8 @@ class PredSense(object):
                          ['+', ''],
                          [' ', '-'],
                          [' ', '']]
-    MANUAL_MAP = {'neg_rel': ('00024073-r',)}
+    MANUAL_MAP = {'neg_rel': ('00024073-r',),
+                  'be_v_id_rel': ('02604760-v', ' 02664769-v', '02445925-v', '02616386-v')}
 
     @staticmethod
     def extend_lemma(lemma):
@@ -156,6 +158,12 @@ class PredSense(object):
             return PredSense.wn.get_synsets(PredSense.MANUAL_MAP[pred_str], ctx=ctx)
         elif pred.pos == 'x' and pred.sense == 'subord':
                 return SynsetCollection()
+        elif pred.pos == 'u' and pred.sense == 'unknown' and '/' in pred.lemma:
+            # unknown pred handling
+            unk_lemma, unk_pos = pred.lemma.split('/')
+            pos = ptpos_to_wn(unk_pos)
+            getLogger().debug("Unknown | lemma: {} | unk_pos: {} | pos: {}".format(unk_lemma, unk_pos, pos))
+            lemmata = [unk_lemma] if not auto_expand else list(PredSense.extend_lemma(unk_lemma))
         # elif (pred.pos == 'x' and pred.sense == 'deg') or pred.pos in 'pq':
         elif pred.pos and pred.pos in 'xpq':
             lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
@@ -163,10 +171,12 @@ class PredSense(object):
             ssr = PredSense.search_sense(lemmata, 'r', ctx=ctx)
             ssa = ssa.merge(ssr)
             return ssa
-
-        lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
-        pos = pred.pos
-
+        else:
+            lemmata = [pred.lemma] if not auto_expand else list(PredSense.extend_lemma(pred.lemma))
+            pos = pred.pos
+        if pred.type == Pred.GRAMMARPRED:
+            # at this point, if it's not a known gpred, kill it
+            return SynsetCollection()
         ss = PredSense.search_sense(lemmata, pos, ctx=ctx)
         # hardcode: try to match noun & adj/v
         if not ss and auto_expand:

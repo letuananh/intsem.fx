@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 '''
-common test functions
+Data reader
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 @license: MIT
 '''
 
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2018, Le Tuan Anh <tuananh.ke@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,13 +31,31 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 ########################################################################
 
 import os
-from chirptext.cli import setup_logging
+import logging
+from coolisf.common import read_file
+
+# -------------------------------------------------------------------------------
+# Configuration
+# -------------------------------------------------------------------------------
+
+MY_DIR = os.path.dirname(__file__)
+CCBY30_PATH = os.path.join(MY_DIR, 'CCBY30_template.txt.gz')
+CONFIG_JSON_TEMPLATE = os.path.join(MY_DIR, 'config.template.json.gz')
 
 
-# ------------------------------------------------------------------------------
-# CONFIGURATION
-# ------------------------------------------------------------------------------
+def getLogger():
+    return logging.getLogger(__name__)
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_DATA = os.path.join(TEST_DIR, 'data')
-setup_logging(os.path.join(TEST_DIR, 'logging.json'), os.path.join(TEST_DIR, 'logs'))
+
+# -------------------------------------------------------------------------------
+# functions
+# -------------------------------------------------------------------------------
+
+def read_ccby30():
+    getLogger().debug("Reading CCBY30 license text from {}".format(CCBY30_PATH))
+    return read_file(CCBY30_PATH)
+
+
+def read_config_template():
+    getLogger().debug("Reading CCBY30 license text from {}".format(CONFIG_JSON_TEMPLATE))
+    return read_file(CONFIG_JSON_TEMPLATE)

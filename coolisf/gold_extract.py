@@ -50,6 +50,7 @@ from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
+from coolisf.data import read_ccby30
 from coolisf.dao import read_tsdb
 from coolisf.model import Sentence
 from coolisf.lexsem import tag_gold
@@ -63,10 +64,6 @@ DATA_DIR = FileHelper.abspath('./data')
 GOLD_PATH = os.path.join(DATA_DIR, 'gold')
 OUTPUT_ISF = 'data/spec-isf.xml'
 
-MY_DIR = os.path.dirname(os.path.realpath(__file__))
-LICENSE_TEMPLATE_LOC = os.path.join(MY_DIR, 'CCBY30_template.txt')
-LICENSE_TEXT = open(LICENSE_TEMPLATE_LOC, 'r').read()
-
 
 def getLogger():
     return logging.getLogger(__name__)
@@ -76,8 +73,20 @@ def getLogger():
 
 def match_sents(isf_doc, ttl_doc):
     ''' Match TSDB profile sentences with TTL sentences '''
+    if len(isf_doc) != len(ttl_doc):
+        for sent in isf_doc:
+            if not ttl_doc.get(sent.ident, default=None):
+                getLogger().warning("ISF doc and TTL doc are different.")
+                return None
+        # it's possible to match all
+        for sent in isf_doc:
+            sent.shallow = ttl_doc.get(sent.ident)
+        return isf_doc
+    # else
     for isf_sent, ttl_sent in zip(isf_doc, ttl_doc):
         if isf_sent.text != ttl_sent.text:
+            # try to match all available sentences
+            getLogger().warning("ISF doc and TTL doc are different.")
             return None
     # only import when everything could be matched
     for isf_sent, ttl_sent in zip(isf_doc, ttl_doc):
@@ -85,18 +94,12 @@ def match_sents(isf_doc, ttl_doc):
     return isf_doc
 
 
-def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=None, use_ttl_sid=True, wsd=None, ctx=None):
-    ''' Combine TSDB profile and TTL profile to create ISF document (shallow + deep)
-    This function return an instance of coolisf.model.Document
-    '''
-    tsdb_doc = read_tsdb(tsdb_path, name=name, title=title)
-    if ttl_path is None:
-        ttl_path = tsdb_path
-    ttl_doc = ttl.Document.read_ttl(ttl_path)
-    isf_doc = match_sents(tsdb_doc, ttl_doc)
-    getLogger().debug("TTL doc {} contains {} sentence(s).".format(ttl_path, len(ttl_doc)))
-    getLogger().debug("isf_doc size: {}".format(len(isf_doc)))
-    not_matched = []
+def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, ctx=None):
+    ''' Tag an ISF document using a TTL '''
+    isf_doc = match_sents(isf_doc, ttl_doc)
+    if isf_doc is None:
+        raise Exception("isf_doc and ttl_doc could not be matched")
+    not_matched = set()
     wsd = LeLeskWSD(dbcache=LeskCache())
     ctx = PredSense.wn.ctx()
     for sent in isf_doc:
@@ -109,13 +112,27 @@ def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, wsd_method=No
                 m, n = tag_gold(reading.dmrs(), sent.shallow, sent.text)
                 # getLogger().debug("Matched: {}".format(m))
                 if n:
-                    not_matched.append(sent.ident)
+                    not_matched.add(sent.ident)
                     sent.flag = Sentence.ERROR
             # update XML
             reading.dmrs().tag_xml(method=None, update_back=True, wsd=wsd, ctx=ctx)
         sent.tag_xml()
     if not_matched:
         getLogger().warning("TSDB/IMI mismatched sentences: {}".format(not_matched))
+    return isf_doc
+
+
+def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, *args, **kwargs):
+    ''' Combine TSDB profile and TTL profile to create ISF document (shallow + deep)
+    This function return an instance of coolisf.model.Document
+    '''
+    tsdb_doc = read_tsdb(tsdb_path, name=name, title=title)
+    if ttl_path is None:
+        ttl_path = tsdb_path
+    ttl_doc = ttl.Document.read_ttl(ttl_path)
+    isf_doc = tag_doc(tsdb_doc, ttl_doc, *args, **kwargs)
+    getLogger().debug("TTL doc {} contains {} sentence(s).".format(ttl_path, len(ttl_doc)))
+    getLogger().debug("isf_doc size: {}".format(len(isf_doc)))
     return isf_doc
 
 
@@ -142,7 +159,7 @@ def build_root_node():
     filedesc_node.set("creationtime", datetime.datetime.now().isoformat())
     # License text
     license_node = etree.SubElement(filedesc_node, "license")
-    license_node.text = etree.CDATA(LICENSE_TEXT)
+    license_node.text = etree.CDATA(read_ccby30())
     # CoolISF
     procs_node = etree.SubElement(header_node, "linguisticProcessors")
     proc_node = etree.SubElement(procs_node, "linguisticProcessor")

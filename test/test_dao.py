@@ -50,7 +50,7 @@ from coolisf.dao.textcorpus import RawCollection
 # CONFIGURATION
 # -----------------------------------------------------------------------
 
-from test.common import TEST_DATA
+from test import TEST_DATA
 
 
 def getLogger():

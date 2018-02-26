@@ -140,13 +140,16 @@ def filter_concepts(concepts):
     return [c for c in concepts if c.tag not in ('02604760-v', '00024073-r', '02749904-v', '02655135-v', '02603699-v', '02664769-v', '02620587-v', '77000091-n', '77000053-n', '00770437-v')]
 
 
-def taggable_eps(eps):
+def taggable_eps(eps, mode=Lexsem.ROBUST):
     """ Only tag real_preds, string_preds and some special gpreds:
              + named_rel
              + pron_rel
              + card_rel
     """
-    return [ep for ep in eps if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or ep.pred in ('named_rel', 'pron_rel', 'card_rel')]
+    if mode == Lexsem.STRICT:
+        return [ep for ep in eps if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or ep.pred in ('named_rel', 'pron_rel', 'card_rel')]
+    else:
+        return [ep for ep in eps if ep.pred not in ('udef_q',)]
 
 
 def filter_small_senses(tagged):
@@ -188,12 +191,11 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
     # filter small senses (< MWE) out
     filter_small_senses(tagged_sent)
     # filter (what I considered) non-senses out
-    concepts = filter_concepts(tagged_sent.concepts)
+    # [2018-02-19] Don't filter out concepts for now
+    # concepts = filter_concepts(tagged_sent.concepts)
+    concepts = tagged_sent.concepts
     # idv_concepts = [c for c in concepts if len(c.words) == 1]
-    if mode == Lexsem.STRICT:
-        eps = taggable_eps(dmrs.obj().eps())
-    else:
-        eps = dmrs.obj().eps()
+    eps = taggable_eps(dmrs.obj().eps(), mode=mode)
     matched_preds = []
     not_matched = []
     for c in concepts:

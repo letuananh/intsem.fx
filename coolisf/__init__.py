@@ -47,5 +47,6 @@ __url__ = "https://github.com/letuananh/intsem.fx"
 
 from .lexsem import Lexsem, tag_gold
 from .ghub import GrammarHub
+from .config import read_config
 
-__all__ = ['GrammarHub', 'Lexsem', 'tag_gold']
+__all__ = ['GrammarHub', 'Lexsem', 'tag_gold', 'read_config']

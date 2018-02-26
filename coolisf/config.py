@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
 
 '''
-TSDB DAO
+Configuration helper
+
+Latest version can be found at https://github.com/letuananh/intsem.fx
+
+References:
+    ACE:
+        http://moin.delph-in.net/AceOptions
+    Python documentation:
+        https://docs.python.org/
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
+
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 @license: MIT
 '''
 
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2018, Le Tuan Anh <tuananh.ke@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -29,50 +40,36 @@ TSDB DAO
 ########################################################################
 
 import os
-import os.path
 import logging
 
-from delphin import itsdb
-
-from coolisf.model import Document, Sentence
-
-
-# ----------------------------------------------------------------------
-# Configuration
-# ----------------------------------------------------------------------
-
-logger = logging.getLogger(__name__)
-MY_DIR = os.path.dirname(os.path.realpath(__file__))
+from chirptext import FileHelper, AppConfig
+from coolisf.common import write_file
+from coolisf.data import read_config_template
 
 
 # ----------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------
 
-def read_tsdb(path, name=None, title=None):
-    ''' Read a TSDB profile in ISF format '''
-    prof = itsdb.ItsdbProfile(path)
-    if name is None:
-        name = os.path.basename(path)
-    if title is None:
-        title = name
-    doc = Document(name=name, title=title)
-    # Read all sentences
-    tbl_item = prof.read_table('item')
-    for row in tbl_item:
-        iid = row.get('i-id')
-        raw_text = row.get('i-input').strip()
-        sent = Sentence(text=raw_text, ident=iid)
-        doc.add(sent)
-    # Read all parses
-    tbl_result = prof.read_table('result')
-    for row in tbl_result:
-        pid = row.get('parse-id')
-        mrs = row.get('mrs')
-        if pid not in doc.ident_map:
-            raise Exception('pid {} cannot be found in provided TSDB profile'.format(pid))
-        elif mrs:
-            doc.ident_map[pid].add(mrs)
-        else:
-            raise Exception("Invalid MRS string in provided TSDB profile")
-    return doc
+MY_DIR = os.path.dirname(__file__)
+__isf_home = os.environ.get('ISF_HOME', MY_DIR)
+__app_config = AppConfig('coolisf', mode=AppConfig.JSON, working_dir=__isf_home)
+
+
+def getLogger():
+    return logging.getLogger(__name__)
+
+
+def read_config():
+    if not __app_config.config and not __app_config.locate_config():
+        # need to create a config
+        config_dir = FileHelper.abspath('~/.coolisf')
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+        cfg_loc = os.path.join(config_dir, 'config.json')
+        default_config = read_config_template()
+        getLogger().warning("CoolISF configuration file could not be found. A new configuration file will be generated at {}".format(cfg_loc))
+        getLogger().debug("Default config: {}".format(default_config))
+        write_file(default_config, cfg_loc)
+    config = __app_config.config
+    return config

@@ -39,13 +39,12 @@ References:
 
 ########################################################################
 
-import os
 import logging
-import json
 from delphin.interfaces import ace
 
 from chirptext import FileHelper
 
+from coolisf.config import read_config
 from coolisf.dao.cache import AceCache, ISFCache
 from coolisf.util import sent2json
 from coolisf.model import Sentence
@@ -56,10 +55,6 @@ from coolisf.processors.base import ProcessorManager
 # Configuration
 # ----------------------------------------------------------------------
 
-MY_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(MY_DIR, 'config.json')
-
-
 def getLogger():
     return logging.getLogger(__name__)
 
@@ -68,8 +63,8 @@ def getLogger():
 
 class GrammarHub:
 
-    def __init__(self, cfg_path=CONFIG_FILE):
-        self.read_config(cfg_path)
+    def __init__(self):
+        self.read_config()
         self.grammars = {}
         if self.cache_path:
             self.cache = ISFCache(self.cache_path)
@@ -78,13 +73,19 @@ class GrammarHub:
         self.preps = ProcessorManager.from_json(self.cfg["preprocessors"])
         self.posts = ProcessorManager.from_json(self.cfg["postprocessors"])
 
-    def read_config(self, cfg_path=CONFIG_FILE):
-        getLogger().debug("Reading grammars configuration from: {}".format(cfg_path))
-        with open(cfg_path) as cfgfile:
-            self.cfg = json.loads(cfgfile.read())
-            self.cache_path = FileHelper.abspath(self.cfg['cache'])
-            getLogger().debug("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
+    def read_config(self):
+        self.cfg = read_config()
+        if not self.cfg:
+            raise Exception("Application configuration could not be read")
+        if 'cache' in self.cfg:
+            self.cache_path = self.to_path(self.cfg['cache'])
+        else:
+            self.cache_path = None
+        getLogger().info("ISF Cache DB: {o} => {c}".format(o=self.cfg['cache'], c=self.cache_path))
         return self.cfg
+
+    def to_path(self, path):
+        return FileHelper.abspath(path.format(data_root=self.cfg['data_root']))
 
     @property
     def names(self):
@@ -107,10 +108,16 @@ class GrammarHub:
         if grm not in self.grammars:
             ginfo = self.cfg['grammars'][grm]
             ace_bin = ginfo['ace'] if 'ace' in ginfo else self.cfg['ace']
-            cache_loc = ginfo['acecache'] if 'acecache' in ginfo else self.cfg['acecache'] if 'acecache' in self.cfg else None
+            if 'acecache' in ginfo:
+                cache_loc = self.to_path(ginfo['acecache'])
+            elif 'acecache' in self.cfg:
+                cache_loc = self.to_path(self.cfg['acecache'])
+            else:
+                cache_loc = None
             preps = self.lookup_preps(ginfo)
             posts = self.lookup_posts(ginfo)
-            self.grammars[grm] = Grammar(grm, ginfo['path'], ginfo['args'], ace_bin, cache_loc, preps=preps, posts=posts)
+            grm_path = self.to_path(ginfo['path'])
+            self.grammars[grm] = Grammar(grm, grm_path, ginfo['args'], ace_bin, cache_loc, preps=preps, posts=posts)
         # done creating grammar
         return self.grammars[grm]
 
@@ -154,7 +161,7 @@ class GrammarHub:
         sent = self[grm].parse(txt, parse_count=pc, ignore_cache=ignore_cache)
         if tagger:
             getLogger().debug("Sense-tagging sentence using {}".format(tagger))
-            sent.tag(method=tagger, wsd=wsd, ctx=ctx)
+            sent.tag_xml(method=tagger, wsd=wsd, ctx=ctx)
         return sent
 
 
