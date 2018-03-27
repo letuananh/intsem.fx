@@ -155,3 +155,14 @@ def ptpos_to_wn(ptpos):
         return 'v'
     else:
         return 'x'
+
+
+def get_ep_lemma(ep):
+    ''' Get lemma from a pyDelphin elementary predicate '''
+    if ep.pred == 'named':
+        return ep.carg
+    elif ep.pred.pos == 'u' and ep.pred.sense == 'unknown' and "/" in ep.pred.lemma:
+        cutpoint = ep.pred.lemma.rfind('/')
+        return ep.pred.lemma[:cutpoint]
+    else:
+        return ep.pred.lemma

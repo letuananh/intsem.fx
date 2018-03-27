@@ -58,7 +58,7 @@ from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
-from coolisf.common import read_file
+from coolisf.common import read_file, get_ep_lemma
 from coolisf.parsers import parse_dmrs_str
 from coolisf.mappings import PredSense
 
@@ -764,23 +764,19 @@ class DMRS(object):
                 with PredSense.wn.ctx() as ctx:
                     getLogger().warning("Creating a new WSD, this can be optimized further ...")
                     return self.tag(method=method, wsd=wsd, ctx=ctx)
-        eps = self.get_lexical_preds() if strict else self.obj().eps()
-        context = self.get_wsd_context()
+        eps = self.get_lexical_preds(strict=strict)
+        getLogger().debug("eps for WSD: {}".format(eps))
+        context = self.get_wsd_context()  # all lemmas from other predicates
         for ep in eps:
             # taggable eps
             # TODO: Use POS for better sense-tagging?
             getLogger().debug("processing {}".format(ep))
-            lemma = get_ep_lemma(ep)
             # getLogger().debug("Performing WSD using {} on {}({})/{}".format(method, lemma, ep.pred.lemma, context))
-            candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
-            if candidates:
-                getLogger().debug("Candidate for {}: {}".format(ep.pred.string, candidates))
-            elif ep.carg:
-                candidates = PredSense.search_sense((ep.carg,), ctx=ctx)
-                getLogger().debug("Candidates for [{} [CARG '{}']]: {}".format(ep.pred.string, ep.carg, [(c, c.lemmas) for c in candidates]))
+            candidates = PredSense.search_ep(ep, ctx=ctx)
             if not candidates:
-                getLogger().debug("No candidate was found for {}".format(ep.pred.string))
+                # getLogger().debug("No candidate was found for {}".format(ep.pred.string))
                 continue
+            lemma = get_ep_lemma(ep)
             if method == ttl.Tag.LELESK:
                 scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
             elif method == ttl.Tag.MFS:
@@ -832,9 +828,9 @@ class DMRS(object):
             self.reset(node=root, tags=tags)
         return root
 
-    #-------------------------------
+    # -------------------------------
     # Sense-tagging
-    #-------------------------------
+    # -------------------------------
 
     def tag_node(self, nodeid, synsetid, lemma, method, score=None):
         synset = Synset(synsetid, lemma=lemma)
@@ -846,26 +842,20 @@ class DMRS(object):
             self.tags[nodeid].append(sensetag)
 
     def get_wsd_context(self):
+        ''' All lemmas from predicates '''
         return (get_ep_lemma(p) for p in self.get_lexical_preds())
 
     def is_known_gpred(self, pred):
         return pred in ("named", 'superl', '_be_v_id')
 
-    def get_lexical_preds(self):
-        return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or self.is_known_gpred(p.pred))
+    def get_lexical_preds(self, strict=False):
+        if not strict:
+            return (p for p in self.obj().eps() if str(p.pred) != 'named')
+        else:
+            return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or self.is_known_gpred(p.pred))
 
     def edit(self):
         return DMRSLayout(self.json(), self)
-
-
-def get_ep_lemma(ep):
-    if ep.pred == 'named':
-        return ep.carg
-    elif ep.pred.pos == 'u' and ep.pred.sense == 'unknown' and "/" in ep.pred.lemma:
-        cutpoint = ep.pred.lemma.rfind('/')
-        return ep.pred.lemma[:cutpoint]
-    else:
-        return ep.pred.lemma
 
 
 def get_attr(a_dict, key, default):
