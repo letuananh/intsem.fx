@@ -36,7 +36,7 @@ from delphin.mrs.components import Pred
 
 from yawlib import SynsetCollection
 from yawlib.helpers import get_wn
-from coolisf.common import ptpos_to_wn
+from coolisf.common import ptpos_to_wn, get_ep_lemma
 from coolisf.mappings.mwemap import MWE_ERG_PRED_LEMMA
 
 
@@ -58,7 +58,7 @@ class PredSense(object):
     PREPOSITIONS = ['of', 'to', 'on', 'as']
     IGNORED_GPREDS = ('named', 'a_q',
                       'time_n_rel', 'person_n_rel', 'place_n_rel', 'thing_n_rel', 'manner_n_rel',
-                      'reason_n_rel')
+                      'reason_n_rel', 'proper_q_rel')
     REPLACE_TEMPLATES = [['-', ' '],
                          ['-', ''],
                          ['-', '_'],
@@ -71,6 +71,15 @@ class PredSense(object):
                          [' ', '-'],
                          [' ', '']]
     MANUAL_MAP = {'neg_rel': ('00024073-r',),
+                  '_no_a_1_rel': ('00024356-r',),
+                  'no_q_rel': ('02268485-a',),
+                  'more_comp_rel': ('00099341-r',),
+                  '_more_x_comp_rel': ('00099341-r',),
+                  '_more_a_1_rel': ('00099712-r',),
+                  '_more+than_p_rel': ('01555133-a',),
+                  'superl_rel': ('00111609-r',),
+                  'the+most_q_rel': ('01555732-a',),
+                  '_most_q_rel': ('01557120-a',),
                   'be_v_id_rel': ('02604760-v', ' 02664769-v', '02445925-v', '02616386-v')}
 
     @staticmethod
@@ -119,6 +128,7 @@ class PredSense(object):
         return potential
 
     # alias
+    @staticmethod
     def search_pred_string(pred_str, extend_lemma=True, ctx=None):
         if not pred_str:
             raise Exception("pred_str cannot be empty")
@@ -136,6 +146,17 @@ class PredSense(object):
             return sorted(ss, key=lambda x: x.tagcount, reverse=True)
         else:
             return PredSense.search_pred(pred, extend_lemma)
+
+    @staticmethod
+    def search_ep(ep, ctx=None):
+        getLogger().debug("processing {}".format(ep))
+        candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
+        if candidates:
+            getLogger().debug("Candidate for {}: {}".format(ep.pred.string, candidates))
+        elif ep.carg:
+            candidates = PredSense.search_sense((ep.carg,), ctx=ctx)
+            getLogger().debug("Candidates for [{} [CARG '{}']]: {}".format(ep.pred.string, ep.carg, [(c, c.lemmas) for c in candidates]))
+        return candidates
 
     @staticmethod
     def search_pred(pred, auto_expand=True, ctx=None):
