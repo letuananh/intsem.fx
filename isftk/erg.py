@@ -37,6 +37,7 @@ import logging
 from chirptext import TextReport, Counter
 from chirptext.cli import CLIApp, setup_logging
 
+from coolisf import GrammarHub
 from coolisf.mappings import PredSense
 from coolisf.ergex import read_erg_lex
 from coolisf.model import Predicate
@@ -47,6 +48,8 @@ from coolisf.model import Predicate
 
 setup_logging('logging.json', 'logs')
 TRIVIAL_POS = 'navj'
+ghub = GrammarHub()
+EI = ghub.ERG_ISF
 
 
 def getLogger():
@@ -128,6 +131,28 @@ def map_preds(cli, args):
     print("Done")
 
 
+def analyse(cli, args):
+    ''' Analyse a sentence '''
+    print("Source: {}".format(args.sent))
+    if args.erg:
+        p = ghub.ERG.parse(args.sent).edit(0)
+    else:
+        p = ghub.ERG_ISF.parse(args.sent).edit(0)
+    preds = p.source.preds()
+    print("Predicates: {}".format(preds))
+    print("Sense candidates:")
+    for pred in preds:
+        candidates = PredSense.search_pred_string(pred)
+        if candidates:
+            print("\\item {} -> {}".format(pred.replace('_', '\\_'), ', '.join(str(c.ID) for c in candidates)))
+            print("    \\begin{itemize}")
+            for c in candidates:
+                print("        \\item {}: {}".format(c.ID, c.definition))
+            print("    \\end{itemize}")
+        else:
+            print(pred)
+
+
 def pred_info(cli, args):
     p = Predicate.from_string(args.pred)
     print("{}: lemma={} | pos={} | sense={}".format(args.pred, p.lemma, p.pos, p.sense))
@@ -160,6 +185,10 @@ def main():
     # show predicate info
     task = app.add_task('info', func=pred_info)
     task.add_argument('pred')
+    # analyse text
+    task = app.add_task('text', func=analyse)
+    task.add_argument('sent')
+    task.add_argument('-e', '--erg', help='ERG only - no transformation', action='store_true')
     # run app
     app.run()
 
