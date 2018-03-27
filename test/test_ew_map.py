@@ -48,7 +48,7 @@ import logging
 
 from coolisf.ergex import read_erg_lex, find_mwe
 from coolisf.mappings import PredSense
-from coolisf.model import Predicate
+from coolisf.model import Reading, Predicate
 from coolisf import GrammarHub
 
 # ------------------------------------------------------------------------------
@@ -127,6 +127,12 @@ class TestMain(unittest.TestCase):
         ss = PredSense.search_pred_string('time_n_rel')
         self.assertFalse(ss)
 
+    def test_ignored(self):
+        ss = PredSense.search_pred_string('card_rel')
+        self.assertFalse(ss)
+        ss = PredSense.search_pred_string('card')
+        self.assertFalse(ss)
+
     def test_mwe_lemma_sense(self):
         ss = PredSense.search_pred_string('_squeeze_v_in')
         getLogger().debug(ss)
@@ -186,6 +192,20 @@ class TestMain(unittest.TestCase):
     def test_known_mwe(self):
         d = PredSense.search_pred_string('_green+tea_n_1')
         self.assertEqual(d[0].synsetid, '07935152-n')
+
+    def test_search_node(self):
+        mrs = '''[ TOP: h0 RELS: < [ proper_q<0:4> LBL: h1 ARG0: x6 [ x NUM: sg PERS: 3 GEND: m IND: + ] RSTR: h10 ] [ named<0:4> LBL: h2 ARG0: x6 CARG: "John" ] [ _have_v_1<5:8> LBL: h3 ARG0: e7 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x6 ARG2: x9 [ x NUM: sg PERS: 3 IND: + ] ] [ udef_q<9:10> LBL: h4 ARG0: x9 RSTR: h11 ] [ card<9:10> LBL: h5 ARG0: e8 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x9 CARG: "1" ] [ _car_n_1<11:15> LBL: h5 ARG0: x9 ] > HCONS: < h0 qeq h3 h10 qeq h2 h11 qeq h5 > ]'''
+        r = Reading(mrs)
+        print(r.dmrs().preds())
+        eps = list(r.dmrs().get_lexical_preds())
+        for ep in eps:
+            print(ep.pred.string, PredSense.search_ep(ep))
+        proper_q, _have_v_1, udef_q, card, _car_n_1 = eps
+        self.assertFalse(PredSense.search_ep(proper_q))
+        self.assertTrue(PredSense.search_ep(_have_v_1))
+        self.assertFalse(PredSense.search_ep(udef_q))
+        self.assertTrue(PredSense.search_ep(_car_n_1))
+        # TODO: Fix card mapping
 
 
 ########################################################################
