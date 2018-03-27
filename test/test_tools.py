@@ -60,7 +60,7 @@ def getLogger():
 
 
 samples = ['猫が好きです。',
-           'ケーキをたべた。',
+           'ケーキを食べた。',
            '雨が降る。']
 NEKO = '02121620-n'
 SUKI = '01292683-a'
@@ -118,6 +118,7 @@ class TestTools(unittest.TestCase):
             for c in s.concepts:
                 getLogger().debug(c)
             self.assertEquals(len(s.tags), len(s.concepts))
+        doc_ttl.write_ttl()
 
 
 ########################################################################
