@@ -40,6 +40,7 @@ References:
 
 ########################################################################
 
+import os
 import unittest
 import logging
 from collections import defaultdict as dd
@@ -62,8 +63,8 @@ from coolisf.model import Sentence, MRS, Reading
 
 from test import TEST_DATA
 wsql = WSQL(YLConfig.WNSQL30_PATH)
-TEST_SENTENCES = 'data/bib.txt'
-ACE_OUTPUT_FILE = 'data/bib.mrs.txt'
+TEST_SENTENCES = 'data/tsdb/skeletons/fun.txt'
+SAMPLE_MRS_FILE = os.path.join(TEST_DATA, 'sample_mrs.txt')
 
 
 def getLogger():
@@ -196,7 +197,7 @@ class TestRuleGenerator(unittest.TestCase):
         with rdb.ctx() as ctx:
             ruleinfos = ctx.ruleinfo.select('ID not in (SELECT ruleid FROM rulepred)')
             for rinfo in ruleinfos:
-                print(rinfo.ID, rinfo)
+                getLogger().debug(rinfo.ID, rinfo)
                 rdb.generate_rulepred(rinfo, ctx=ctx)
 
 
@@ -364,11 +365,11 @@ class TestTransformer(unittest.TestCase):
         sent = self.ERG.parse('His name is John.')
         p = sent.edit(0)
         john = p.head()['ARG2']
-        print(john)
+        getLogger().debug(john)
         # Load a rule from optimus
         optimus = Transformer()
         rules = optimus.find_rules((john,))
-        print(len(rules))
+        getLogger().debug(len(rules))
 
     def test_finding_rules(self):
         optimus = Transformer()
@@ -389,16 +390,14 @@ class TestTransformer(unittest.TestCase):
         for r in applicable_rules:
             if r.lemma == 'make+a+face':
                 mafs.append(r)
-            # print(r)
         for maf in mafs:
             subs = maf.match(d.layout)
             if subs:
-                print("-" * 20)
-                print("{} is matched with {}".format(maf.construction.to_dmrs().to_mrs(), subs[0].to_dmrs()))
-                print("sub", subs[0].top.to_graph(), subs[0].nodes)
-                print("maf", maf.graph, maf.construction.nodes)
+                getLogger().debug("-" * 20)
+                getLogger().debug("{} is matched with {}".format(maf.construction.to_dmrs().to_mrs(), subs[0].to_dmrs()))
+                getLogger().debug("sub: {} {}".format(subs[0].top.to_graph(), subs[0].nodes))
+                getLogger().debug("maf: {} {}".format(maf.graph, maf.construction.nodes))
         optimus.apply(d)
-        # print(d.to_mrs())
 
     def test_optimus_rule_db(self):
         optimus = Transformer()
@@ -427,11 +426,11 @@ class TestTransformer(unittest.TestCase):
         optimus = Transformer()
         # test matching preds
         rules = optimus.find_rules(r.dmrs().layout.nodes)
-        print(r.dmrs())
+        getLogger().debug(r.dmrs())
         for rule in rules:
-            print("MATCHING {}: {} -> {}".format(rule.lemma, rule.construction.to_dmrs(), rule.match(r.dmrs().layout)))
+            getLogger().debug("MATCHING {}: {} -> {}".format(rule.lemma, rule.construction.to_dmrs(), rule.match(r.dmrs().layout)))
         optimus.apply(r)
-        print("Final: {}".format(r.dmrs().layout.nodes))
+        getLogger().debug("Final: {}".format(r.dmrs().layout.nodes))
 
     def test_long_sentence(self):
         r = Reading('''[ TOP: h0
@@ -505,7 +504,7 @@ class TestERGISF(unittest.TestCase):
     def test_named_rel(self):
         sent = self.EI.parse("My name is Sherlock Holmes.")
         sent.tag_xml(ttl.Tag.LELESK)
-        print(sent[0].dmrs().xml_str(pretty_print=True))
+        getLogger().debug(sent[0].dmrs().xml_str(pretty_print=True))
 
 
 class TestMain(unittest.TestCase):
@@ -529,10 +528,11 @@ class TestMain(unittest.TestCase):
         self.assertIsNotNone(sent[0].mrs().to_dmrs())
 
     def test_ace_output_to_xml(self):
-        sentences = read_ace_output(ACE_OUTPUT_FILE)
+        sentences = read_ace_output(SAMPLE_MRS_FILE)
         self.assertIsNotNone(sentences)
 
-        sent = sentences[0]
+        sent = sentences[3]
+        getLogger().debug(sent)
         self.assertGreaterEqual(len(sent), 3)
         # sentence to XML
         xml = sent.to_xml_node()
@@ -543,18 +543,15 @@ class TestMain(unittest.TestCase):
 
     def test_txt_to_dmrs(self):
         print("Test parsing raw text sentences")
-        with open(TEST_SENTENCES) as test_file:
-            raw_sentences = test_file.readlines()
-            sentences = [self.ERG.parse(x, 5) for x in raw_sentences]
-            self.assertEqual(len(sentences[0]), 5)
-            self.assertEqual(len(sentences[1]), 5)
-            self.assertEqual(len(sentences[2]), 0)
-            p0 = sentences[0][0]
-            self.assertIsNotNone(p0.dmrs().xml())
-            print("Test sense tag")
-            xnode = p0.dmrs().tag_xml()
-            senses = xnode.findall('./node/sense')
-            self.assertGreater(len(senses), 0)
+        sent = self.ERG.parse("It rains.")
+        sent.tag_xml(method=ttl.Tag.MFS)
+        sent_xml = sent.to_xml_node()
+        sent_re = Sentence.from_xml_node(sent_xml)
+        getLogger().debug(sent_re.to_xml_str())
+        tags = sent_re[0].dmrs().tags
+        self.assertTrue(tags)
+        self.assertEqual(tags[10000][0].synset.lemma, 'rain')
+        self.assertEqual(tags[10000][0].method, ttl.Tag.MFS)
 
     def test_sensetag_in_json(self):
         text = "Some dogs chase a cat."
@@ -639,9 +636,18 @@ class TestMain(unittest.TestCase):
         s.tag_xml(method=ttl.Tag.LELESK, update_back=False)
         s.tag_xml(method=ttl.Tag.MFS, update_back=False)
         s.tag_xml(method=ttl.Tag.MFS, update_back=False)
-        print(s[0].dmrs().xml_str(pretty_print=True))
-        for k, v in s[0].dmrs().tags.items():
-            print(k, v)
+        dmrs_xml = s[0].dmrs().xml()
+        for node in dmrs_xml.findall('node'):
+            senses = node.findall('sense')
+            if senses:
+                self.assertEqual(len(senses), 2)
+        # getLogger().debug(s[0].dmrs().xml_str(pretty_print=True))
+        # for k, v in s[0].dmrs().tags.items():
+        #     getLogger().debug("{}: {}".format(k, v))
+        for reading in s:
+            for nodeid, tags in reading.dmrs().tags.items():
+                self.assertEqual(len(tags), 2)
+                self.assertEqual({t.method for t in tags}, {ttl.Tag.MFS, ttl.Tag.LELESK})
 
     def test_parse_no(self):
         text = "I saw a girl with a big telescope which is nice."

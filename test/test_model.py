@@ -186,7 +186,7 @@ class TestDMRSModel(unittest.TestCase):
         r = Reading('''[ TOP: h0 INDEX: e2 [ e SF: prop-or-ques ] RELS: < [ unknown_rel<0:34> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg ] ARG0: e2 ] [ _the_q_rel<0:3> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ] [ "_adventure_n_1_rel"<4:13> LBL: h8 ARG0: x4 ] [ _of_p_rel<14:16> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x4 ARG2: x10 [ x PERS: 3 NUM: sg ] ] [ _the_q_rel<17:20> LBL: h11 ARG0: x10 RSTR: h12 BODY: h13 ] [ "_speckled/JJ_u_unknown_rel"<21:29> LBL: h14 ARG0: e15 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x10 ] [ "_band_n_1_rel"<30:34> LBL: h14 ARG0: x10 ] > HCONS: < h0 qeq h1 h6 qeq h8 h12 qeq h14 > ]''')
         context = list(r.dmrs().get_wsd_context())
         expected = ['the', 'adventure', 'of', 'the', 'speckled', 'band']
-        self.assertEqual(context, expected)
+        self.assertEqual(expected, context)
 
 
 class TestDMRSLayout(unittest.TestCase):

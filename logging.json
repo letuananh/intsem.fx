@@ -38,17 +38,10 @@
     },
 
     "loggers": {
-        "__main__": {
-            "level": "INFO",
-            "handlers": ["file_handler_verbose"],
-            "propagate": "no"
-        }
-        ,"coolisf.gold_extract": {
-            "level": "INFO",
-            "handlers": ["file_handler_verbose"],
-            "propagate": "no"
-         }
+        "__main__": {"level": "INFO"}
+        ,"coolisf.gold_extract": {"level": "INFO"}
         ,"isftk": {"level": "INFO"}
+        ,"coolisf.model": {"level": "INFO"}
     },
 
     "root": {

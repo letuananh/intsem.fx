@@ -59,6 +59,8 @@ from coolisf import GrammarHub
 # ------------------------------------------------------------------------------
 
 TEST_GOLD_DIR = 'data'
+GOLD_TSDB = 'data/gold'
+GOLD_FIXED = 'data/gold_fixed'
 ghub = GrammarHub()
 ERG = ghub.ERG
 
@@ -73,11 +75,22 @@ def getLogger():
 
 class TestShallowDMRSMapping(unittest.TestCase):
 
+    doc_dir = 'data'
+    doc_name = 'gold'
+
+    def test_reading_gold(self):
+        ttl_doc = ttl.Document.read_ttl(GOLD_FIXED)
+        self.assertTrue(ttl_doc)
+        self.assertEqual(len(ttl_doc), 599)
+
+    def test_reading_tsdb(self):
+        tsdb_doc = read_tsdb(GOLD_TSDB)
+        self.assertTrue(tsdb_doc)
+        self.assertEqual(len(tsdb_doc), 599)
+
     def test_mapping(self):
-        doc_dir = 'data'
-        doc_name = 'gold'
-        ttl_doc = ttl.Document(doc_name, doc_dir).read()
-        tsdb_doc = read_tsdb(os.path.join(doc_dir, doc_name))
+        ttl_doc = ttl.Document.read_ttl(GOLD_FIXED)
+        tsdb_doc = read_tsdb(GOLD_TSDB)
         isf_doc = match_sents(tsdb_doc, ttl_doc)
         self.assertTrue(isf_doc)
         for s in isf_doc:
@@ -95,7 +108,15 @@ class TestShallowDMRSMapping(unittest.TestCase):
 
 class TestGoldAccuracy(unittest.TestCase):
 
-    gold = read_tsdb_ttl('data/gold')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__gold = None
+
+    @property
+    def gold(self):
+        if not self.__gold:
+            self.__gold = read_tsdb_ttl(GOLD_TSDB, ttl_path=GOLD_FIXED)
+        return self.__gold
 
     def test_accuracy(self):
         c = Counter()
@@ -152,9 +173,9 @@ class TestGoldData(unittest.TestCase):
             self.assertIn('%%% {}'.format(i), out)
 
     def test_ep_types(self):
-        sid = '10598'
+        sid = 10598
         sents = self.gold()
-        smap = {str(s.ident): s for s in sents}
+        smap = {int(s.ident): s for s in sents}
         dobj = smap[sid][0].dmrs().obj()
         eps = dobj.eps()
         for ep in eps:
