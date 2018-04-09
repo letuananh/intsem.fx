@@ -599,6 +599,7 @@ class DMRS(object):
         self.reset(node=xml_node)
         self._node = xml_node
         self._raw = etree.tostring(xml_node).decode('utf-8')
+        self.find_tags()
         if self.reading:
             self.reading.update_mrs()
 
@@ -807,18 +808,18 @@ class DMRS(object):
                 node.remove(child)
             if int(node.get('nodeid')) in tags:
                 ntags = tags[int(node.get('nodeid'))]
-                for tag, tagtype in ntags:
-                    if tagtype == ttl.Tag.GOLD:
+                for ntag in ntags:
+                    if ntag.method == ttl.Tag.GOLD:
                         gold_node = etree.SubElement(node, 'sensegold')
-                        gold_node.set('synsetid', str(tag.synsetid))
-                        gold_node.set('lemma', tag.lemma)
-                        gold_node.set('type', tagtype)
-                    elif tagtype:
+                        gold_node.set('synsetid', str(ntag.synset.synsetid))
+                        gold_node.set('lemma', ntag.synset.lemma)
+                        gold_node.set('type', ntag.method)
+                    elif ntag.method:
                         candidate_node = etree.SubElement(node, 'sense')
-                        candidate_node.set('synsetid', str(tag.synsetid))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
-                        candidate_node.set('lemma', str(tag.lemma))
-                        candidate_node.set('score', str(tag.tagcount))
-                        candidate_node.set('type', tagtype)
+                        candidate_node.set('synsetid', str(ntag.synset.ID))  # [2015-10-26] FCB: synsetid format should be = 12345678-x]
+                        candidate_node.set('lemma', str(ntag.synset.lemma))
+                        candidate_node.set('score', str(ntag.synset.tagcount))
+                        candidate_node.set('type', ntag.method)
                     else:
                         # DEFAULT? etc.
                         # Do nothing for now
@@ -846,13 +847,20 @@ class DMRS(object):
         return (get_ep_lemma(p) for p in self.get_lexical_preds())
 
     def is_known_gpred(self, pred):
-        return pred in ("named", 'superl', '_be_v_id')
+        return pred in ("named_rel", 'superl_rel', '_be_v_id_rel')
 
     def get_lexical_preds(self, strict=False):
-        if not strict:
-            return (p for p in self.obj().eps() if str(p.pred) != 'named')
-        else:
-            return (p for p in self.obj().eps() if p.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or self.is_known_gpred(p.pred))
+        preds = []
+        for p in self.obj().eps():
+            pred_str = str(p.pred)
+            if not pred_str.endswith('_rel'):
+                pred_str += '_rel'
+            if pred_str in ('named_rel', 'unknown_rel'):
+                continue
+            if strict and p.pred.type not in (Pred.REALPRED, Pred.STRINGPRED) and not self.is_known_gpred(pred_str):
+                continue
+            preds.append(p)
+        return preds
 
     def edit(self):
         return DMRSLayout(self.json(), self)
