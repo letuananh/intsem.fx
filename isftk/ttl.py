@@ -212,7 +212,7 @@ def pop_concept(sent, c):
     cfrom = min(t.cfrom for t in c.tokens)
     cto = min(t.cto for t in c.tokens)
     synset = c.tag
-    sent.pop_concept(c.ID)
+    sent.pop_concept(c.cidx)
     remove_tags = set()
     # remove tags in sentence as well
     for tag in sent.tags:
@@ -233,10 +233,11 @@ def remove_msw_ttl(cli, args):
     if args.manual:
         entries = CSV.read_tsv(args.manual)
         for sid, wid, tag, keep, lemma in entries:
+            sid, wid = int(sid), int(wid)
             if not lemma:
-                manual[sid][int(wid)][tag] = int(keep)
+                manual[sid][wid][tag] = int(keep)
             else:
-                manual[sid][int(wid)][(tag, lemma)] = int(keep)
+                manual[sid][wid][(tag, lemma)] = int(keep)
     wn = get_wn()
     ctx = wn.ctx()
     nope_synsets = set()

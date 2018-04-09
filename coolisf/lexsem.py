@@ -164,13 +164,13 @@ def filter_small_senses(tagged):
         ln = len(wcl[w][0].tokens)
         for c in wcl[w][1:]:
             if len(c.tokens) > ln:
-                to_be_removed.add(maxed_c.ID)
+                to_be_removed.add(maxed_c.cidx)
                 # new max
                 maxed_c = c
                 ln = len(c.tokens)
             elif len(c.tokens) < ln:
                 # remove this concept instead
-                to_be_removed.add(c.ID)
+                to_be_removed.add(c.cidx)
     # remove concepts
     for cid in to_be_removed:
         tagged.pop_concept(cid)
