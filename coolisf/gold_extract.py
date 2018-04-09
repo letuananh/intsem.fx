@@ -82,9 +82,11 @@ def getLogger():
 def match_sents(isf_doc, ttl_doc):
     ''' Match TSDB profile sentences with TTL sentences '''
     if len(isf_doc) != len(ttl_doc):
+        print(len(isf_doc))
+        print(len(ttl_doc))
         for sent in isf_doc:
             if not ttl_doc.get(sent.ident, default=None):
-                getLogger().warning("ISF doc and TTL doc are different.")
+                getLogger().warning("Sentence ID(s) in ISF doc and TTL doc are different.")
                 return None
         # it's possible to match all
         for sent in isf_doc:
@@ -94,7 +96,7 @@ def match_sents(isf_doc, ttl_doc):
     for isf_sent, ttl_sent in zip(isf_doc, ttl_doc):
         if isf_sent.text != ttl_sent.text:
             # try to match all available sentences
-            getLogger().warning("ISF doc and TTL doc are different.")
+            getLogger().warning("Sentence(s) in ISF doc and TTL doc are different. E.g. ISF/#{}: {} vs TTL/#{}: {}".format(isf_sent.ident, isf_sent.text, ttl_sent.ID, ttl_sent.text))
             return None
     # only import when everything could be matched
     for isf_sent, ttl_sent in zip(isf_doc, ttl_doc):
@@ -126,7 +128,7 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, ctx=N
             reading.dmrs().tag_xml(method=None, update_back=True, wsd=wsd, ctx=ctx)
         sent.tag_xml()
     if not_matched:
-        getLogger().warning("TSDB/IMI mismatched sentences: {}".format(not_matched))
+        getLogger().warning("TSDB/IMI mismatched sentences: {} - IDs={}".format(len(not_matched), not_matched))
     return isf_doc
 
 
@@ -248,7 +250,8 @@ def filter_wrong_senses(doc):
             if c.tag in GOLD_WRONG and int(sent.ID) in GOLD_WRONG[c.tag]:
                 to_remove.append(c)
         for c in to_remove:
-            sent.pop_concept(c.ID)
+            getLogger().debug("popping {} in sent #{}".format(repr(c.cidx), sent.ID))
+            sent.pop_concept(c.cidx)
 
 
 def export_to_visko(sents, doc_path, pretty_print=True):
