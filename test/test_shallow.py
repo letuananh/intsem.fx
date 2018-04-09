@@ -107,16 +107,18 @@ class TestMain(unittest.TestCase):
 
     def test_jpn(self):
         a = JapaneseAnalyser()
-        txt = '猫が好きです。'
-        words = a.tokenize(txt)
-        lemmas = a.lemmatize(words)
-        tags = a.pos_tag(words)
+        txt = '猫が好きだった。'
+        tokens = a.tokenize(txt)
+        lemmas = a.lemmatize(tokens)
+        self.assertEqual(tokens, ['猫', 'が', '好き', 'だっ', 'た', '。'])
+        self.assertEqual(lemmas, ['猫', 'が', '好き', 'だ', 'た', '。'])
+        # test POS tagger
+        tags = a.pos_tag(tokens)
+        expected = [('猫', '名詞-一般'), ('が', '助詞-格助詞-一般'), ('好き', '名詞-形容動詞語幹'), ('だっ', '助動詞'), ('た', '助動詞'), ('。', '記号-句点'), ('EOS', '')]
+        self.assertEqual(tags, expected)
         tsent = a.analyse(txt)
-        self.assertEqual(words, ['猫', 'が', '好き', 'です', '。'])
-        self.assertEqual(lemmas, ['ねこ', 'が', 'すき', 'です', '。'])
-        self.assertEqual(tags, [('猫', '名詞-一般'), ('が', '助詞-格助詞-一般'), ('好き', '名詞-形容動詞語幹'), ('です', '助動詞'), ('。', '記号-句点'), ('EOS', '')])
         twords = [t.text for t in tsent]
-        self.assertEqual(twords, ['猫', 'が', '好き', 'です', '。'])
+        self.assertEqual(twords, ['猫', 'が', '好き', 'だっ', 'た', '。'])
 
 
 # -------------------------------------------------------------------------------

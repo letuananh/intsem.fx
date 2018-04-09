@@ -38,6 +38,7 @@ from nltk.stem import WordNetLemmatizer
 from chirptext import texttaglib as ttl
 try:
     from chirptext.deko import txt2mecab
+    from chirptext.deko import tokenize as deko_tokenize
 except:
     logging.warning("Deko cannot be imported. JapaneseAnalyser will not function properly")
 
@@ -124,12 +125,11 @@ class JapaneseAnalyser(Analyser):
         super().__init__(lang="jpn")
 
     def tokenize(self, sent):
-        msent = txt2mecab(sent).words
-        return msent
+        return deko_tokenize(sent)
 
     def lemmatize(self, words):
         msent = txt2mecab(' '.join(words))
-        return [m.reading_hira() for m in msent if not m.is_eos]
+        return [m.root for m in msent if not m.is_eos]
 
     def pos_tag(self, words):
         msent = txt2mecab(' '.join(words))
@@ -137,11 +137,4 @@ class JapaneseAnalyser(Analyser):
 
     def analyse(self, sent):
         msent = txt2mecab(sent)
-        tsent = ttl.Sentence(msent.surface)
-        tsent.import_tokens(msent.words)
-        # pos tagging
-        for mtk, tk in zip(msent, tsent):
-            tk.pos = mtk.pos3()
-            tk.lemma = mtk.root
-            tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
-        return tsent
+        return msent.to_ttl()

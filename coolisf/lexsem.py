@@ -183,7 +183,7 @@ def import_shallow(isf_sent, mode=Lexsem.ROBUST):
 
 
 def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
-    ''' Use a TaggedSentence to tag a DMRS
+    ''' Use a ttl.Sentence to tag a DMRS
     Results (matched, not_matched) in which
         matched => (concept, ep.nodeid, ep.pred)
         not_matched => a list of concepts
