@@ -37,7 +37,7 @@ from chirptext import TextReport
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import texttaglib as ttl
 
-from coolisf.gold_extract import read_gold_mrs
+from coolisf.gold_extract import read_gold_mrs, read_gold_sents
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -61,10 +61,16 @@ def getLogger():
 
 def fix_gold(cli, args):
     sents = read_gold_mrs()
-    doc = ttl.Document('gold', 'data/').read()
+    print("Gold sentences: {}".format(len(sents)))
+    # patch ident to NTU format
+    for idx, s in enumerate(sents):
+        s.ident = idx + 10000
+    doc = ttl.Document('gold', path='data').read()
+    print("TTL sentences: {}".format(len(doc)))
     patches = []
     for s in sents:
-        tagged = doc.sent_map[str(s.ident)]
+        # print("Checking #{}".format(s.ident))
+        tagged = doc.get(int(s.ident))
         if tagged.text != s.text:
             new_text = s.text.replace("'", "''")
             old_text = tagged.text.replace("'", "''")
