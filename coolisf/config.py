@@ -60,6 +60,13 @@ def getLogger():
     return logging.getLogger(__name__)
 
 
+def _get_config_manager():
+    ''' Internal function for retrieving application config manager object
+    Don't use this directly, use read_config() method instead
+    '''
+    return __app_config
+
+
 def read_config():
     if not __app_config.config and not __app_config.locate_config():
         # need to create a config
@@ -70,6 +77,6 @@ def read_config():
         default_config = read_config_template()
         getLogger().warning("CoolISF configuration file could not be found. A new configuration file will be generated at {}".format(cfg_loc))
         getLogger().debug("Default config: {}".format(default_config))
-        write_file(default_config, cfg_loc)
+        write_file(cfg_loc, default_config)
     config = __app_config.config
     return config
