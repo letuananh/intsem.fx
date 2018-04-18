@@ -51,6 +51,7 @@ from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
+from coolisf.config import read_config, _get_config_manager
 from coolisf.common import write_file
 from coolisf.morph import Transformer
 from coolisf.ghub import GrammarHub
@@ -335,6 +336,20 @@ def isf_config_logging(args):
         logging.getLogger('coolisf.processors').setLevel(logging.DEBUG)
 
 
+def show_isf_info(cli, args):
+    print("coolisf - Python implementation of the intsem.fx (Integrated Semantic Framework)")
+    config = read_config()  # make sure that the configuration file is created
+    cfg_mgr = _get_config_manager()
+    ghub = GrammarHub()
+    config_loc = cfg_mgr.locate_config()
+    ace_path = ghub.to_path(config['ace'])
+    # report it
+    print("Configuration file: {}".format(config_loc))
+    print("Data folder: {}".format(config['data_root']))
+    print("ACE path: {}".format(ace_path))
+    print(config)
+
+
 app = CLIApp("CoolISF Main Application", logger=__name__, config_logging=isf_config_logging)
 
 
@@ -393,6 +408,9 @@ def main():
     task.add_argument('doc')
     task.add_argument('-k', '--topk', help='Only extract top K sentences')
     task.add_argument('-b', '--bibloc', help='Path to Biblioteche folder (corpus collection root)')
+
+    # show ISF configuration
+    app.add_task('info', func=show_isf_info)
 
     app.run()
 
