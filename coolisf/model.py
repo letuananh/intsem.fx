@@ -108,8 +108,8 @@ class Corpus(object):
 
 class Document(object):
 
-    def __init__(self, name='', corpusID=None, title='', grammar=None, tagger=None, parse_count=None, lang=None):
-        self.ID = None
+    def __init__(self, name='', corpusID=None, title='', grammar=None, tagger=None, parse_count=None, lang=None, ID=None):
+        self.ID = ID
         self.name = name
         self.corpusID = corpusID
         self.title = title if title else name
