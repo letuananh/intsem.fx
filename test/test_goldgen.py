@@ -198,7 +198,7 @@ class TestGoldData(unittest.TestCase):
         dmrs = sent[0].dmrs()
         doc = ttl.Document('gold', TEST_GOLD_DIR).read()
         tagged = doc.get(sid)
-        m, n = tag_gold(dmrs, tagged, sent.text)
+        m, n, ignored = tag_gold(dmrs, tagged, sent.text)
         self.assertGreater(len(m), 0)
 
     def test_read_tags(self):
@@ -222,7 +222,7 @@ class TestGoldData(unittest.TestCase):
             getLogger().debug(sent.shallow.text)
         dmrs = sent[0].dmrs()
         # print(sent.to_xml_str())
-        m, n = tag_gold(dmrs, sent.shallow, sent.text)
+        m, n, ignored = tag_gold(dmrs, sent.shallow, sent.text)
         header("#{}: {}".format(sid, sent.text), 'h0')
         getLogger().debug(sent[0].dmrs())
         header('Available concepts')
@@ -298,7 +298,7 @@ class TestGoldData(unittest.TestCase):
                     fix_texts.append((s.ident, s.text, tagged.text))
                 # try to tag ...
                 dmrs = s[0].dmrs()
-                matched, not_matched = tag_gold(dmrs, tagged, s.text, mode=Lexsem.ROBUST)
+                matched, not_matched, ignored = tag_gold(dmrs, tagged, s.text, mode=Lexsem.ROBUST)
                 if not not_matched:
                     count_good_bad.count("Perfect")
                     perfects.append((s, matched))
