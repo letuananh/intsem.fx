@@ -181,7 +181,7 @@ class CorpusDAOSQLite(RichKopasu):
         if not is_valid_name(doc.name):
             raise ValueError("Invalid doc name (provided: {}) - Visko only accept names using alphanumeric characters".format(doc.name))
         else:
-            doc.ID = self.doc.save(doc, *fields, ctx=ctx)
+            doc.ID = self.doc.save(doc, fields, ctx=ctx)
         return doc
 
     @with_ctx
@@ -412,6 +412,7 @@ class CorpusDAOSQLite(RichKopasu):
                 if no_more_query:
                     a_sentence = Sentence(ident=sentence_ident, text=text, docID=docID)
                     a_sentence.corpus = Corpus(name=row['corpus_name'], ID=row['corpusID'])
+                    a_sentence.doc = Document(name=row['doc_name'], ID=docID)
                     a_sentence.ID = sentID
                 else:
                     a_sentence = self.get_sent(sentID, readingIDs=[], skip_details=True)
