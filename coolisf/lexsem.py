@@ -61,6 +61,7 @@ class Lexsem(object):
     STRICT = 'strict'
     FLEXIBLE = 'flexible'
     ROBUST = 'robust'
+    NAIVE = 'naive'
 
 
 def fix_tokenization(ep, sent_text=None):
@@ -77,9 +78,12 @@ def fix_tokenization(ep, sent_text=None):
     return cfrom, cto, surface
 
 
-def match(concept, ep, sent_text):
+def match(concept, ep, sent_text, fix_token=True):
     ''' Match concept (idv/MWE) with preds '''
-    cfrom, cto, surface = fix_tokenization(ep, sent_text)
+    if fix_token:
+        cfrom, cto, surface = fix_tokenization(ep, sent_text)
+    else:
+        cfrom, cto, surface = ep.cfrom, ep.cto, sent_text[ep.cfrom:ep.cto] if sent_text is not None else ''
     if len(concept.tokens) == 1:
         pred_bits = list(ep.pred.lemma.split('+'))
         w0 = concept.tokens[0]
@@ -137,7 +141,14 @@ def filter_concepts(concepts):
     # 77000091-n: what
     # 77000053-n: it
     # 00770437-v: have
-    return [c for c in concepts if c.tag not in ('02604760-v', '00024073-r', '02749904-v', '02655135-v', '02603699-v', '02664769-v', '02620587-v', '77000091-n', '77000053-n', '00770437-v')]
+    senses = []
+    nonsenses = []
+    for c in concepts:
+        if c.tag in ('02604760-v', '00024073-r', '02749904-v', '02655135-v', '02603699-v', '02664769-v', '02620587-v', '77000091-n', '77000053-n', '00770437-v'):
+            nonsenses.append(c)
+        else:
+            senses.append(c)
+    return senses, nonsenses
 
 
 def taggable_eps(eps, mode=Lexsem.ROBUST):
@@ -148,6 +159,8 @@ def taggable_eps(eps, mode=Lexsem.ROBUST):
     """
     if mode == Lexsem.STRICT:
         return [ep for ep in eps if ep.pred.type in (Pred.REALPRED, Pred.STRINGPRED) or ep.pred in ('named_rel', 'pron_rel', 'card_rel')]
+    elif mode == Lexsem.NAIVE:
+        return eps
     else:
         return [ep for ep in eps if ep.pred not in ('udef_q',)]
 
@@ -172,28 +185,38 @@ def filter_small_senses(tagged):
                 # remove this concept instead
                 to_be_removed.add(c.cidx)
     # remove concepts
+    removed = []
     for cid in to_be_removed:
-        tagged.pop_concept(cid)
+        removed.append(tagged.pop_concept(cid))
+    return removed
 
 
-def import_shallow(isf_sent, mode=Lexsem.ROBUST):
+def import_shallow(isf_sent, *args, **kwargs):
+    output = []
     for reading in isf_sent:
         if reading.dmrs() is not None:
-            tag_gold(reading.dmrs(), isf_sent.shallow, isf_sent.text, mode)
+            res = tag_gold(reading.dmrs(), isf_sent.shallow, isf_sent.text, *args, **kwargs)
+            output.append(res)
+    return output
 
 
-def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
+def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST, no_small_sense=True, fix_token=True, no_nonsense=False):
     ''' Use a ttl.Sentence to tag a DMRS
     Results (matched, not_matched) in which
         matched => (concept, ep.nodeid, ep.pred)
         not_matched => a list of concepts
     '''
     # filter small senses (< MWE) out
-    filter_small_senses(tagged_sent)
+    ignored = []
+    if no_small_sense:
+        ignored = filter_small_senses(tagged_sent)
     # filter (what I considered) non-senses out
     # [2018-02-19] Don't filter out concepts for now
-    # concepts = filter_concepts(tagged_sent.concepts)
-    concepts = tagged_sent.concepts
+    if no_nonsense:
+        concepts, nonsenses = filter_concepts(tagged_sent.concepts)
+        ignored += nonsenses
+    else:
+        concepts = tagged_sent.concepts
     # idv_concepts = [c for c in concepts if len(c.words) == 1]
     eps = taggable_eps(dmrs.obj().eps(), mode=mode)
     matched_preds = []
@@ -201,7 +224,7 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
     for c in concepts:
         matched = False
         for ep in eps:
-            m = match(c, ep, sent_text)
+            m = match(c, ep, sent_text, fix_token=fix_token)
             if m:
                 matched_preds.append((c, ep.nodeid, ep.pred))
                 dmrs.tag_node(ep.nodeid, c.tag, c.clemma, ttl.Tag.GOLD)
@@ -212,4 +235,6 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST):
             # tag concept not matched
             c.flag = ttl.Concept.NOT_MATCHED
             not_matched.append(c)
-    return matched_preds, not_matched
+    if ignored:
+        getLogger().debug("Ignored senses: {}".format(ignored))
+    return matched_preds, not_matched, ignored

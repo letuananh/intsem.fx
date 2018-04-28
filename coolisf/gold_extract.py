@@ -119,7 +119,7 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, ctx=N
             if wsd_method:
                 sent.tag(method=wsd_method, wsd=wsd, ctx=ctx)
             if sent.shallow:
-                m, n = tag_gold(reading.dmrs(), sent.shallow, sent.text)
+                m, n, ignored = tag_gold(reading.dmrs(), sent.shallow, sent.text)
                 # getLogger().debug("Matched: {}".format(m))
                 if n:
                     not_matched.add(sent.ident)
