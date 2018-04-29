@@ -307,21 +307,31 @@ def export_ttl(cli, args):
         out_path = 'data'
         out_name = 'ttl_output'
     doc_ttl = ttl.Document(out_name, out_path)
+    empty_sents = []
+    tag_count = 0
     for sent in doc:
         tsent = doc_ttl.new_sent(sent.text, sent.ident)
         if not len(sent):
+            empty_sents.append(sent.ident)
             continue
         dmrs = sent[0].dmrs()  # only support the first reading for now
-        tags = dmrs.find_tags()
         tags = dmrs.find_tags()
         for nid, ss in tags.items():
             node = dmrs.layout[nid]
             synsets = {(s.ID, tuple(s.lemmas), m) for s, m in ss}
             for synsetid, lemmas, method in synsets:
                 tsent.new_tag(synsetid, node.cfrom, node.cto, tagtype='WN')
+                tag_count += 1
                 if args.with_lemmas:
                     tsent.new_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
             # print(sent.ident, node.cfrom, node.cto, synsets)
+    print("Created {} tags".format(tag_count))
+    if empty_sents:
+        print("Empty sentences: {}".format(empty_sents))
+        if args.emptyfile:
+            ef = TextReport(args.emptyfile)
+            for sid in empty_sents:
+                ef.print(sid)
     doc_ttl.write_ttl()
     pass
 
@@ -399,6 +409,7 @@ def main():
     task = make_task('ttl', func=export_ttl)
     task.add_argument('path', help='Path to XML doc')
     task.add_argument('--with-lemmas', help='Add lemmas to sentences', action="store_true")
+    task.add_argument('-e', '--emptyfile', help='Output empty sentences list')
 
     # Export to visko
     task = app.add_task('export', func=to_visko)
