@@ -34,11 +34,12 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 import logging
 from collections import defaultdict as dd
 
+from chirptext import TextReport
 from chirptext.cli import CLIApp, setup_logging
 
 from coolisf.common import write_file
 from coolisf.model import Document, Sentence
-
+from .gold import patch_gold_sid
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -55,7 +56,18 @@ def getLogger():
 # Functions
 # ------------------------------------------------------------------------------
 
+def extract_mrs(cli, args):
+    ''' Remove everything except MRS raw string '''
+    doc = Document.from_file(args.path)
+    if args.patchsid:
+        patch_gold_sid(doc)
+    doc_str = doc.to_xml_str(with_shallow=False, with_dmrs=False)
+    write_file(doc_str, args.output)
+    print("Done!")
+
+
 def remove_tags(cli, args):
+    ''' Remove tags from ISF doc '''
     doc = Document.from_file(args.path)
     new_doc = Document(name=doc.name, corpusID=doc.corpusID, title=doc.title, grammar=doc.grammar, tagger=doc.tagger, parse_count=doc.parse_count, lang=doc.lang)
     if args.nogold:
@@ -82,7 +94,11 @@ def remove_tags(cli, args):
                         getLogger().debug("removing {}".format(tag))
                         tags.remove(tag)
         new_sent.tag_xml()
-    write_file(new_doc.to_xml_str(), args.output)
+    # write output to file
+    if args.output:
+        write_file(new_doc.to_xml_str(), args.output)
+    else:
+        TextReport().write(new_doc.to_xml_str())
 
 
 # ------------------------------------------------------------------------------
@@ -97,6 +113,11 @@ def main():
     task.add_argument('path', help='Path to document file (*.xml or *.xml.gz)')
     task.add_argument('-o', '--output', help='Output file')
     task.add_argument('--nogold', action="store_true")
+    # compress
+    task = app.add_task('mrs', func=extract_mrs)
+    task.add_argument('path', help='Path to document file (*.xml or *.xml.gz)')
+    task.add_argument('-o', '--output', help='Output file')
+    task.add_argument('-f', '--patchsid', help='Force patching sentences Ids', action='store_true')
     # run app
     app.run()
 
