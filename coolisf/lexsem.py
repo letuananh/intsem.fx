@@ -162,7 +162,7 @@ def taggable_eps(eps, mode=Lexsem.ROBUST):
     elif mode == Lexsem.NAIVE:
         return eps
     else:
-        return [ep for ep in eps if ep.pred not in ('udef_q',)]
+        return [ep for ep in eps if ep.pred not in ('udef_q', 'pronoun_q')]
 
 
 def filter_small_senses(tagged):
