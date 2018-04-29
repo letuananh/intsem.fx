@@ -128,8 +128,8 @@ def compare_ttls(cli, args):
     profile = None
     ignored_ids = None
     if args.ignore:
-        ignored_ids = read_file(args.ignore).splitlines()
-        getLogger().info("Ignored sentence IDs: {}".format(ignored_ids))
+        ignored_ids = [x.strip() for x in read_file(args.ignore).splitlines()]
+        getLogger().info("Ignored sentence IDs: {}".format(', '.join(ignored_ids)))
     if args.gold_profile:
         gold = read_ttl(args.gold_profile)
         # remove ignored sentences
