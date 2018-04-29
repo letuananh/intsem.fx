@@ -1,3 +1,5 @@
+lexsem_*.txt
+test_*.txt
 fix_gold.sql
 /fun_*.txt
 /vkspeckled*
