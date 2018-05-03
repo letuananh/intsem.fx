@@ -76,35 +76,39 @@ def read_ttl(ttl_path):
 
 
 def prepare_tags(doc, args=None, nonsense=True):
-    ''' Return a set of (sid, cfrom, cto, synsetid) '''
+    ''' Return a map of sentID -> map of {synsetid:(cfrom:cto)}, number of used tags (int), and ignored tags (int)'''
     tags = dd(lambda: dd(set))
     tagcount = 0
+    ignored = 0
     for s in doc:
         for tag in s.tags:
             cfrom = int(tag.cfrom)
             cto = int(tag.cto)
-            if tag.tagtype == 'WN':
+            if tag.tagtype in ('WN', 'EXTRA', 'OMW'):
                 # ignore nonsense
                 if not nonsense and tag.label in NONSENSES:
+                    ignored += 1
                     continue
                 tags[s.ID][tag.label].add((cfrom, cto))
                 tagcount += 1
-            elif args and not args.quiet:
-                getLogger().warning("Unknown label: {} in sentence #{}".format(tag.tagtype, s.ID))
-    return tags, tagcount
+            else:
+                ignored += 1
+                if args and not args.quiet:
+                    getLogger().warning("Unknown label: {} in sentence #{}".format(tag.tagtype, s.ID))
+    return tags, tagcount, ignored
 
 
 def score(gold_tags, profile_tags, args=None):
     matched = set()
     notmatched = set()  # false negative
     for sid in gold_tags.keys():
-        gstags = gold_tags[sid]
-        pstags = profile_tags[sid]
-        for gstag in gstags.keys():
+        gstags = gold_tags[sid]  # gold tags of this sent
+        pstags = profile_tags[sid]  # profile tags of this sent
+        for gstag in gstags.keys():  # gstag = synsetID
             glocs = gstags[gstag]
             plocs = set(pstags[gstag]) if gstag in pstags else []
             for gfrom, gto in glocs:
-                tag = (sid, gfrom, gto, gstag)
+                tag = (sid, gfrom, gto, gstag)  # sentID, gfrom, gto, synsetID
                 for pfrom, pto in plocs:
                     getLogger().debug("Checking {}:{} againts {}:{}".format(gfrom, gto, pfrom, pto))
                     if overlap(pfrom, pto, gfrom, gto):
@@ -136,7 +140,7 @@ def compare_ttls(cli, args):
         if ignored_ids:
             for sid in ignored_ids:
                 gold.pop(sid, default=None)
-        rp.header("Gold sentences: {}".format(len(gold)))
+        rp.header("Gold sentences: {} | Loc: {}".format(len(gold), args.gold_profile))
         if args.verbose:
             for s in gold:
                 rp.print("Sent #{}: {} tags".format(s.ID, len(s.tags)))
@@ -149,7 +153,7 @@ def compare_ttls(cli, args):
         if ignored_ids:
             for sid in ignored_ids:
                 profile.pop(sid, default=None)
-        rp.header("Profile sentences: {}".format(len(profile)))
+        rp.header("Profile sentences: {} | Loc: {}".format(len(profile), args.profile))
         if args.verbose:
             for s in profile:
                 getLogger().debug("Profile/Sent #{}: {} tags".format(s.ID, len(s.tags)))
@@ -157,8 +161,8 @@ def compare_ttls(cli, args):
         print("Oops, no profile to evaluate")
     # calculate precision and recall
     if gold and profile:
-        gold_tags, gold_tags_len = prepare_tags(gold, args=args, nonsense=args.nonsense)
-        profile_tags, profile_tags_len = prepare_tags(profile, args=args, nonsense=args.nonsense)
+        gold_tags, gold_tags_len, gold_ignored = prepare_tags(gold, args=args, nonsense=args.nonsense)
+        profile_tags, profile_tags_len, profile_ignored = prepare_tags(profile, args=args, nonsense=args.nonsense)
         getLogger().debug("Gold tags: {}".format(gold_tags_len))
         getLogger().debug(list(gold_tags.items())[:5])
         getLogger().debug("Profile tags: {}".format(profile_tags_len))
@@ -186,19 +190,19 @@ def compare_ttls(cli, args):
             # CSV.write_tsv(args.debug, rows, quoting=CSV.QUOTE_MINIMAL)
             # by classes
             c = Counter()
-            c.update(label for sid, cfrom, cto, label in false_negative)
+            c.update(synsetID for sentID, cfrom, cto, synsetID in false_negative)
             debugfile.header("By classes")
-            for sid, freq in c.most_common():
-                ss = ss_map[sid]
-                debugfile.print("{}: {} | {} - {}".format(sid, freq, ss.definition, ss.lemmas))
+            for synsetID, freq in c.most_common():
+                ss = ss_map[synsetID]
+                debugfile.print("{}: {} | ({}) - {}".format(synsetID, freq, ', '.join(ss.lemmas), ss.definition))
         precision = len(true_positive) / profile_tags_len
         recall = len(true_positive) / gold_tags_len
         getLogger().debug("Precision: {}".format(precision))
         getLogger().debug("Recall: {}".format(recall))
         f1 = 2 * precision * recall / (precision + recall)
         rp.print("True positive: {}".format(len(true_positive)))
-        rp.print("Gold # senses: {}".format(gold_tags_len))
-        rp.print("Predicted # senses: {}".format(profile_tags_len))
+        rp.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
+        rp.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
         rp.print("Recall:    {:.2f}%".format(recall * 100))
         rp.print("Precision: {:.2f}%".format(precision * 100))
         rp.print("F1       : {:.2f}%".format(f1 * 100))
@@ -227,8 +231,15 @@ def pop_concept(sent, c):
 
 def remove_msw_ttl(cli, args):
     doc = read_ttl(args.path)
-    rp = TextReport()
+    rp = TextReport(args.debug)
     rp.print("Doc size: {}".format(len(doc)))
+    orig_tag_count = 0
+    orig_concept_count = 0
+    for s in doc:
+        orig_concept_count += len(s.concepts)
+        orig_tag_count += len(s.tags)
+    print("# tags: {}".format(orig_tag_count))
+    print("# concepts: {}".format(orig_concept_count))
     manual = dd(lambda: dd(dict))
     if args.manual:
         entries = CSV.read_tsv(args.manual)
@@ -247,7 +258,7 @@ def remove_msw_ttl(cli, args):
     for sidx, sent in enumerate(doc):
         if args.topk and sidx > int(args.topk):
             break
-        getLogger().info("Processing sentence {}/{}".format(sidx + 1, len(doc)))
+        getLogger().debug("Processing sentence {}/{}".format(sidx + 1, len(doc)))
         getLogger().debug("Before concepts: {}".format(sent.concepts))
         getLogger().debug("Before tags: {}".format(sent.tags))
         # remove concepts that are not in PWN 3.0
@@ -305,7 +316,9 @@ def remove_msw_ttl(cli, args):
                 else:
                     # everything is OK, remove them now
                     for c in remove:
-                        getLogger().debug("Removing concept {} from {}".format(c.ID, sent.ID))
+                        if args.debug:
+                            rp.print("Removing concept {} from {}".format(c, sent.ID))
+                        getLogger().debug("Removing concept {} from {}".format(c, sent.ID))
                         pop_concept(sent, c)
             if keep_remove:
                 rp.header(sent)
@@ -327,6 +340,13 @@ def remove_msw_ttl(cli, args):
         sents = doc if not args.topk else list(doc)[:int(args.topk)]
         for s in sents:
             new_doc.add_sent(s)
+        tag_count = 0
+        concept_count = 0
+        for s in sents:
+            concept_count += len(s.concepts)
+            tag_count += len(s.tags)
+        print("[New] # tags: {}".format(tag_count))
+        print("[New] # concepts: {}".format(concept_count))
         rp.print("Writing fixed TTL to {}".format(new_doc.sent_path))
         new_doc.write_ttl()
 
@@ -352,6 +372,7 @@ def main():
     task.add_argument('--wn30', help='Only keep PWN3.0 synsets', action='store_true')
     task.add_argument('-n', '--topk', help='Only process top k items')
     task.add_argument('-o', '--output', help='New TTL path')
+    task.add_argument('--debug', help='Debug file')
     # run app
     app.run()
 
