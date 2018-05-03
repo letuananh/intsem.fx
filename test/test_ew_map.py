@@ -77,6 +77,14 @@ class TestMain(unittest.TestCase):
         mwe_list = list(find_mwe())[:5]
         self.assertEqual(len(mwe_list), 5)
 
+    def test_pred_type(self):
+        p = Predicate.from_string('idiom_q_i')
+        self.assertEqual(p.ptype, Predicate.GRAMMARPRED)
+        self.assertEqual(p.to_pred().type, Predicate.GRAMMARPRED)
+        p = Predicate.from_string('_dog_n_1')
+        self.assertEqual(p.ptype, Predicate.STRINGPRED)
+        self.assertEqual(p.to_pred().type, Predicate.STRINGPRED)
+
     def test_read_erg_lexdb(self):
         # get non empty rels
         nonempty = [x for x in self.lexdb if x.keyrel != '\\N']
