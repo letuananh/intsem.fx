@@ -80,7 +80,8 @@ class PredSense(object):
                   'superl_rel': ('00111609-r',),
                   'the+most_q_rel': ('01555732-a',),
                   '_most_q_rel': ('01557120-a',),
-                  'be_v_id_rel': ('02604760-v', ' 02664769-v', '02445925-v', '02616386-v')}
+                  'be_v_id_rel': ('02604760-v', ' 02664769-v', '02445925-v', '02616386-v'),
+                  'be_v_there_rel': ('02749904-v', '02603699-v', '02655135-v')}
 
     @staticmethod
     def extend_lemma(lemma):
