@@ -46,6 +46,7 @@
         ,"coolisf.dao": {"level": "INFO"}
         ,"coolisf.dao.ruledb": {"level": "INFO"}
         ,"coolisf.morph": {"level": "INFO"}
+        ,"coolisf.lexsem": {"level": "INFO"}
         ,"test": {"level": "INFO"}
         ,"puchikarui": {"level": "INFO"}
     },
