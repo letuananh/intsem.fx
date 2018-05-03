@@ -135,7 +135,7 @@ def parse_isf(cli, args):
 def retag_doc(cli, args):
     ''' Re-tag an ISF document '''
     # verification
-    if args.output and os.path.exists(args.output):
+    if args.output and os.path.exists(args.output) and not args.yes:
         if not confirm("Output file exists. Do you want to continue (Y/N)? "):
             print("Program aborted.")
             return
@@ -403,6 +403,7 @@ def main():
     task = make_task('tag', func=retag_doc)
     task.add_argument('path', help='Path to document file (xml or xml.gz)')
     task.add_argument('--ttl', help='Path to TTL files')
+    task.add_argument('-y', '--yes', help='Answer yes to everything', action='store_true')
     task.add_argument('--ident', nargs='*')
 
     # ISF to TTL
