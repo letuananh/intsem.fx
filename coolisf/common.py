@@ -65,19 +65,19 @@ def read_file(file_path, mode='rt'):
         return FileHelper.read(file_path, mode)
 
 
-def write_file(content, outpath=None):
+def write_file(content, path=None):
     ''' Write content to a file, or to console if no path is provided '''
     if isinstance(content, str):
         mode = 'wt'
     else:
         mode = 'wb'
-    if outpath:
-        getLogger().debug("Writing content to {}".format(outpath))
-        if outpath.endswith('.gz'):
-            with gzip.open(outpath, mode) as outfile:
+    if path:
+        getLogger().debug("Writing content to {}".format(path))
+        if path.endswith('.gz'):
+            with gzip.open(path, mode) as outfile:
                 outfile.write(content)
         else:
-            with open(outpath, mode) as outfile:
+            with open(path, mode) as outfile:
                 outfile.write(content)
     else:
         print(content)
@@ -159,7 +159,8 @@ def ptpos_to_wn(ptpos):
 
 def get_ep_lemma(ep):
     ''' Get lemma from a pyDelphin elementary predicate '''
-    if ep.pred == 'named':
+    # if ep.pred == 'named':
+    if ep.carg:
         return ep.carg
     elif ep.pred.pos == 'u' and ep.pred.sense == 'unknown' and "/" in ep.pred.lemma:
         cutpoint = ep.pred.lemma.rfind('/')

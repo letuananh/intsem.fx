@@ -77,6 +77,6 @@ def read_config():
         default_config = read_config_template()
         getLogger().warning("CoolISF configuration file could not be found. A new configuration file will be generated at {}".format(cfg_loc))
         getLogger().debug("Default config: {}".format(default_config))
-        write_file(cfg_loc, default_config)
+        write_file(path=cfg_loc, content=default_config)
     config = __app_config.config
     return config
