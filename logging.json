@@ -42,6 +42,12 @@
         ,"coolisf.gold_extract": {"level": "INFO"}
         ,"isftk": {"level": "INFO"}
         ,"coolisf.model": {"level": "INFO"}
+        ,"coolisf.lexsem": {"level": "INFO"}
+        ,"coolisf.morph": {"level": "INFO"}
+        ,"coolisf.mappings.predsense": {"level": "INFO"}
+        ,"puchikarui": { "leveL": "INFO"}
+        ,"lelesk": { "level": "INFO" }
+        ,"delphin.interfaces.ace": { "disabled": "yes", "propagate": "no" }
     },
 
     "root": {
