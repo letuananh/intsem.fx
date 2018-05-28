@@ -104,7 +104,7 @@ def match_sents(isf_doc, ttl_doc):
     return isf_doc
 
 
-def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, ctx=None):
+def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggold=True, ctx=None):
     ''' Tag an ISF document using a TTL '''
     isf_doc = match_sents(isf_doc, ttl_doc)
     if isf_doc is None:
@@ -118,7 +118,7 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, ctx=N
         for reading in sent:
             if wsd_method:
                 sent.tag(method=wsd_method, wsd=wsd, ctx=ctx)
-            if sent.shallow:
+            if taggold and sent.shallow:
                 m, n, ignored = tag_gold(reading.dmrs(), sent.shallow, sent.text)
                 # getLogger().debug("Matched: {}".format(m))
                 if n:
@@ -254,13 +254,17 @@ def filter_wrong_senses(doc):
             sent.pop_concept(c.cidx)
 
 
-def export_to_visko(sents, doc_path, pretty_print=True):
+def export_to_visko(sents, doc_path, pretty_print=True, separate=True):
+    ''' Export sentences to XML files '''
     if not os.path.exists(doc_path):
         os.makedirs(doc_path)
     print("Exporting %s sentences to Visko" % (len(sents),))
     print("Visko doc path: {}".format(doc_path))
-    for sent in sents:
-        sentpath = os.path.join(doc_path, str(sent.ident) + '.xml.gz')
-        with gzip.open(sentpath, 'w') as f:
-            f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
+    if separate:
+        pass
+    else:
+        for sent in sents:
+            sentpath = os.path.join(doc_path, str(sent.ident) + '.xml.gz')
+            with gzip.open(sentpath, 'w') as f:
+                f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
     print("Done!")

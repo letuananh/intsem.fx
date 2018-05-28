@@ -80,7 +80,7 @@ setup_logging('logging.json', 'logs')
 
 
 def to_visko(cli, args):
-    ''' Export MRS to VISKO '''
+    ''' Convert ACE output to ISF XML format '''
     # determine docpath
     if args.bibloc:
         visko_data_dir = os.path.abspath(args.bibloc)
@@ -125,6 +125,8 @@ def parse_isf(cli, args):
     timer = Timer(cli.logger)
     timer.start("Parsing {} sentences".format(len(lines)))
     for idx, sent in enumerate(ghub.ERG_ISF.parse_many_iterative(lines, parse_count=args.topk, ignore_cache=args.nocache)):
+        if args.max and args.max < idx:
+            break
         print("Processing sentence {} of {}".format(idx + 1, len(lines)))
         sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
         report.writeline(sent.to_xml_str(pretty_print=not args.compact))
@@ -159,7 +161,7 @@ def retag_doc(cli, args):
     if args.ttl:
         print("Tagging doc {} using TTL doc {}".format(doc.name, args.ttl))
         ttl_doc = ttl.Document.read_ttl(args.ttl)
-        tag_doc(doc, ttl_doc)
+        tag_doc(doc, ttl_doc, taggold=not args.nogold)
     doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
     write_file(doc_xml_str, args.output)
 
@@ -252,6 +254,14 @@ def parse_text(cli, args):
             for reading in result:
                 report.writeline(reading.mrs().tostring(pretty_print=not args.compact))
                 report.writeline()
+        if args.shallow and result.shallow is not None:
+            shallow = result.shallow
+            report.writeline(shallow.tokens)
+            for concept in shallow.concepts:
+                if concept.comment:
+                    report.writeline("{} - {}".format(concept, concept.comment))
+                else:
+                    report.writeline("{} - {}".format(concept, concept.comment))
     timer.stop("Text: {} | Parses: {}".format(text, len(result)))
 
 
@@ -371,9 +381,11 @@ def make_task(name, func):
     task.add_argument('--wsd', help='Word Sense Disambiguator', default=ttl.Tag.LELESK)
     task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    task.add_argument('-n', '--topk', help="Only process top n items", default=None)
+    task.add_argument('-n', '--topk', help="Limit number of parses returned by ACE", default=None)
+    task.add_argument('-m', '--max', help="Only process top m items", default=None, type=int)
     task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
+    task.add_argument('--shallow', help="With shallow", action="store_true")
     return task
 
 
@@ -403,6 +415,7 @@ def main():
     task = make_task('tag', func=retag_doc)
     task.add_argument('path', help='Path to document file (xml or xml.gz)')
     task.add_argument('--ttl', help='Path to TTL files')
+    task.add_argument('--nogold', help='Do not tag DMRS with gold TTL, import TTL as shallow only', action='store_true')
     task.add_argument('-y', '--yes', help='Answer yes to everything', action='store_true')
     task.add_argument('--ident', nargs='*')
 
@@ -420,6 +433,7 @@ def main():
     task.add_argument('doc')
     task.add_argument('-k', '--topk', help='Only extract top K sentences')
     task.add_argument('-b', '--bibloc', help='Path to Biblioteche folder (corpus collection root)')
+    task.add_argument('--separate', help='One file for each sentence', action='store_true')
 
     # show ISF configuration
     app.add_task('info', func=show_isf_info)
