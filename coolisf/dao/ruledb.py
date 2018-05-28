@@ -177,6 +177,7 @@ class LexRuleDB(CorpusDAOSQLite):
 
     @with_ctx
     def find_ruleinfo(self, nodes, restricted=True, limit=None, ctx=None):
+        ''' Find applicable rules for given DMRS nodes '''
         template = '''
 head IN ({head}) {res}
 AND (ID IN (SELECT ruleid FROM rulepred WHERE {incl})
@@ -185,6 +186,8 @@ AND (ID IN (SELECT ruleid FROM rulepred WHERE {incl})
 AND ID NOT IN (SELECT ruleid FROM rulepred WHERE {excl})
 '''
         params_heads = ['udef_q', 'unknown']
+        # ruleinfo's flag == 2 (coolisf.model.RuleInfo.COMPOUND)
+        # lexunit.flag > 3
         restricted = 'AND flag = 2 AND lid IN (SELECT lid FROM lexunit WHERE flag > 3)' if restricted else ''
         params_nocargs = ['udef_q', 'unknown']
         cargs = set()
