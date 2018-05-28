@@ -215,6 +215,12 @@ class TestDMRSLayout(unittest.TestCase):
         p = '_dog_n_1'
         self.assertEqual(str(Predicate.from_string(p)), p)
 
+    def test_exploring_structure(self):
+        r = Reading(self.sent)
+        d = r.dmrs()
+        p = d.obj().eps()[2]
+        self.assertIn('ARG0', p.args)
+
     def test_pydelphin_pred(self):
         p = Pred.string_or_grammar_pred('unknown')
         self.assertEqual((p.type, p.lemma, p.pos, p.sense), (0, 'unknown', None, None))

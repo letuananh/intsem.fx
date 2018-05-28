@@ -399,6 +399,13 @@ class TestTransformer(unittest.TestCase):
                 getLogger().debug("maf: {} {}".format(maf.graph, maf.construction.nodes))
         optimus.apply(d)
 
+    def test_subgraph(self):
+        g1 = '''[ TOP: h0
+  RELS: < [ unknown<0:12> LBL: h1 ARG: x5 [ x NUM: pl PERS: 3 IND: + ] ARG0: e4 [ e SF: prop-or-ques ] ]
+          [ udef_q<0:4> LBL: h2 ARG0: x5 RSTR: h6 ]
+          [ _five+finger_n_1<0:12> LBL: h3 ARG0: x5 ] >
+  HCONS: < h0 qeq h1 h6 qeq h3 > ]'''
+
     def test_optimus_rule_db(self):
         optimus = Transformer()
         sent = self.ERG.parse('We made eye contact.')

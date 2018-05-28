@@ -77,6 +77,36 @@ class TestMain(unittest.TestCase):
         mwe_list = list(find_mwe())[:5]
         self.assertEqual(len(mwe_list), 5)
 
+    def test_search_ep(self):
+        r = Reading('''[ TOP: h0
+  INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+  RELS: < [ _of+course_a_1<0:9> LBL: h1 ARG0: i4 ARG1: h5 ]
+          [ pron<10:12> LBL: h6 ARG0: x3 [ x PERS: 3 NUM: sg GEND: n PT: std ] ]
+          [ pronoun_q<10:12> LBL: h7 ARG0: x3 RSTR: h8 BODY: h9 ]
+          [ _work_v_1<13:19> LBL: h10 ARG0: e2 ARG1: x3 ARG2: i11 ] >
+  HCONS: < h0 qeq h1 h5 qeq h10 h8 qeq h6 > ]''')
+        eps = r.dmrs().obj().eps()
+        p = eps[0]
+        self.assertEqual(p.pred.string, '_of+course_a_1_rel')
+        out = PredSense.search_ep(p)
+        self.assertIn('00038625-r', out)
+        # how about ``now''?
+        r2 = Reading('''[ TOP: h0
+  INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+  RELS: < [ pron<0:2> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg GEND: n PT: std ] ]
+          [ pronoun_q<0:2> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
+          [ _work_v_1<3:8> LBL: h1 ARG0: e2 ARG1: x3 ARG2: i8 ]
+          [ loc_nonsp<9:13> LBL: h1 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: e2 ARG2: x10 [ x PERS: 3 NUM: sg ] ]
+          [ time_n<9:13> LBL: h11 ARG0: x10 ]
+          [ def_implicit_q<9:13> LBL: h12 ARG0: x10 RSTR: h13 BODY: h14 ]
+          [ _now_a_1<9:13> LBL: h11 ARG0: e15 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x10 ] >
+        HCONS: < h0 qeq h1 h6 qeq h4 h13 qeq h11 > ]''')
+        p = r2.dmrs().obj().eps()[-1]
+        out = PredSense.search_ep(p)
+        for ss in out:
+            self.assertEqual(ss.lemma, 'now')
+            self.assertEqual(ss.ID.pos, 'r')
+
     def test_pred_type(self):
         p = Predicate.from_string('idiom_q_i')
         self.assertEqual(p.ptype, Predicate.GRAMMARPRED)
