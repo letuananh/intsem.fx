@@ -35,10 +35,12 @@ import os
 import logging
 from collections import defaultdict as dd
 
-from chirptext import TextReport, Counter
+from chirptext import TextReport, Counter, piter
 from chirptext.cli import CLIApp, setup_logging
+from chirptext import io as chio
 from chirptext.io import CSV
 from chirptext import texttaglib as ttl
+from yawlib import SynsetID
 from yawlib.helpers import get_omw, get_wn
 
 from coolisf.common import read_file, overlap
@@ -195,6 +197,8 @@ def compare_ttls(cli, args):
             for synsetID, freq in c.most_common():
                 ss = ss_map[synsetID]
                 debugfile.print("{}: {} | ({}) - {}".format(synsetID, freq, ', '.join(ss.lemmas), ss.definition))
+        getLogger().debug("Profile tags: {}".format(profile_tags_len))
+        getLogger().debug("Gold tags: {}".format(gold_tags_len))
         precision = len(true_positive) / profile_tags_len
         recall = len(true_positive) / gold_tags_len
         getLogger().debug("Precision: {}".format(precision))
@@ -351,6 +355,84 @@ def remove_msw_ttl(cli, args):
         new_doc.write_ttl()
 
 
+def strip_ttl(cli, args):
+    doc = read_ttl(args.path)
+    print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
+    if args.noconcept:
+        for sent in doc:
+            cids = [c.cidx for c in sent.concepts]
+            for cid in cids:
+                sent.pop_concept(cid)
+    if args.notag:
+        for sent in doc:
+            sent.tags.clear()
+    if args.output:
+        print("Writing output to: {}".format(args.output))
+        doc_path = os.path.dirname(args.output)
+        doc_name = os.path.basename(args.output)
+        new_doc = ttl.Document(doc_name, doc_path)
+        for s in doc:
+            new_doc.add_sent(s)
+        new_doc.write_ttl()
+    print("Done")
+
+
+def concept_to_tags(cli, args):
+    doc = read_ttl(args.path)
+    print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
+    for sent in doc:
+        for concept in sent.concepts:
+            cfrom = min(t.cfrom for t in concept.tokens)
+            cto = min(t.cto for t in concept.tokens)
+            sid = SynsetID.from_string(concept.tag, default=None)  # must be a valid synsetID
+            if cfrom >= 0 and cto >= 0 and sid is not None:
+                sent.new_tag(concept.tag, cfrom, cto, tagtype='WN')
+    if args.output:
+        ttl.TxtWriter.from_path(args.output).write_doc(doc)
+    print("Done")
+
+
+def ttl_to_txt(cli, args):
+    doc = read_ttl(args.path)
+    print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
+    lines = [s.text for s in doc]
+    if args.output:
+        chio.write_file(args.output, '\n'.join(lines))
+        print("Written {} lines to {}".format(len(lines), args.output))
+    print("Done")
+
+
+def import_ttl_data(cli, args):
+    doc = read_ttl(args.path)
+    print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
+    # import tokens
+    if args.tokens:
+        p = piter(chio.read_tsv_iter(args.tokens))
+        groups = []
+        current = []
+        for row in p:
+            if row:
+                current.append(row)
+            if not p.peep() or not p.peep().value:
+                if current:
+                    groups.append(current)
+                    current = []
+        print("Found {} sentences.".format(len(groups)))
+        if len(groups) != len(doc):
+            print("Wrong token files")
+            exit()
+        for sent, row in zip(doc, groups):
+            sent.tokens = [tk[0] for tk in row]
+            for token, (text, pos) in zip(sent, row):
+                token.text = text
+                token.pos = pos
+    # output stuff
+    if args.output:
+        ttl.TxtWriter.from_path(args.output).write_doc(doc)
+        print("Written {} sentences to {}".format(len(doc), args.output))
+    print("Done")
+
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -373,6 +455,25 @@ def main():
     task.add_argument('-n', '--topk', help='Only process top k items')
     task.add_argument('-o', '--output', help='New TTL path')
     task.add_argument('--debug', help='Debug file')
+
+    task = app.add_task('strip', func=strip_ttl)
+    task.add_argument('path', help='Path to TTL document')
+    task.add_argument('--noconcept', help='Remove concepts', action='store_true')
+    task.add_argument('--notag', help='Remove tags', action='store_true')
+    task.add_argument('-o', '--output', help='New TTL path')
+
+    task = app.add_task('bake', func=concept_to_tags)
+    task.add_argument('path', help='Path to TTL document')
+    task.add_argument('-o', '--output', help='New TTL path')
+
+    task = app.add_task('totxt', func=ttl_to_txt)
+    task.add_argument('path', help='Path to TTL document')
+    task.add_argument('-o', '--output', help='Output text file')
+
+    task = app.add_task('import', func=import_ttl_data)
+    task.add_argument('path', help='Path to TTL document')
+    task.add_argument('-o', '--output', help='Output text file')
+    task.add_argument('--tokens', help='Path to token file')
     # run app
     app.run()
 

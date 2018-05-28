@@ -37,6 +37,8 @@ import logging
 
 from yawlib import YLConfig
 from yawlib.omwsql import OMWSQL
+from chirptext.cli import CLIApp, setup_logging
+from chirptext import io as chio
 
 from coolisf import GrammarHub
 from coolisf.model import LexUnit, Reading
@@ -48,6 +50,7 @@ from coolisf.morph import LexRuleDB
 # Configuration
 # ---------------------------------------------------------
 
+setup_logging('logging.json', 'logs')
 UNK_DOCS = {'n': 'unk_noun', 'v': 'unk_verb', 'a': 'unk_adj', 'r': 'unk_adv', 'x': 'unk_other'}
 
 
@@ -162,7 +165,8 @@ class RuleGenerator(object):
         print("Processing: {}".format(lu))
         return parse_lexunit(lu, self.grm)
 
-    def gen_ruledb(self, args):
+    def gen_ruledb(self, cli, args):
+        ''' Generate rule DB from WN '''
         rdb = LexRuleDB(args.dbloc)
         # read wordnets
         query = """SELECT word.lemma, sense.synset, word.pos FROM sense LEFT JOIN word ON sense.wordid = word.wordid WHERE sense.lang = ?"""
@@ -173,7 +177,7 @@ class RuleGenerator(object):
             # rdb.generate_rules(lexunits, lambda x: self.process(x, self.ghub.ERG), ctx=ctx)
             rdb.generate_rules(lexunits, None, ctx=ctx)
 
-    def parse_ruledb(self, args):
+    def parse_ruledb(self, cli, args):
         rdb = LexRuleDB(args.dbloc)
         with rdb.ctx() as ctx:
             unparsed = ctx.lexunit.select('flag IS NULL')
@@ -181,7 +185,7 @@ class RuleGenerator(object):
                 print("Parsing {}".format(rule))
                 rdb.parse_rule(rule, self.process, ctx=ctx)
 
-    def analyse_ruledb(self, args):
+    def analyse_ruledb(self, cli, args):
         rdb = LexRuleDB(args.dbloc)
         with rdb.ctx() as ctx:
             lexunits = rdb.find_lexunits(flag=LexUnit.PROCESSED, limit=args.n, lazy=False, ctx=ctx)
@@ -193,6 +197,21 @@ class RuleGenerator(object):
                         print("Found a compound: {}".format(lu))
                     pass
 
+    def deactive(self, cli, args):
+        print("Lemma file: {}".format(args.lemmafile))
+        lemmas = [l[0].strip() for l in chio.read_csv(args.lemmafile) if l and l[0].strip()]
+        print("Lemmas: {}".format(len(lemmas)))
+        rdb = LexRuleDB(args.dbloc)
+        with rdb.ctx() as ctx:
+            ctx.buckmode()
+            ctx.execute('BEGIN;')
+            for lemma in lemmas:
+                query = '''UPDATE ruleinfo SET flag = 1
+                WHERE lid IN (SELECT ID FROM lexunit WHERE lemma = ?)'''
+                ctx.execute(query, (lemma,))
+            ctx.execute('END;')
+        print("Done")
+
 # ---------------------------------------------------------
 # Main
 # ---------------------------------------------------------
@@ -201,31 +220,22 @@ class RuleGenerator(object):
 def main():
     ''' ISF Miner
     '''
-    parser = argparse.ArgumentParser(description="ISF Miner", add_help=False)
-    parser.set_defaults(func=None)
-
+    app = CLIApp(desc='RDB tools', logger=__name__)
+    RuleGenerator()
     # Positional argument(s)
-    task_parsers = parser.add_subparsers(help='Task to be done')
-
-    ruledb_task = task_parsers.add_parser('ruledb', add_help=False)
-    ruledb_task.add_argument('--dbloc', default='data/lexrules.db')
-    ruledb_jobs = ruledb_task.add_subparsers(help='Job to perform on rule DB')
+    app.parser.add_argument('--dbloc', default='data/lexrules.db')
     # generate DB
-    gen_job = ruledb_jobs.add_parser('gen', parents=[ruledb_task])
-    gen_job.set_defaults(func=RuleGenerator().gen_ruledb)
+    task = app.add_task('gen', func=RuleGenerator().gen_ruledb)
     # parse unparsed lexunits
-    parse_job = ruledb_jobs.add_parser('parse', parents=[ruledb_task])
-    parse_job.set_defaults(func=RuleGenerator().parse_ruledb)
+    task = app.add_task('parse', func=RuleGenerator().parse_ruledb)
+    # deactivate rules
+    task = app.add_task('deactive', func=RuleGenerator().deactive)
+    task.add_argument('lemmafile', help='Lemma file in CSV format')
     # analyse parsed lexunits
-    analyse_job = ruledb_jobs.add_parser('analyse', parents=[ruledb_task])
-    analyse_job.add_argument('-n', help="Limit to top n records", default=None)
-    analyse_job.set_defaults(func=RuleGenerator().analyse_ruledb)
-    # Main script
-    args = parser.parse_args()
-    if args.func:
-        args.func(args)
-    else:
-        parser.print_help()
+    task = app.add_task('analyse', func=RuleGenerator().analyse_ruledb)
+    task.add_argument('-n', help="Limit to top n records", default=None)
+    # run
+    app.run()
 
 
 if __name__ == "__main__":

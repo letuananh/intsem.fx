@@ -91,7 +91,11 @@ def doc_stats(cli, args):
                 if n.pred.pos == 'u' and n.pred.sense == 'unknown':
                     stats.count("Unnown predicates")
                     if '/' in n.pred.lemma:
-                        lemma, pos = n.pred.lemma.split('/')
+                        try:
+                            lemma, pos = n.pred.lemma.rsplit('/', 1)
+                        except:
+                            getLogger().warning("Invalid unknown pred: {}".format(n.pred))
+                            raise
                         all_pos.count(pos)
                         unknown_preds.count((str(n.pred), lemma, pos))
                     else:

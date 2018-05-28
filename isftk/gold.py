@@ -39,9 +39,10 @@ from chirptext.anhxa import DataObject as DO
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import texttaglib as ttl
 
-from coolisf.lexsem import Lexsem, import_shallow
+from coolisf.lexsem import Lexsem, import_shallow, sort_eps
 from coolisf.gold_extract import read_gold_mrs
 from coolisf.model import Document
+from coolisf.mappings import PredSense
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -116,6 +117,17 @@ def map_all(cli, args):
             print(' & '.join((args.dataset, prof.strat, noss, ft, str(total_matched), str(total_notmatched), str(total_ignored), str(total_concepts))), ' \\\\ ')
         else:
             print(' | '.join(('', args.dataset, prof.strat, noss, ft, str(total_matched), str(total_notmatched), str(total_ignored), str(total_concepts), '')))
+
+
+def patch_sids(cli, args):
+    rp = TextReport(args.output) if args.output else TextReport()
+    if args.gold:
+        sents = Document.from_file(args.gold)
+        patch_gold_sid(sents)
+        rp.write(sents.to_xml_str())
+        print("Done")
+    else:
+        print("No document to patch")
 
 
 def map_predsense(cli, args):
@@ -224,6 +236,83 @@ def map_predsense(cli, args):
     return total_concepts, total_matched, total_notmatched, total_ignored
 
 
+def find_lesk_candidates(cli, args):
+    doc = Document.from_file(args.gold)
+    ne = 0
+    for s in doc:
+        if len(s):
+            ne += 1
+    print("Gold ISF: {} | not empty sents: {}".format(args.gold, ne))
+    # candidates = dd(lambda: dd(set))
+    notfound = dd(list)
+    ident_sent_map = {}
+    all_preds = Counter()
+    missing_preds = Counter()
+    found_preds = Counter()
+    with PredSense.wn.ctx() as ctx:
+        for idx, sent in enumerate(doc):
+            if not len(sent):
+                continue
+            elif args.ident and sent.ident not in args.ident:
+                continue
+            if args.topk and args.topk < idx:
+                break
+            print(sent)
+            ident_sent_map[sent.ident] = sent
+            dmrs = sent[0].dmrs()
+            if dmrs.tags:
+                for ep in dmrs.get_lexical_preds():
+                    all_preds.count(str(ep.pred))
+                    if ep.nodeid in dmrs.tags:
+                        # if there is a tag for this node
+                        ep_synsets = PredSense.search_ep(ep, ctx=ctx)  # return a SynsetCollection()
+                        for tag in dmrs.tags[ep.nodeid]:
+                            if tag.synset.ID not in ep_synsets:
+                                notfound[sent.ident].append((ep.nodeid, str(ep.pred), tag.synset.ID, tag.synset.lemma, [(x.ID, x.lemma) for x in ep_synsets]))
+                                missing_preds.count(str(ep.pred))
+                            else:
+                                found_preds.count(str(ep.pred))
+    output = TextReport(args.output)
+    # summarise
+    total_found = sum(c for pred, c in found_preds.most_common())
+    total_missing = sum(c for pred, c in missing_preds.most_common())
+    output.print("Found    : {}".format(total_found))
+    output.print("Not found: {}".format(total_missing))
+    ratio = (total_missing * 100) / (total_found + total_missing)
+    output.print("Missing %: {}".format(ratio))
+    # preds by sentences
+    output.header("By sentences")
+    for sid in sorted(notfound.keys()):
+        sent = ident_sent_map[sid]
+        output.print((sid, sent.text))
+        items = notfound[sid]
+        for item in items:
+            output.print(item)
+        output.print()
+    # by preds
+    output.header("By preds")
+    for pred, occurrence in missing_preds.most_common():
+        output.print("{}: {}".format(pred, occurrence))
+    print("Done")
+
+
+def order_preds(cli, args):
+    doc = Document.from_file(args.gold)
+    output = TextReport(args.output)
+    if not args.ident:
+        print("No ident was provided")
+    for ident in args.ident:
+        sent = doc.by_ident(ident, default=None)
+        if sent is None:
+            print("Sent #{} is missing".format(ident))
+        else:
+            print(sent)
+            eps = sent[0].dmrs().obj().eps()
+            sort_eps(eps)
+            print(["{}<{}:{}>".format(str(x.pred), x.cfrom, x.cto) for x in eps])
+    print("Done")
+
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -254,6 +343,21 @@ def main():
     task.add_argument('--fixtoken', help='Auto fix token', action='store_true')
     task.add_argument('--nononsense', help='Auto fix token', action='store_true')
     task.add_argument('--patchsid', help='Force patching sentence ID', action='store_true')
+
+    task = app.add_task('patch', func=patch_sids)
+    task.add_argument('-g', '--gold', help='Gold MRS', default=None)
+    task.add_argument('-o', '--output', help='Output file', default=None)
+
+    task = app.add_task('order', func=order_preds)
+    task.add_argument('-g', '--gold', help='Gold MRS', default=None)
+    task.add_argument('-o', '--output', help='Output file', default=None)
+    task.add_argument('--ident', nargs='*')
+
+    task = app.add_task('leskcan', func=find_lesk_candidates)
+    task.add_argument('-g', '--gold', help='Gold MRS', default=None)
+    task.add_argument('-o', '--output', help='Output file', default=None)
+    task.add_argument('-n', '--topk', help='Only process top k sentences', type=int)
+    task.add_argument('--ident', nargs='*')
     # run app
     app.run()
 
