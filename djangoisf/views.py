@@ -133,6 +133,8 @@ def parse(request):
     # Parse sentence
     logger.info("Parsing sentence: ... " + sentence_text)
     sent = ghub.parse_json(sentence_text, grammar, parse_count, tagger)
+    logger.debug("Shallow: {}".format(sent['shallow']))
+    logger.debug("Parses: {}".format(len(sent)))
     logger.info("Done parsing")
     return sent
 
