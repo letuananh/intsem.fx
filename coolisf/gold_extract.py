@@ -47,6 +47,7 @@ from lxml import etree
 
 from chirptext.leutile import FileHelper
 from chirptext import texttaglib as ttl
+from chirptext import io as chio
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
@@ -256,15 +257,16 @@ def filter_wrong_senses(doc):
 
 def export_to_visko(sents, doc_path, pretty_print=True, separate=True):
     ''' Export sentences to XML files '''
-    if not os.path.exists(doc_path):
-        os.makedirs(doc_path)
     print("Exporting %s sentences to Visko" % (len(sents),))
     print("Visko doc path: {}".format(doc_path))
     if separate:
-        pass
-    else:
+        if not os.path.exists(doc_path):
+            os.makedirs(doc_path)
         for sent in sents:
             sentpath = os.path.join(doc_path, str(sent.ident) + '.xml.gz')
             with gzip.open(sentpath, 'w') as f:
                 f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
+    else:
+        # write to file
+        chio.write_file(doc_path, sents.to_xml_str(pretty_print=pretty_print))
     print("Done!")

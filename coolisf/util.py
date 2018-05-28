@@ -41,7 +41,7 @@ import logging
 
 from chirptext import Counter, FileHelper
 
-from coolisf.model import Sentence
+from coolisf.model import Sentence, Document
 
 
 # ----------------------------------------------------------------------
@@ -67,7 +67,7 @@ def read_ace_output(ace_output_file):
     getLogger().info("Reading parsed MRS from %s..." % (ace_output_file,))
     c = Counter()
     items = []
-    sentences = []
+    doc = Document(name=FileHelper.getfilename(ace_output_file))
     skipped = []
     with open(ace_output_file, 'r') as input_mrs:
         current_sid = 0
@@ -78,7 +78,7 @@ def read_ace_output(ace_output_file):
                 mrs_line = input_mrs.readline()
                 # item = [line, mrs_line]
                 s = Sentence(line[5:], ID=current_sid)
-                sentences.append(s)
+                doc.add(s)
                 while mrs_line.strip():
                     s.add(mrs_line)
                     mrs_line = input_mrs.readline()
@@ -86,6 +86,8 @@ def read_ace_output(ace_output_file):
                 c.count('sent')
                 c.count('total')
             elif line.startswith('SKIP'):
+                s = Sentence(line[5:], ID=current_sid)
+                doc.add(s)
                 skipped.append(line[5:].strip())
                 items.append([line])
                 input_mrs.readline()
@@ -96,7 +98,7 @@ def read_ace_output(ace_output_file):
                 break
     c.summarise()
     FileHelper.save(ace_output_file + '.skipped.txt', '\n'.join(skipped))
-    return sentences
+    return doc
 
 
 def sent2json(sent, sentence_text=None, parse_count=-1, tagger='N/A', grammar='N/A'):

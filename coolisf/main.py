@@ -87,7 +87,10 @@ def to_visko(cli, args):
     else:
         # default bibloc
         visko_data_dir = os.path.expanduser('~/workspace/visualkopasu/data/biblioteche')
-    export_path = os.path.join(visko_data_dir, args.biblioteca, args.corpus, args.doc)
+    if args.separate:
+        export_path = os.path.join(visko_data_dir, args.biblioteca, args.corpus, args.doc)
+    else:
+        export_path = args.doc
     print("Biblioteche location: {}".format(visko_data_dir))
     print("Document location   : {}".format(export_path))
     # which file to export
@@ -103,7 +106,7 @@ def to_visko(cli, args):
         else:
             print("Aborted")
             return
-    export_to_visko(sents, export_path)
+    export_to_visko(sents, export_path, separate=args.separate)
 
 
 def parse_isf(cli, args):

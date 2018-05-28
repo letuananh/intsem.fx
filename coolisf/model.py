@@ -140,7 +140,6 @@ class Document(object):
 
     def new(self, text='', ident=None):
         sent = Sentence(text=text, ident=ident)
-        sent.docID = self.ID
         self.add(sent)
         return sent
 
