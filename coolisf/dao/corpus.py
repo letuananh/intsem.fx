@@ -389,7 +389,11 @@ class CorpusDAOSQLite(RichKopasu):
         # update reading info
         self.save_reading(reading, ctx=ctx)
 
-    def build_search_result(self, rows, no_more_query=False):
+    @with_ctx
+    def build_search_result(self, rows, with_comment=True, ctx=None):
+        ''' build search result from query results
+        Format: sentID, readingID, text, sentence_ident, docID, doc_name, corpus_name, corpusID
+        '''
         if rows:
             logger.debug(("Found: %s presentation(s)" % len(rows)))
         else:
@@ -404,25 +408,24 @@ class CorpusDAOSQLite(RichKopasu):
             text = row['text']
             docID = row['docID']
             if sentID in sentences_by_id:
-                # update reading
+                # sentence exists, add this reading to that sentence
                 a_reading = Reading(ID=readingID)
                 # self.get_reading(a_reading)
                 sentences_by_id[sentID].readings.append(a_reading)
             else:
-                if no_more_query:
-                    a_sentence = Sentence(ident=sentence_ident, text=text, docID=docID)
-                    a_sentence.corpus = Corpus(name=row['corpus_name'], ID=row['corpusID'])
-                    a_sentence.doc = Document(name=row['doc_name'], ID=docID)
-                    a_sentence.ID = sentID
-                else:
-                    a_sentence = self.get_sent(sentID, readingIDs=[], skip_details=True)
-                a_sentence.readings = []
-                a_reading = Reading(ID=readingID)
-                a_sentence.readings.append(a_reading)
+                a_sentence = Sentence(ident=sentence_ident, text=text, docID=docID, ID=sentID)
+                a_sentence.corpus = Corpus(name=row['corpus_name'], ID=row['corpusID'])
+                a_sentence.doc = Document(name=row['doc_name'], ID=docID)
+                if readingID:
+                    # add reading if needed
+                    a_reading = Reading(ID=readingID)
+                    a_sentence.readings.append(a_reading)
                 sentences.append(a_sentence)
                 sentences_by_id[sentID] = a_sentence
-            # sentences.append(a_sentence)
         logger.debug(("Sentence count: %s" % len(sentences)))
+        if with_comment:
+            for sent in sentences:
+                sent.comment = self.read_note_sentence(sent_id=sent.ID, ctx=ctx)
         return sentences
 
     @with_ctx
