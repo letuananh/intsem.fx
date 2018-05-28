@@ -32,6 +32,9 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 ########################################################################
 
 import logging
+import copy
+from itertools import chain
+from collections import defaultdict as dd
 from delphin.mrs.components import Pred
 
 from yawlib import SynsetCollection
@@ -73,6 +76,7 @@ class PredSense(object):
     MANUAL_MAP = {'neg_rel': ('00024073-r',),
                   '_no_a_1_rel': ('00024356-r',),
                   'no_q_rel': ('02268485-a',),
+                  'little-few_a_rel': ('01552885-a', '01554510-a'),
                   'more_comp_rel': ('00099341-r',),
                   '_more_x_comp_rel': ('00099341-r',),
                   '_more_a_1_rel': ('00099712-r',),
@@ -108,9 +112,13 @@ class PredSense(object):
         return potential
 
     singleton_sm = None
+    search_cache = dd()
 
     @staticmethod
     def search_sense(lemmata, pos=None, ctx=None):
+        search_key = (tuple(lemmata), pos)
+        if search_key in PredSense.search_cache:
+            return copy.deepcopy(PredSense.search_cache[search_key])
         if ctx is None:
             with PredSense.wn.ctx() as ctx:
                 return PredSense.search_sense(lemmata, pos=pos, ctx=ctx)
@@ -125,7 +133,9 @@ class PredSense(object):
             getLogger().debug("search_sense: {} (pos={}): {}".format(lemma, pos, synsets))
             for synset in synsets:
                 if synset.ID not in potential:
+                    synset.lemma = lemma
                     potential.add(synset)
+        PredSense.search_cache[search_key] = potential
         return potential
 
     # alias
@@ -142,22 +152,65 @@ class PredSense(object):
         pred = Pred.string_or_grammar_pred(pred_str)
         # use manual mapping whenever possible
         pred_str_search = pred_str if pred_str.endswith('_rel') else pred_str + '_rel'
+        # if this is a known preds
         if pred_str_search in MWE_ERG_PRED_LEMMA:
             ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str_search]], pred.pos)
-            return sorted(ss, key=lambda x: x.tagcount, reverse=True)
-        else:
-            return PredSense.search_pred(pred, extend_lemma)
+            if ss:
+                return sorted(ss, key=lambda x: x.tagcount, reverse=True)
+        return PredSense.search_pred(pred, extend_lemma)
 
     @staticmethod
-    def search_ep(ep, ctx=None):
-        getLogger().debug("processing {}".format(ep))
-        candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
-        if candidates:
+    def search_ep(ep, extend_lemma=True, ctx=None):
+        candidates = None
+        pred_str = str(ep.pred)
+        if not pred_str.endswith('_rel'):
+            pred_str += "_rel"
+        getLogger().debug("search_ep {} | pred={}".format(ep, pred_str))
+        if pred_str in PredSense.MANUAL_MAP:
+            return PredSense.wn.get_synsets(PredSense.MANUAL_MAP[pred_str], ctx=ctx)
+        elif ep.pred.type == Pred.GRAMMARPRED and ep.carg:
+            lemmas = PredSense.extend_lemma(ep.carg) if extend_lemma else (ep.cargs,)
+            pos = None
+            arg0 = ep.args['ARG0'] if 'ARG0' in ep.args else ''
+            if arg0.startswith('e'):
+                pos = 'a'
+            elif arg0.startswith('i') or arg0.startswith('x'):
+                pos = 'n'
+            candidates = PredSense.search_sense(lemmas, pos=pos, ctx=ctx)
             getLogger().debug("Candidate for {}: {}".format(ep.pred.string, candidates))
-        elif ep.carg:
-            candidates = PredSense.search_sense((ep.carg,), ctx=ctx)
+        elif ep.pred.pos == 'a' and 'ARG1' in ep.args:
+            if extend_lemma:
+                lemmas = list(chain(PredSense.extend_lemma(ep.pred.lemma), PredSense.extend_lemma(ep.pred.lemma + 'ly')))
+            else:
+                lemmas = (ep.pred.lemma, ep.pred.lemma + 'ly')
+            arg1 = ep.args['ARG1']
+            # try to guess POS first
+            if arg1.startswith('h') or arg1.startswith('e'):
+                pos = 'r'
+            else:
+                pos = 'a'
+            candidates = PredSense.search_sense(lemmas, pos=pos, ctx=ctx)
+            if candidates:
+                return candidates
+            else:
+                # change to the other
+                old_pos = pos
+                pos = 'r' if pos != 'r' else 'a'
+                getLogger().debug("Not found {}, change POS {} -> {}".format(lemmas, old_pos, pos))
+                candidates = PredSense.search_sense(lemmas, pos=pos, ctx=ctx)
+                getLogger().debug("Candidate for {}: {}".format(ep.pred.string, candidates))
+        else:
+            candidates = PredSense.search_pred_string(ep.pred.string, ctx=ctx)
             getLogger().debug("Candidates for [{} [CARG '{}']]: {}".format(ep.pred.string, ep.carg, [(c, c.lemmas) for c in candidates]))
-        return candidates
+        if candidates:
+            return candidates
+        # try to search by known lemmas
+        if pred_str in MWE_ERG_PRED_LEMMA:
+            ss = PredSense.search_sense([MWE_ERG_PRED_LEMMA[pred_str]], ep.pred.pos)
+            if ss:
+                sorted(ss, key=lambda x: x.tagcount, reverse=True)
+        # search by preds
+        return PredSense.search_pred(ep.pred, auto_expand=extend_lemma, ctx=ctx)
 
     @staticmethod
     def search_pred(pred, auto_expand=True, ctx=None):

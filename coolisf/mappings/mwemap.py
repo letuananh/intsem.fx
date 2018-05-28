@@ -1148,6 +1148,7 @@ MWE_ERG_PRED_LEMMA = {
 ,'_bump_v_off_rel' : 'bump off'
 ,'_chill_v_out_rel' : 'chill out'
 ,'_look_v_around_rel' : 'look around'
+,'_look_v_at_rel': 'look at'
 ,'_pal_v_around_rel' : 'pal around'
 ,'_send_v_off_rel' : 'send off'
 ,'_cover_v_up_rel' : 'cover up'

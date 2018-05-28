@@ -44,7 +44,7 @@ from chirptext import texttaglib as ttl
 
 SPECIAL_CHARS = '''?!"'$-_&|.,;:'''
 # TODO: Move this to chirptext
-PREPS = ['aboard', 'about', 'above', 'across', 'after', 'against', 'along', 'amid', 'among', 'anti', 'around', 'as', 'at', 'before', 'behind', 'below', 'beneath', 'beside', 'besides', 'between', 'beyond', 'but', 'by', 'concerning', 'considering', 'despite', 'down', 'during', 'except', 'excepting', 'excluding', 'following', 'for', 'from', 'in', 'inside', 'into', 'like', 'minus', 'near', 'of', 'off', 'on', 'onto', 'opposite', 'outside', 'over', 'past', 'per', 'plus', 'regarding', 'round', 'save', 'since', 'than', 'through', 'to', 'toward', 'towards', 'under', 'underneath', 'unlike', 'until', 'up', 'upon', 'versus', 'via', 'with', 'within', 'without']
+PREPS = ['aboard', 'about', 'above', 'across', 'after', 'against', 'along', 'amid', 'among', 'anti', 'around', 'as', 'at', 'before', 'behind', 'below', 'beneath', 'beside', 'besides', 'between', 'beyond', 'but', 'by', 'concerning', 'considering', 'despite', 'down', 'during', 'except', 'excepting', 'excluding', 'following', 'for', 'from', 'in', 'inside', 'into', 'like', 'minus', 'near', 'of', 'off', 'on', 'onto', 'opposite', 'outside', 'over', 'past', 'per', 'plus', 'regarding', 'round', 'save', 'since', 'than', 'through', 'to', 'toward', 'towards', 'under', 'underneath', 'unlike', 'until', 'up', 'upon', 'versus', 'via', 'with', 'within', 'without', 'that']
 PREPS_PLUS = PREPS + ['a']
 
 
@@ -78,7 +78,7 @@ def fix_tokenization(ep, sent_text=None):
     return cfrom, cto, surface
 
 
-def match(concept, ep, sent_text, fix_token=True):
+def match(concept, ep, sent_text, mode=Lexsem.NAIVE, fix_token=True):
     ''' Match concept (idv/MWE) with preds '''
     if fix_token:
         cfrom, cto, surface = fix_tokenization(ep, sent_text)
@@ -86,14 +86,20 @@ def match(concept, ep, sent_text, fix_token=True):
         cfrom, cto, surface = ep.cfrom, ep.cto, sent_text[ep.cfrom:ep.cto] if sent_text is not None else ''
     if len(concept.tokens) == 1:
         pred_bits = list(ep.pred.lemma.split('+'))
+        getLogger().debug("pred={} | plemma={}/bits={} | cfrom={} | cto={} | surface={} | concept={} | tokens={}".format(ep.pred, ep.pred.lemma, pred_bits, cfrom, cto, surface, concept, concept.tokens))
         w0 = concept.tokens[0]
+        target_lemmas = (w0.text, concept.clemma)
+        if mode == Lexsem.STRICT and ep.pred.pos == 'q' and ep.pred.type == Pred.GRAMMARPRED:
+            return (ep.pred.pos in target_lemmas) and (w0.cfrom == cfrom) and (w0.cto == ep.cto)
         if w0.cfrom == cfrom or w0.cfrom == ep.cfrom:
             if w0.cto == cto or w0.cto == ep.cto:
                 return True
-            elif ep.pred.lemma == w0.text or surface == w0.text:
+            elif ep.pred.lemma in target_lemmas or surface in target_lemmas:
                 return True
-            elif len(pred_bits) == 2 and pred_bits[-1] in PREPS_PLUS and pred_bits[0] == w0.text:
+            elif len(pred_bits) == 2 and pred_bits[-1] in PREPS_PLUS and pred_bits[0] in (w0.text, concept.clemma):
                 return True
+        if concept.clemma in ('not', "n't") and ep.pred.lemma == 'neg' and w0.cto == cto:
+            return True
     elif len(concept.tokens) > 1:
         # MWE
         tagged_words = tuple(w.text for w in concept.tokens)
@@ -162,7 +168,7 @@ def taggable_eps(eps, mode=Lexsem.ROBUST):
     elif mode == Lexsem.NAIVE:
         return eps
     else:
-        return [ep for ep in eps if ep.pred not in ('udef_q', 'pronoun_q')]
+        return [ep for ep in eps if ep.pred not in ('udef_q', 'pronoun_q', 'proper_q', 'def_implicit_q', 'free_relative_q', 'free_relative_ever_q', 'def_poss_q', 'number_q', 'every_q', 'which_q')]
 
 
 def filter_small_senses(tagged):
@@ -200,6 +206,12 @@ def import_shallow(isf_sent, *args, **kwargs):
     return output
 
 
+def sort_eps(eps):
+    # order: cfrom / cto / type (realpred first) / with_carg / quantifier
+    eps.sort(key=lambda x: (x.cfrom, x.cto, 0 - x.pred.type, x.carg is None, x.pred.pos == 'q'))
+    return eps
+
+
 def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST, no_small_sense=True, fix_token=True, no_nonsense=False):
     ''' Use a ttl.Sentence to tag a DMRS
     Results (matched, not_matched) in which
@@ -219,12 +231,14 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST, no_small_sense=Tr
         concepts = tagged_sent.concepts
     # idv_concepts = [c for c in concepts if len(c.words) == 1]
     eps = taggable_eps(dmrs.obj().eps(), mode=mode)
+    sort_eps(eps)
+    getLogger().debug("EPS: {}".format([(str(x.pred), x.pred.type) for x in eps]))
     matched_preds = []
     not_matched = []
     for c in concepts:
         matched = False
         for ep in eps:
-            m = match(c, ep, sent_text, fix_token=fix_token)
+            m = match(c, ep, sent_text, mode=mode, fix_token=fix_token)
             if m:
                 matched_preds.append((c, ep.nodeid, ep.pred))
                 dmrs.tag_node(ep.nodeid, c.tag, c.clemma, ttl.Tag.GOLD)
