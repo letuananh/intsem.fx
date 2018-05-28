@@ -159,6 +159,22 @@ class Document(object):
     def __iter__(self):
         return iter(self.sentences)
 
+    def get(self, ID, **kwargs):
+        if ID in self.id_map:
+            return self.id_map[ID]
+        elif 'default' in kwargs:
+            return kwargs['default']
+        else:
+            raise LookupError("Sentence ID#{} could not be found".format(ID))
+
+    def by_ident(self, ident, **kwargs):
+        if ident in self.ident_map:
+            return self.ident_map[ident]
+        elif 'default' in kwargs:
+            return kwargs['default']
+        else:
+            raise LookupError("Sentence ident#{} could not be found".format(ident))
+
     def to_xml_node(self, corpus_node=None, with_raw=True, with_shallow=True, with_dmrs=True):
         doc_node = etree.Element('document')
         if corpus_node is not None:
@@ -194,7 +210,7 @@ class Document(object):
 
     @staticmethod
     def from_xml_str(xml_str, *args, **kwargs):
-        doc_root = etree.XML(xml_str)
+        doc_root = etree.XML(xml_str, parser=etree.XMLParser(huge_tree=True))
         if doc_root.tag == 'rootisf':
             doc_root = doc_root.find('document')
         return Document.from_xml_node(doc_root, *args, **kwargs)
@@ -216,7 +232,7 @@ class Sentence(object):
     ERROR = 2
     WARNING = 3
 
-    def __init__(self, text='', ID=None, ident=None, docID=None, doc=None):
+    def __init__(self, text='', ID=None, ident=None, docID=None, doc=None, readings=None):
         # corpus management
         self.ID = ID if ID else None
         self.ident = ident
@@ -227,7 +243,7 @@ class Sentence(object):
         self.collection = None
         # sentence information
         self.text = StringTool.strip(text)
-        self.readings = []
+        self.readings = [] if not readings else list(readings)
         # human annotation layer
         self.flag = None
         self._shallow = None
@@ -368,7 +384,7 @@ class Sentence(object):
         # store shallow if needed
         if with_shallow and self.shallow is not None:
             shallow_node = etree.SubElement(sent_node, 'shallow')
-            shallow_node.text = json.dumps(self.shallow.to_json(), indent=2 if pretty_print else None)
+            shallow_node.text = json.dumps(self.shallow.to_json(), ensure_ascii=False, indent=2 if pretty_print else None)
         # store readings
         for idx, reading in enumerate(self):
             intp_node = etree.SubElement(sent_node, 'reading')
@@ -523,7 +539,7 @@ class MRS(object):
 
     def json_str(self):
         '''MRS data in JSON format'''
-        return json.dumps(self.json())
+        return json.dumps(self.json(), ensure_ascii=False)
 
     def to_dmrs(self, with_raw=False):
         xml_str = dmrx.dumps_one(self.obj())
@@ -688,7 +704,7 @@ class DMRS(object):
     def json_str(self):
         '''DMRS data in JSON format'''
         try:
-            return json.dumps(self.json())
+            return json.dumps(self.json(), ensure_ascii=False)
         except:
             return None
 
@@ -730,6 +746,7 @@ class DMRS(object):
             nodes = root.findall('./node')
             for n in nodes:
                 # find all sense nodes
+                carg = n.attrib['carg'] if 'carg' in n.attrib else ''
                 sense_nodes = n.findall('sense')
                 if sense_nodes is None:
                     sense_nodes = []
@@ -743,7 +760,7 @@ class DMRS(object):
                     lemma = s.attrib['lemma']
                     score = s.attrib['score'] if 'score' in s.attrib else None
                     method = s.attrib['type'] if 'type' in s.attrib else ttl.Tag.ISF
-                    self.tag_node(nodeid, sid, lemma, method, score=score)
+                    self.tag_node(nodeid, sid, carg or lemma, method, score=score)
             # end for
             # tag list is stored esp for JSON
             if tags:
@@ -785,7 +802,8 @@ class DMRS(object):
             if scores:
                 # insert the top one
                 best = scores[0].candidate.synset
-                self.tag_node(ep.nodeid, best.synsetid, ep.pred.lemma, method)
+                getLogger().debug("Lemma: {} -> {} | {}".format(lemma, scores[0].candidate.synset.lemmas, scores[0]))
+                self.tag_node(ep.nodeid, best.synsetid, best.lemma, method)
             else:
                 # What should be done here? no tagging at all?
                 pass
@@ -1081,7 +1099,8 @@ class Node(object):
             out_links = None
         else:
             out_links = frozenset((l.label, l.to_node.to_graph(top, visited)) for l in self.out_links if l.to_node is not None and l.to_node not in visited)
-        return Triplet(self.predstr if self.predstr != "named" else 'named("{}")'.format(self.carg), in_links, out_links)
+        # need to match carg too
+        return Triplet((self.predstr, self.carg), in_links, out_links)
 
     def rstr(self):
         return [l.from_node for l in self.in_links if l.rargname == 'RSTR' and l.post == 'H']
@@ -1302,7 +1321,6 @@ class DMRSLayout(object):
         elif value in self._nodes:
             self._top = value
         else:
-            print(value, value in self)
             raise Exception("Invalid node object invaded ({}({}) was provided)".format(repr(value), type(value)))
 
     def __getitem__(self, nodeid):
@@ -1664,13 +1682,6 @@ class LexUnit(object):
     def __str__(self):
         return "LexUnit({}, {}, {}, {}, {}, {})".format(self.ID, repr(self.lemma), repr(self.pos), repr(self.synsetid), repr(self.sentid), LexUnit.FLAGS[self.flag] if self.flag else None)
 
-    def dump(self):
-        iw = self.to_isf()
-        header(iw)
-        for idx, p in enumerate(iw):
-            print("#{}. {}".format(idx + 1, p.mrs()))
-        return iw
-
 
 class RuleInfo(object):
 
@@ -1789,11 +1800,3 @@ class CWLink(object):
 
     def __str__(self):
         return "c#{}->w#{}".format(self.cid, self.wid)
-
-
-##############################################################################
-# MAIN
-##############################################################################
-
-if __name__ == "__main__":
-    print("You should NOT see this line. This is a library, not an app")
