@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS "cwl" (
 
 
 CREATE INDEX IF NOT EXISTS "sentence_|_docID" ON "sentence" ("docID" ASC);
+CREATE INDEX IF NOT EXISTS "sentence_|_ident" ON "sentence" ("ident" ASC);
 CREATE INDEX IF NOT EXISTS "document_|_grammar" ON "document" ("grammar");
 CREATE INDEX IF NOT EXISTS "document_|_lang" ON "document" ("lang");
 CREATE INDEX IF NOT EXISTS "reading_|_sentID" ON "reading" ("sentID" ASC);
