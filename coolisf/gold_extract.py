@@ -47,7 +47,7 @@ from lxml import etree
 
 from chirptext.leutile import FileHelper
 from chirptext import texttaglib as ttl
-from chirptext import io as chio
+from chirptext import chio
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 

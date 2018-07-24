@@ -32,7 +32,7 @@ import os
 import json
 
 from chirptext import FileHelper
-from chirptext.io import CSV
+from chirptext.chio import CSV
 
 
 # ----------------------------------------------------------------------

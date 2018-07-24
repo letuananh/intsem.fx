@@ -37,8 +37,8 @@ from collections import defaultdict as dd
 
 from chirptext import TextReport, Counter, piter
 from chirptext.cli import CLIApp, setup_logging
-from chirptext import io as chio
-from chirptext.io import CSV
+from chirptext import chio
+from chirptext.chio import CSV
 from chirptext import texttaglib as ttl
 from yawlib import SynsetID
 from yawlib.helpers import get_omw, get_wn
@@ -135,18 +135,19 @@ def compare_ttls(cli, args):
     ignored_ids = None
     if args.ignore:
         ignored_ids = [x.strip() for x in read_file(args.ignore).splitlines()]
-        getLogger().info("Ignored sentence IDs: {}".format(', '.join(ignored_ids)))
+        getLogger().debug("Ignored sentence IDs: {}".format(', '.join(ignored_ids)))
     if args.gold_profile:
         gold = read_ttl(args.gold_profile)
         # remove ignored sentences
         if ignored_ids:
             for sid in ignored_ids:
                 gold.pop(sid, default=None)
-        rp.header("Gold sentences: {} | Loc: {}".format(len(gold), args.gold_profile))
-        if args.verbose:
+        if not args.batch:
+            rp.header("Gold sentences: {} | Loc: {}".format(len(gold), args.gold_profile))
+        if args.verbose and not args.batch:
             for s in gold:
                 rp.print("Sent #{}: {} tags".format(s.ID, len(s.tags)))
-    else:
+    elif not args.batch:
         print("Oops, no gold!")
     # read profile
     if args.profile:
@@ -155,11 +156,12 @@ def compare_ttls(cli, args):
         if ignored_ids:
             for sid in ignored_ids:
                 profile.pop(sid, default=None)
-        rp.header("Profile sentences: {} | Loc: {}".format(len(profile), args.profile))
-        if args.verbose:
+        if not args.batch:
+            rp.header("Profile sentences: {} (ignored: {}) | Loc: {}".format(len(profile), len(ignored_ids), args.profile))
+        if args.verbose and not args.batch:
             for s in profile:
                 getLogger().debug("Profile/Sent #{}: {} tags".format(s.ID, len(s.tags)))
-    else:
+    elif not args.batch:
         print("Oops, no profile to evaluate")
     # calculate precision and recall
     if gold and profile:
@@ -173,7 +175,8 @@ def compare_ttls(cli, args):
         getLogger().debug("TP: {}".format(len(true_positive)))
         getLogger().debug("FN: {}".format(len(false_negative)))
         if args.debug:
-            print("Debug file: {}".format(args.debug))
+            if not args.batch:
+                print("Debug file: {}".format(args.debug))
             debugfile = TextReport(args.debug)
             # false_positive = gold_tags.difference(profile_tags)
             # rows = []
@@ -204,12 +207,23 @@ def compare_ttls(cli, args):
         getLogger().debug("Precision: {}".format(precision))
         getLogger().debug("Recall: {}".format(recall))
         f1 = 2 * precision * recall / (precision + recall)
-        rp.print("True positive: {}".format(len(true_positive)))
-        rp.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
-        rp.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
-        rp.print("Recall:    {:.2f}%".format(recall * 100))
-        rp.print("Precision: {:.2f}%".format(precision * 100))
-        rp.print("F1       : {:.2f}%".format(f1 * 100))
+        if not args.batch:
+            rp.print("True positive: {}".format(len(true_positive)))
+            rp.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
+            rp.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
+        rc_text = "{:.2f}%".format(recall * 100)
+        pr_text = "{:.2f}%".format(precision * 100)
+        f1_text = "{:.2f}%".format(f1 * 100)
+        if not args.batch:
+            rp.print("Recall:    {:.2f}%".format(recall * 100))
+            rp.print("Precision: {:.2f}%".format(precision * 100))
+            rp.print("F1       : {:.2f}%".format(f1 * 100))
+        if args.org:
+            # output org-mode
+            columns = [rc_text, pr_text, f1_text]
+            if args.cols:
+                columns = args.cols + columns
+            rp.print('| {} |'.format(' | '.join(columns)))
     ctx.close()
 
 
@@ -447,6 +461,9 @@ def main():
     task.add_argument('--debug', help='Debug file')
     task.add_argument('--ignore', help='Sentence IDs to ignore')
     task.add_argument('--nonsense', help='Count nonsense tags too', action="store_true")
+    task.add_argument('--batch', help='Output in batch mode only (no detailed summary)', action="store_true")
+    task.add_argument('--org', help='Output ORG-mode format', action="store_true")
+    task.add_argument('--cols', help='Extra columns', nargs='*')
 
     task = app.add_task('msw', func=remove_msw_ttl)
     task.add_argument('path', help='Path to TTL document')

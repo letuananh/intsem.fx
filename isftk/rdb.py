@@ -38,7 +38,7 @@ import logging
 from yawlib import YLConfig
 from yawlib.omwsql import OMWSQL
 from chirptext.cli import CLIApp, setup_logging
-from chirptext import io as chio
+from chirptext import chio
 
 from coolisf import GrammarHub
 from coolisf.model import LexUnit, Reading
