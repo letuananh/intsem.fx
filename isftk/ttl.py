@@ -73,8 +73,8 @@ NONSENSES = ['02604760-v',  # : 85 | have the quality of being - ['be']
 # Functions
 # ------------------------------------------------------------------------------
 
-def read_ttl(ttl_path):
-    return ttl.Document.read_ttl(ttl_path)
+def read_ttl(ttl_path, ttl_format=ttl.MODE_TSV):
+    return ttl.read(ttl_path, ttl_format)
 
 
 def prepare_tags(doc, args=None, nonsense=True):
@@ -137,7 +137,7 @@ def compare_ttls(cli, args):
         ignored_ids = [x.strip() for x in read_file(args.ignore).splitlines()]
         getLogger().debug("Ignored sentence IDs: {}".format(', '.join(ignored_ids)))
     if args.gold_profile:
-        gold = read_ttl(args.gold_profile)
+        gold = read_ttl(args.gold_profile, ttl_format=args.ttl_format)
         # remove ignored sentences
         if ignored_ids:
             for sid in ignored_ids:
@@ -151,7 +151,7 @@ def compare_ttls(cli, args):
         print("Oops, no gold!")
     # read profile
     if args.profile:
-        profile = read_ttl(args.profile)
+        profile = read_ttl(args.profile, ttl_format=args.ttl_format)
         # remove ignored sentences
         if ignored_ids:
             for sid in ignored_ids:
@@ -391,9 +391,8 @@ def strip_ttl(cli, args):
     print("Done")
 
 
-def concept_to_tags(cli, args):
-    doc = read_ttl(args.path)
-    print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
+def bake_doc(doc):
+    ''' Convert concepts to tags '''
     for sent in doc:
         for concept in sent.concepts:
             cfrom = min(t.cfrom for t in concept.tokens)
@@ -401,8 +400,15 @@ def concept_to_tags(cli, args):
             sid = SynsetID.from_string(concept.tag, default=None)  # must be a valid synsetID
             if cfrom >= 0 and cto >= 0 and sid is not None:
                 sent.new_tag(concept.tag, cfrom, cto, tagtype='WN')
+    return doc
+
+
+def concept_to_tags(cli, args):
+    doc = read_ttl(args.path, ttl_format=args.ttl_format)
+    print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
+    bake_doc(doc)
     if args.output:
-        ttl.TxtWriter.from_path(args.output).write_doc(doc)
+        ttl.write(args.output, doc, mode=args.ttl_format)
     print("Done")
 
 
@@ -463,7 +469,9 @@ def main():
     task.add_argument('--nonsense', help='Count nonsense tags too', action="store_true")
     task.add_argument('--batch', help='Output in batch mode only (no detailed summary)', action="store_true")
     task.add_argument('--org', help='Output ORG-mode format', action="store_true")
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
     task.add_argument('--cols', help='Extra columns', nargs='*')
+    task.add_argument('--bake', action='store_true')
 
     task = app.add_task('msw', func=remove_msw_ttl)
     task.add_argument('path', help='Path to TTL document')
@@ -482,6 +490,7 @@ def main():
     task = app.add_task('bake', func=concept_to_tags)
     task.add_argument('path', help='Path to TTL document')
     task.add_argument('-o', '--output', help='New TTL path')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('totxt', func=ttl_to_txt)
     task.add_argument('path', help='Path to TTL document')

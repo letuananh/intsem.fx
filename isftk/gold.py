@@ -64,10 +64,10 @@ def getLogger():
 # Functions
 # ------------------------------------------------------------------------------
 
-def patch_gold_sid(sents):
+def patch_gold_sid(sents, seed=10000):
     ''' patch TSDB ident to NTU format '''
     for idx, s in enumerate(sents):
-        s.ident = idx + 10000
+        s.ident = idx + seed
 
 
 def fix_gold(cli, args):
@@ -97,13 +97,14 @@ def fix_gold(cli, args):
 
 
 def map_all(cli, args):
+    ''' Batch mapping '''
     grid = [
-        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, output="{}_naive.txt".format(args.prefix)),
-        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, fixtoken=True, output="{}_naive_ft.txt".format(args.prefix)),
-        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, noss=True, output="{}_naive_noss.txt".format(args.prefix)),
-        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, noss=True, fixtoken=True, output="{}_naive_noss_ft.txt".format(args.prefix)),
-        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.ROBUST, noss=True, fixtoken=True, output="{}_robust.txt".format(args.prefix)),
-        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.STRICT, noss=True, fixtoken=True, output="{}_strict.txt".format(args.prefix)),
+        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, ttl_format=args.ttl_format, output="{}_naive.txt".format(args.prefix)),
+        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, fixtoken=True, ttl_format=args.ttl_format, output="{}_naive_ft.txt".format(args.prefix)),
+        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, noss=True, ttl_format=args.ttl_format, output="{}_naive_noss.txt".format(args.prefix)),
+        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.NAIVE, noss=True, fixtoken=True, ttl_format=args.ttl_format, output="{}_naive_noss_ft.txt".format(args.prefix)),
+        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.ROBUST, noss=True, fixtoken=True, ttl_format=args.ttl_format, output="{}_robust.txt".format(args.prefix)),
+        DO(ttl=args.ttl, gold=args.gold, topk=args.topk, strat=Lexsem.STRICT, noss=True, fixtoken=True, ttl_format=args.ttl_format, output="{}_strict.txt".format(args.prefix)),
     ]
     results = []
     yes = {'tex': 'Y', 'org': 'X'}
@@ -141,19 +142,25 @@ def map_predsense(cli, args):
     else:
         sents = read_gold_mrs()
         patch_gold_sid(sents)
+    # ignore empty sentence
+    empty_sents = [s for s in sents if not len(s)]
+    not_empty_sents = [s for s in sents if len(s)]
     rp.print("MRS-Sents: {}".format(len(sents)))
+    rp.print("MRS-Sents not empty: {}".format(len(not_empty_sents)))
     if args.ttl:
-        doc = ttl.Document.read_ttl(args.ttl)
+        doc = ttl.read(args.ttl, mode=args.ttl_format)
     else:
-        doc = ttl.Document('gold', path='data').read()
+        # [XXX] using gold by default is bad ...
+        doc = ttl.Document(name='gold', path='data').read()
     rp.print("TTL-Sents: {}".format(len(doc)))
     found_sents = 0
-    for sent in sents:
+    for sent in not_empty_sents:
         if doc.get(sent.ident) is None:
             cli.logger.warning("Sentence {} could not be found".format(sent.ident))
         else:
             found_sents += 1
     rp.print("Matched: {}".format(found_sents))
+    rp.print("Empty sentences: {}".format([s.ident for s in empty_sents]))
     # Now mapping is possible
     # ----------------------------------------
     ct = Counter()  # total
@@ -164,7 +171,7 @@ def map_predsense(cli, args):
     sense_sents = dd(set)  # not-matched senses to sentences
     lemma_sents = dd(set)  # not matched lemmas to sentences
     rp.print("Performing Pred-Sense Mapping")
-    sents_to_map = sents[:args.topk] if args.topk else sents
+    sents_to_map = not_empty_sents[:args.topk] if args.topk else not_empty_sents
     for sent in sents_to_map:
         sent.shallow = doc.get(sent.ident)
         for m, nm, ig in import_shallow(sent, mode=args.strat, no_small_sense=args.noss, fix_token=args.fixtoken, no_nonsense=args.nononsense):
@@ -300,17 +307,17 @@ def order_preds(cli, args):
     doc = Document.from_file(args.gold)
     output = TextReport(args.output)
     if not args.ident:
-        print("No ident was provided")
+        output.print("No ident was provided")
     for ident in args.ident:
         sent = doc.by_ident(ident, default=None)
         if sent is None:
-            print("Sent #{} is missing".format(ident))
+            output.print("Sent #{} is missing".format(ident))
         else:
-            print(sent)
+            output.print(sent)
             eps = sent[0].dmrs().obj().eps()
             sort_eps(eps)
-            print(["{}<{}:{}>".format(str(x.pred), x.cfrom, x.cto) for x in eps])
-    print("Done")
+            output.print(["{}<{}:{}>".format(str(x.pred), x.cfrom, x.cto) for x in eps])
+    output.print("Done")
 
 
 # ------------------------------------------------------------------------------
@@ -331,10 +338,12 @@ def main():
     task.add_argument('-p', '--prefix', help='Output ', default='data/mapbm')
     task.add_argument('-d', '--dataset', help='Dataset name', default='DMRS')
     task.add_argument('-f', '--format', help='Output format', choices=['org', 'tex'], default='org')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('map', func=map_predsense)
     task.add_argument('-g', '--gold', help='Gold MRS', default=None)
     task.add_argument('-t', '--ttl', help='TTL profile', default=None)
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
     task.add_argument('-o', '--output', help='Output file', default=None)
     task.add_argument('-s', '--strat', help='Strategy', choices=[Lexsem.NAIVE, Lexsem.STRICT, Lexsem.ROBUST], default=Lexsem.NAIVE)
     task.add_argument('-n', '--topk', help='Only process top k sentences', type=int)
