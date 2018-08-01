@@ -51,6 +51,7 @@ from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
+from coolisf.lexsem import Lexsem
 from coolisf.config import read_config, _get_config_manager
 from coolisf.common import write_file
 from coolisf.morph import Transformer
@@ -154,17 +155,24 @@ def retag_doc(cli, args):
     if args.wsd:
         print("Retagging document using {}".format(args.wsd))
         wsd = LeLeskWSD(dbcache=LeskCache())
+        wsd.connect()
         ctx = PredSense.wn.ctx()
         for idx, sent in enumerate(doc):
+            if args.topk and idx > args.topk:
+                break
             if args.ident and sent.ident not in args.ident:
                 continue
             print("Tagging sentence #{}/{}".format(idx + 1, len(doc)))
             sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
         ctx.close()
+        wsd.disconnect()
     if args.ttl:
         print("Tagging doc {} using TTL doc {}".format(doc.name, args.ttl))
-        ttl_doc = ttl.Document.read_ttl(args.ttl)
-        tag_doc(doc, ttl_doc, taggold=not args.nogold)
+        ttl_doc = ttl.read(args.ttl, mode=args.ttl_format)
+        kwargs = {}
+        if args.mode:
+            kwargs['mode'] = args.mode
+        tag_doc(doc, ttl_doc, taggold=not args.nogold, **kwargs)
     doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
     write_file(doc_xml_str, args.output)
 
@@ -313,17 +321,22 @@ def export_ttl(cli, args):
     ''' Export ISF document to TTL '''
     doc = Document.from_file(args.path)
     print("Found {} sentences".format(len(doc)))
-    if args.output:
+    if not args.output:
         out_path = os.path.dirname(args.output)
         out_name = os.path.basename(args.output)
     else:
         out_path = 'data'
         out_name = 'ttl_output'
     doc_ttl = ttl.Document(out_name, out_path)
+    if args.ttl_format == ttl.MODE_JSON:
+        _writer = ttl.JSONWriter.from_doc(doc_ttl)
+    else:
+        _writer = ttl.TxtWriter.from_doc(doc_ttl)
     empty_sents = []
     tag_count = 0
+    print("Exporting ISF document to TTL - Empty sentences will be removed automatically")
     for sent in doc:
-        tsent = doc_ttl.new_sent(sent.text, sent.ident)
+        tsent = ttl.Sentence(text=sent.text, ID=sent.ident)
         if not len(sent):
             empty_sents.append(sent.ident)
             continue
@@ -333,11 +346,11 @@ def export_ttl(cli, args):
             node = dmrs.layout[nid]
             synsets = {(s.ID, tuple(s.lemmas), m) for s, m in ss}
             for synsetid, lemmas, method in synsets:
-                tsent.new_tag(synsetid, node.cfrom, node.cto, tagtype='WN')
+                tsent.new_tag(synsetid.to_canonical(), node.cfrom, node.cto, tagtype='WN')
                 tag_count += 1
                 if args.with_lemmas:
                     tsent.new_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
-            # print(sent.ident, node.cfrom, node.cto, synsets)
+        _writer.write_sent(tsent)
     print("Created {} tags".format(tag_count))
     if empty_sents:
         print("Empty sentences: {}".format(empty_sents))
@@ -345,8 +358,7 @@ def export_ttl(cli, args):
             ef = TextReport(args.emptyfile)
             for sid in empty_sents:
                 ef.print(sid)
-    doc_ttl.write_ttl()
-    pass
+    print("Done!")
 
 
 def isf_config_logging(args):
@@ -384,7 +396,7 @@ def make_task(name, func):
     task.add_argument('--wsd', help='Word Sense Disambiguator', default=ttl.Tag.LELESK)
     task.add_argument('-f', '--format', help='Output format', choices=OUTPUT_FORMATS, default=OUTPUT_DMRS)
     task.add_argument('--nocache', help='Do not cache parse result', action='store_true', default=None)
-    task.add_argument('-n', '--topk', help="Limit number of parses returned by ACE", default=None)
+    task.add_argument('-n', '--topk', help="Limit number of parses returned by ACE", type=int, default=None)
     task.add_argument('-m', '--max', help="Only process top m items", default=None, type=int)
     task.add_argument('-c', '--compact', help="Produce compact outputs", action="store_true")
     task.add_argument('--nodmrs', help="Do not generate DMRS XML", action="store_true")
@@ -418,8 +430,10 @@ def main():
     task = make_task('tag', func=retag_doc)
     task.add_argument('path', help='Path to document file (xml or xml.gz)')
     task.add_argument('--ttl', help='Path to TTL files')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
     task.add_argument('--nogold', help='Do not tag DMRS with gold TTL, import TTL as shallow only', action='store_true')
     task.add_argument('-y', '--yes', help='Answer yes to everything', action='store_true')
+    task.add_argument('--mode', help='SensePred predicate choosing mode', choices=Lexsem.MODES)
     task.add_argument('--ident', nargs='*')
 
     # ISF to TTL
@@ -427,6 +441,7 @@ def main():
     task.add_argument('path', help='Path to XML doc')
     task.add_argument('--with-lemmas', help='Add lemmas to sentences', action="store_true")
     task.add_argument('-e', '--emptyfile', help='Output empty sentences list')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     # Export to visko
     task = app.add_task('export', func=to_visko)
