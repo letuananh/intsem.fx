@@ -54,7 +54,7 @@ from lelesk import LeskCache  # WSDResources
 from coolisf.data import read_ccby30
 from coolisf.dao import read_tsdb
 from coolisf.model import Sentence
-from coolisf.lexsem import tag_gold
+from coolisf.lexsem import tag_gold, Lexsem
 from coolisf.mappings import PredSense
 from coolisf.common import write_file
 from coolisf.config import read_config
@@ -105,7 +105,7 @@ def match_sents(isf_doc, ttl_doc):
     return isf_doc
 
 
-def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggold=True, ctx=None):
+def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggold=True, ctx=None, **kwargs):
     ''' Tag an ISF document using a TTL '''
     isf_doc = match_sents(isf_doc, ttl_doc)
     if isf_doc is None:
@@ -120,7 +120,7 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggo
             if wsd_method:
                 sent.tag(method=wsd_method, wsd=wsd, ctx=ctx)
             if taggold and sent.shallow:
-                m, n, ignored = tag_gold(reading.dmrs(), sent.shallow, sent.text)
+                m, n, ignored = tag_gold(reading.dmrs(), sent.shallow, sent.text, **kwargs)
                 # getLogger().debug("Matched: {}".format(m))
                 if n:
                     not_matched.add(sent.ident)
