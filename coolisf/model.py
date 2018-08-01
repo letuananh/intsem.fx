@@ -794,6 +794,7 @@ class DMRS(object):
                 # getLogger().debug("No candidate was found for {}".format(ep.pred.string))
                 continue
             lemma = get_ep_lemma(ep)
+            scores = []
             if method == ttl.Tag.LELESK:
                 scores = wsd.lelesk_wsd(lemma, '', lemmatizing=False, context=context, synsets=candidates)
             elif method == ttl.Tag.MFS:
