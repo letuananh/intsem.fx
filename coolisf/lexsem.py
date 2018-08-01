@@ -36,6 +36,7 @@ import logging
 from delphin.mrs.components import Pred
 
 from chirptext import texttaglib as ttl
+from yawlib import SynsetID
 
 
 # -------------------------------------------------------------------------------
@@ -62,6 +63,7 @@ class Lexsem(object):
     FLEXIBLE = 'flexible'
     ROBUST = 'robust'
     NAIVE = 'naive'
+    MODES = [STRICT, FLEXIBLE, ROBUST, NAIVE]
 
 
 def fix_tokenization(ep, sent_text=None):
@@ -157,6 +159,19 @@ def filter_concepts(concepts):
     return senses, nonsenses
 
 
+def filter_bad_synsetids(concepts):
+    good_concepts = []
+    bad_concepts = []
+    for c in concepts:
+        valid_sid = SynsetID.from_string(c.tag, default=None)
+        if valid_sid is None:
+            getLogger().warning("{} is not a valid synset ID".format(c.tag))
+            bad_concepts.append(c)
+        else:
+            good_concepts.append(c)
+    return good_concepts, bad_concepts
+
+
 def taggable_eps(eps, mode=Lexsem.ROBUST):
     """ Only tag real_preds, string_preds and some special gpreds:
              + named_rel
@@ -221,7 +236,7 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST, no_small_sense=Tr
     # filter small senses (< MWE) out
     ignored = []
     if no_small_sense:
-        ignored = filter_small_senses(tagged_sent)
+        ignored += filter_small_senses(tagged_sent)
     # filter (what I considered) non-senses out
     # [2018-02-19] Don't filter out concepts for now
     if no_nonsense:
@@ -229,6 +244,9 @@ def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST, no_small_sense=Tr
         ignored += nonsenses
     else:
         concepts = tagged_sent.concepts
+    # filter concepts with bad synsetIDs
+    concepts, badconcepts = filter_bad_synsetids(concepts)
+    ignored += badconcepts
     # idv_concepts = [c for c in concepts if len(c.words) == 1]
     eps = taggable_eps(dmrs.obj().eps(), mode=mode)
     sort_eps(eps)
