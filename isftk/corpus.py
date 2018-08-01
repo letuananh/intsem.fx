@@ -60,8 +60,8 @@ def extract_mrs(cli, args):
     ''' Remove everything except MRS raw string '''
     doc = Document.from_file(args.path)
     if args.patchsid:
-        patch_gold_sid(doc)
-    doc_str = doc.to_xml_str(with_shallow=False, with_dmrs=False)
+        patch_gold_sid(doc, seed=args.seed)
+    doc_str = doc.to_xml_str(with_shallow=args.shallow, with_dmrs=args.dmrs)
     write_file(doc_str, args.output)
     print("Done!")
 
@@ -101,6 +101,21 @@ def remove_tags(cli, args):
         TextReport().write(new_doc.to_xml_str())
 
 
+def count_senses(cli, args):
+    ''' Show stats of a document '''
+    doc = Document.from_file(args.path)
+    sense_count = 0
+    dmrs_count = 0
+    for sent in doc:
+        for reading in sent:
+            dmrs_count += 1
+            sense_count += len(reading.dmrs().tags)
+    print("Sentences: {}".format(len(doc)))
+    print("DMRSes: {}".format(dmrs_count))
+    print("Senses: {}".format(sense_count))
+    print("Done")
+
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -118,6 +133,14 @@ def main():
     task.add_argument('path', help='Path to document file (*.xml or *.xml.gz)')
     task.add_argument('-o', '--output', help='Output file')
     task.add_argument('-f', '--patchsid', help='Force patching sentences Ids', action='store_true')
+    task.add_argument('--seed', help='Starting number', type=int, default=10000)
+    task.add_argument('--shallow', help='Keep shallow', action='store_true')
+    task.add_argument('--dmrs', help='Keep DMRS', action='store_true')
+    # count senses
+    task = app.add_task('stats', func=count_senses)
+    task.add_argument('path', help='Path to document file (*.xml or *.xml.gz)')
+    task.add_argument('-o', '--output', help='Output file')
+
     # run app
     app.run()
 
