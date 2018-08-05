@@ -138,6 +138,16 @@ class Document(object):
             self.ident_map[sent.ident] = sent
         self.sentences.append(sent)
 
+    def remove(self, sent):
+        if sent and sent in self.sentences:
+            if sent.ID in self.id_map:
+                self.id_map.pop(sent.ID)
+            if sent.ident in self.ident_map:
+                self.ident_map.pop(sent.ident)
+            self.sentences.remove(sent)
+        else:
+            raise Exception("Sentence object not found: {}".format(sent))
+
     def new(self, text='', ident=None):
         sent = Sentence(text=text, ident=ident)
         self.add(sent)
@@ -713,7 +723,11 @@ class DMRS(object):
         if self._obj is None:
             xml_str = '<dmrs-list>{}</dmrs-list>'.format(self.xml_str())
             mrses = []
-            mrses.extend(dmrx.loads(xml_str))
+            try:
+                mrses.extend(dmrx.loads(xml_str))
+            except:
+                getLogger().exception("Error occurred while deserializing this DMRS {}".format(xml_str))
+                raise
             if len(mrses) == 1:
                 self._obj = mrses[0]
                 # store available tags
