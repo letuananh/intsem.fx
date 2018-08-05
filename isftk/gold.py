@@ -38,6 +38,7 @@ from chirptext import TextReport, Counter
 from chirptext.anhxa import DataObject as DO
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import texttaglib as ttl
+from chirptext import chio
 
 from coolisf.lexsem import Lexsem, import_shallow, sort_eps
 from coolisf.gold_extract import read_gold_mrs
@@ -121,11 +122,39 @@ def map_all(cli, args):
 
 
 def patch_sids(cli, args):
-    rp = TextReport(args.output) if args.output else TextReport()
+    # rp = TextReport(args.output) if args.output else TextReport()
     if args.gold:
+        print("Gold MRS file: {}".format(args.gold))
+        if args.idfile:
+            print("ID file: {}".format(args.idfile))
+            idlines = chio.read_file(args.idfile).splitlines()
+            sent_ids = []
+            for line in idlines:
+                idx, text = line.split('\t', maxsplit=1)
+                sent_ids.append((idx, text))
+            print("Found {} sentences in ID file".format(len(sent_ids)))
         sents = Document.from_file(args.gold)
-        patch_gold_sid(sents)
-        rp.write(sents.to_xml_str())
+        if sent_ids:
+            if len(sent_ids) != len(sents):
+                print("Wrong sent ID files - Found ID: {} | Found MRS: {}".format(len(sent_ids), len(sents)))
+            print("Verifying sentences' text")
+            for ((sid, stext), mrs_sent) in zip(sent_ids, sents):
+                if stext and stext != mrs_sent.text:
+                    print("Invalid sentence text: sentID: {} | {} <> {}".format(sid, stext, mrs_sent.text))
+                    exit()
+            print("Sentences are verified, proceed to patch sent idents")
+            for ((sid, stext), mrs_sent) in zip(sent_ids, sents):
+                mrs_sent.ident = sid
+                if args.both:
+                    mrs_sent.ID = sid
+        else:
+            patch_gold_sid(sents)
+
+        if args.output:
+            print("Sentence idents are patched, writing to output XML file to: {}...".format(args.output))
+            chio.write_file(args.output, sents.to_xml_str())
+        else:
+            print(sents.to_xml_str())
         print("Done")
     else:
         print("No document to patch")
@@ -355,6 +384,8 @@ def main():
 
     task = app.add_task('patch', func=patch_sids)
     task.add_argument('-g', '--gold', help='Gold MRS', default=None)
+    task.add_argument('--idfile', help='ID file in TSV format, 1st column is ID, 2nd column is text (optional)')
+    task.add_argument('--both', help='Patch both sentences IDs and idents', action='store_true')
     task.add_argument('-o', '--output', help='Output file', default=None)
 
     task = app.add_task('order', func=order_preds)
