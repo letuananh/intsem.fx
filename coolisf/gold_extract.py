@@ -83,8 +83,8 @@ def getLogger():
 def match_sents(isf_doc, ttl_doc):
     ''' Match TSDB profile sentences with TTL sentences '''
     if len(isf_doc) != len(ttl_doc):
-        print(len(isf_doc))
-        print(len(ttl_doc))
+        getLogger().info("ISF doc size: {}".format(len(isf_doc)))
+        getLogger().info("TTL doc size: {}".format(len(ttl_doc)))
         for sent in isf_doc:
             if not ttl_doc.get(sent.ident, default=None):
                 getLogger().warning("Sentence ID(s) in ISF doc and TTL doc are different.")
@@ -105,7 +105,7 @@ def match_sents(isf_doc, ttl_doc):
     return isf_doc
 
 
-def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggold=True, ctx=None, **kwargs):
+def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggold=True, on_error='raise', ctx=None, **kwargs):
     ''' Tag an ISF document using a TTL '''
     isf_doc = match_sents(isf_doc, ttl_doc)
     if isf_doc is None:
@@ -113,6 +113,7 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggo
     not_matched = set()
     wsd = LeLeskWSD(dbcache=LeskCache())
     ctx = PredSense.wn.ctx()
+    to_remove = set()
     for sent in isf_doc:
         if use_ttl_sid and sent.shallow and sent.shallow.ID:
             sent.ident = sent.shallow.ID
@@ -120,7 +121,17 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggo
             if wsd_method:
                 sent.tag(method=wsd_method, wsd=wsd, ctx=ctx)
             if taggold and sent.shallow:
-                m, n, ignored = tag_gold(reading.dmrs(), sent.shallow, sent.text, **kwargs)
+                try:
+                    m, n, ignored = tag_gold(reading.dmrs(), sent.shallow, sent.text, **kwargs)
+                except:
+                    getLogger().exception("Could not process sentence #{}: {}".format(sent.ident, sent.text))
+                    if on_error == 'ignore':
+                        continue
+                    elif on_error == 'remove':
+                        to_remove.add(sent)
+                        break
+                    else:
+                        raise
                 # getLogger().debug("Matched: {}".format(m))
                 if n:
                     not_matched.add(sent.ident)
@@ -128,6 +139,8 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggo
             # update XML
             reading.dmrs().tag_xml(method=None, update_back=True, wsd=wsd, ctx=ctx)
         sent.tag_xml()
+    for sent in to_remove:
+        isf_doc.remove(sent)
     if not_matched:
         getLogger().warning("TSDB/IMI mismatched sentences: {} - IDs={}".format(len(not_matched), not_matched))
     return isf_doc
