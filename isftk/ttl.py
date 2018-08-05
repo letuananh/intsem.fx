@@ -33,6 +33,7 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 
 import os
 import logging
+import json
 from collections import defaultdict as dd
 
 from chirptext import TextReport, Counter, piter
@@ -75,6 +76,13 @@ NONSENSES = ['02604760-v',  # : 85 | have the quality of being - ['be']
 
 def read_ttl(ttl_path, ttl_format=ttl.MODE_TSV):
     return ttl.read(ttl_path, ttl_format)
+
+
+def get_ttl_writer(path, ttl_format=ttl.MODE_TSV, id_seed=1):
+    if ttl_format == ttl.MODE_JSON:
+        return ttl.JSONWriter.from_path(path, id_seed=id_seed)
+    else:
+        return ttl.TxtWriter.from_path(path, id_seed=id_seed)
 
 
 def prepare_tags(doc, args=None, nonsense=True):
@@ -172,16 +180,42 @@ def compare_ttls(cli, args):
         getLogger().debug("Profile tags: {}".format(profile_tags_len))
         getLogger().debug(list(profile_tags.items())[:5])
         true_positive, false_negative = score(gold_tags, profile_tags, args=args)
+        precision = len(true_positive) / profile_tags_len
+        recall = len(true_positive) / gold_tags_len
+        f1 = 2 * precision * recall / (precision + recall)
         getLogger().debug("TP: {}".format(len(true_positive)))
         getLogger().debug("FN: {}".format(len(false_negative)))
+        getLogger().debug("Recall (TP/Gtags): {}".format(recall))
+        getLogger().debug("Precision (TP/Ptags): {}".format(precision))
+        getLogger().debug("F1 (2*p*r/(p+r)): {}".format(f1))
+        rc_text = "{:.2f}%".format(recall * 100)
+        pr_text = "{:.2f}%".format(precision * 100)
+        f1_text = "{:.2f}%".format(f1 * 100)
+        if not args.batch:
+            rp.print("True positive: {}".format(len(true_positive)))
+            rp.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
+            rp.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
+            rp.print("Recall:    {}".format(rc_text))
+            rp.print("Precision: {}".format(pr_text))
+            rp.print("F1       : {}".format(f1_text))
+        if args.org:
+            # output org-mode
+            columns = [rc_text, pr_text, f1_text]
+            if args.cols:
+                columns = args.cols + columns
+            rp.print('| {} |'.format(' | '.join(columns)))
         if args.debug:
             if not args.batch:
                 print("Debug file: {}".format(args.debug))
             debugfile = TextReport(args.debug)
-            # false_positive = gold_tags.difference(profile_tags)
-            # rows = []
+            debugfile.print(".:: Table of content ::.")
+            debugfile.print("")
+            debugfile.print("[Misisng senses]")
+            debugfile.print("[By classes]")
+            debugfile.print("[Summary]")
+            debugfile.print("")
             ss_map = {}
-            debugfile.header("Missing senses")
+            debugfile.header("[Missing senses]")
             for sid, cfrom, cto, label in sorted(false_negative):
                 if label not in ss_map:
                     ss = omw.get_synset(label, ctx=ctx)
@@ -191,39 +225,21 @@ def compare_ttls(cli, args):
                 # get the surface form
                 surface = gold.get(sid).text[int(cfrom):int(cto)]
                 debugfile.print("{}\t{}\t{}\t{}\t{}\t{}\t{}".format(sid, cfrom, cto, surface, label, ss.definition, ss.lemmas))
-                # rows.append((sid, cfrom, cto, surface, label, ss.definition, ss.lemmas))
-            # CSV.write_tsv(args.debug, rows, quoting=CSV.QUOTE_MINIMAL)
             # by classes
             c = Counter()
             c.update(synsetID for sentID, cfrom, cto, synsetID in false_negative)
-            debugfile.header("By classes")
+            debugfile.header("[By classes]")
             for synsetID, freq in c.most_common():
                 ss = ss_map[synsetID]
                 debugfile.print("{}: {} | ({}) - {}".format(synsetID, freq, ', '.join(ss.lemmas), ss.definition))
-        getLogger().debug("Profile tags: {}".format(profile_tags_len))
-        getLogger().debug("Gold tags: {}".format(gold_tags_len))
-        precision = len(true_positive) / profile_tags_len
-        recall = len(true_positive) / gold_tags_len
-        getLogger().debug("Precision: {}".format(precision))
-        getLogger().debug("Recall: {}".format(recall))
-        f1 = 2 * precision * recall / (precision + recall)
-        if not args.batch:
-            rp.print("True positive: {}".format(len(true_positive)))
-            rp.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
-            rp.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
-        rc_text = "{:.2f}%".format(recall * 100)
-        pr_text = "{:.2f}%".format(precision * 100)
-        f1_text = "{:.2f}%".format(f1 * 100)
-        if not args.batch:
-            rp.print("Recall:    {:.2f}%".format(recall * 100))
-            rp.print("Precision: {:.2f}%".format(precision * 100))
-            rp.print("F1       : {:.2f}%".format(f1 * 100))
-        if args.org:
-            # output org-mode
-            columns = [rc_text, pr_text, f1_text]
-            if args.cols:
-                columns = args.cols + columns
-            rp.print('| {} |'.format(' | '.join(columns)))
+            # summary
+            debugfile.header("[Summary]")
+            debugfile.print("True positive: {}".format(len(true_positive)))
+            debugfile.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
+            debugfile.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
+            debugfile.print("Recall (TP/Gtags)   : {}".format(rc_text))
+            debugfile.print("Precision (TP/Ptags): {}".format(pr_text))
+            debugfile.print("F1  (2*p*r/(p+r))   : {}".format(f1_text))
     ctx.close()
 
 
@@ -422,6 +438,42 @@ def ttl_to_txt(cli, args):
     print("Done")
 
 
+def tsv_to_json(cli, args):
+    doc_tsv = read_ttl(args.input)
+    _json_writer = ttl.JSONWriter.from_path(args.output)
+    for sent in doc_tsv:
+        if args.textonly:
+            _json_writer.write_sent(ttl.Sentence(sent.text))
+        else:
+            _json_writer.write_sent(sent)
+    print("Create JSON file: {}".format(args.output))
+
+
+def fix_ttl_id(cli, args):
+    ''' Fix sentence ID '''
+    in_doc = read_ttl(args.input, ttl_format=args.ttl_format)
+    out_doc = get_ttl_writer(args.output, ttl_format=args.ttl_format)
+    for idx, sent in enumerate(in_doc):
+        sent.ID = args.seed + idx
+        out_doc.write_sent(sent)
+    print("Fixed file: {}".format(args.output))
+
+
+def txt_to_ttl(cli, args):
+    print("Input file: {}".format(args.input))
+    print("TTL/{} output: {}".format(args.ttl_format, args.output))
+    print("With ID column: {}".format(args.with_idcolumn))
+    raw_sents = chio.read_file(args.input).splitlines()
+    _writer = get_ttl_writer(args.output, ttl_format=args.ttl_format, id_seed=args.seed)
+    for sent in raw_sents:
+        if args.with_idcolumn:
+            sid, text = sent.split('\t', maxsplit=1)
+            _writer.write_sent(ttl.Sentence(text=text, ID=sid))
+        else:
+            _writer.write_sent(ttl.Sentence(text=text))
+    print("Written {} sentences to {}".format(len(raw_sents), args.output))
+
+
 def import_ttl_data(cli, args):
     doc = read_ttl(args.path)
     print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
@@ -451,6 +503,26 @@ def import_ttl_data(cli, args):
         ttl.TxtWriter.from_path(args.output).write_doc(doc)
         print("Written {} sentences to {}".format(len(doc), args.output))
     print("Done")
+
+
+def corenlp_to_ttl(cli, args):
+    print("Core NLP output file: {}".format(args.input))
+    print("TTL file: {}".format(args.output))
+    print("Source (raw) file: {}".format(args.raw))
+    cn_sents = json.loads(chio.read_file(args.input))['sentences']
+    print("Found {} core-nlp sents".format(len(cn_sents)))
+    raw_sents = chio.read_file(args.raw).splitlines()
+    _writer = get_ttl_writer(args.output, ttl_format=args.ttl_format, id_seed=args.seed)
+    for sent_text, cn_sent in zip(raw_sents, cn_sents):
+        ttl_sent = ttl.Sentence(sent_text)
+        ttl_sent.tokens = (cn_tk['originalText'] for cn_tk in cn_sent['tokens'])
+        for ttl_tk, cn_tk in zip(ttl_sent, cn_sent['tokens']):
+            if 'lemma' in cn_tk:
+                ttl_tk.lemma = cn_tk['lemma']
+            if 'pos' in cn_tk:
+                ttl_tk.pos = cn_tk['pos']
+        _writer.write_sent(ttl_sent)
+    print("{} sentences was written to {}".format(len(raw_sents), args.output))
 
 
 # ------------------------------------------------------------------------------
@@ -496,10 +568,36 @@ def main():
     task.add_argument('path', help='Path to TTL document')
     task.add_argument('-o', '--output', help='Output text file')
 
+    task = app.add_task('tojson', func=tsv_to_json)
+    task.add_argument('input', help='Path to TTL/TSV document')
+    task.add_argument('output', help='Path to TTL/JSON output document')
+    task.add_argument('--textonly', action='store_true')
+
+    task = app.add_task('fixid', func=fix_ttl_id)
+    task.add_argument('input', help='Path to TTL/TSV document')
+    task.add_argument('output', help='Path to TTL/JSON output document')
+    task.add_argument('--seed', default=10000, type=int)
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
+    task = app.add_task('fromtxt', func=txt_to_ttl)
+    task.add_argument('input', help='Path to TXT file')
+    task.add_argument('output', help='Path to TTL output document')
+    task.add_argument('--seed', default=10000, type=int)
+    task.add_argument('--with_idcolumn', action='store_true')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
     task = app.add_task('import', func=import_ttl_data)
     task.add_argument('path', help='Path to TTL document')
     task.add_argument('-o', '--output', help='Output text file')
     task.add_argument('--tokens', help='Path to token file')
+
+    task = app.add_task('corenlp', func=corenlp_to_ttl)
+    task.add_argument('input', help='Path to TTL/TSV document')
+    task.add_argument('output', help='Path to TTL/JSON output document')
+    task.add_argument('--raw', help='Raw file')
+    task.add_argument('--seed', default=1, type=int)
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
     # run app
     app.run()
 
