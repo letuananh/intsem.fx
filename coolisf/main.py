@@ -172,7 +172,7 @@ def retag_doc(cli, args):
         kwargs = {}
         if args.mode:
             kwargs['mode'] = args.mode
-        tag_doc(doc, ttl_doc, taggold=not args.nogold, **kwargs)
+        tag_doc(doc, ttl_doc, taggold=not args.nogold, on_error=args.on_error, **kwargs)
     doc_xml_str = doc.to_xml_str(pretty_print=not args.compact, with_dmrs=not args.nodmrs)
     write_file(doc_xml_str, args.output)
 
@@ -320,19 +320,23 @@ def parse_bib(cli, args):
 def export_ttl(cli, args):
     ''' Export ISF document to TTL '''
     doc = Document.from_file(args.path)
-    print("Found {} sentences".format(len(doc)))
-    if not args.output:
+    print("Found MRS {} sentences".format(len(doc)))
+    if args.output:
         out_path = os.path.dirname(args.output)
         out_name = os.path.basename(args.output)
+        if out_name.endswith('.ttl.json'):
+            out_name = out_name[:-9]
     else:
         out_path = 'data'
         out_name = 'ttl_output'
     doc_ttl = ttl.Document(out_name, out_path)
+    print("TTL mode: {}".format(args.ttl_format))
     if args.ttl_format == ttl.MODE_JSON:
         _writer = ttl.JSONWriter.from_doc(doc_ttl)
     else:
         _writer = ttl.TxtWriter.from_doc(doc_ttl)
     empty_sents = []
+    written_count = 0
     tag_count = 0
     print("Exporting ISF document to TTL - Empty sentences will be removed automatically")
     for sent in doc:
@@ -350,14 +354,18 @@ def export_ttl(cli, args):
                 tag_count += 1
                 if args.with_lemmas:
                     tsent.new_tag(','.join(lemmas), node.cfrom, node.cto, tagtype='WN-LEMMAS')
+        written_count += 1
         _writer.write_sent(tsent)
     print("Created {} tags".format(tag_count))
     if empty_sents:
-        print("Empty sentences: {}".format(empty_sents))
+        print("Empty sentences: {}/{}".format(len(empty_sents), len(doc)))
         if args.emptyfile:
             ef = TextReport(args.emptyfile)
             for sid in empty_sents:
                 ef.print(sid)
+    print("Written sentences: {}".format(written_count))
+    print("Output: {}".format(FileHelper.abspath(args.output)))
+    _writer.close()
     print("Done!")
 
 
@@ -433,6 +441,7 @@ def main():
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
     task.add_argument('--nogold', help='Do not tag DMRS with gold TTL, import TTL as shallow only', action='store_true')
     task.add_argument('-y', '--yes', help='Answer yes to everything', action='store_true')
+    task.add_argument('--on_error', help='What to do when error occurred', choices=['remove', 'ignore', 'raise'], default='raise')
     task.add_argument('--mode', help='SensePred predicate choosing mode', choices=Lexsem.MODES)
     task.add_argument('--ident', nargs='*')
 
