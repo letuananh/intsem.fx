@@ -87,7 +87,7 @@ class TestPreps(unittest.TestCase):
         self.assertIsInstance(prep, coolisf.processors.jp_basic.PrepMeCab)
         self.assertEqual(prep.name, "mecab")
         actual = prep.process("猫が好きです。")
-        expected = "猫 が 好き です 。 \n"
+        expected = "猫 が 好き です 。 "
         self.assertEqual(actual, expected)
 
     def test_dekoprep(self):
