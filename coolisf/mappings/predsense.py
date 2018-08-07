@@ -226,6 +226,10 @@ class PredSense(object):
         if pred in PredSense.IGNORED_GPREDS:
             # don't map anything
             return SynsetCollection()
+        # don't map modal verbs
+        if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v' and pred.sense == 'modal':
+            #    ss = PredSense.search_sense(('modal',), 'a', ctx=ctx)
+            return SynsetCollection()
         pred_str = str(pred)
         if not pred_str.endswith('_rel'):
             pred_str += "_rel"
@@ -257,9 +261,7 @@ class PredSense(object):
         if not ss and auto_expand:
             getLogger().debug("Trying to change POS for lemmas: {}".format(lemmata))
             # hard code modal
-            if pred.lemma in PredSense.MODAL_VERBS and pred.pos == 'v':
-                ss = PredSense.search_sense(('modal',), 'a', ctx=ctx)
-            elif pred.pos == 'a':
+            if pred.pos == 'a':
                 ss = PredSense.search_sense(lemmata, 'r', ctx=ctx)
                 if not ss:
                     pos = 'n'
@@ -268,4 +270,6 @@ class PredSense(object):
                 pos = 'a'
                 ss = PredSense.search_sense(lemmata, pos, ctx=ctx)
         # Done
-        return sorted(ss, key=lambda x: x.tagcount, reverse=True)
+        ss.synsets.sort(key=lambda x: x.tagcount, reverse=True)
+        # return sorted(ss.synsets, key=lambda x: x.tagcount, reverse=True)
+        return ss

@@ -47,8 +47,9 @@ import logging
 
 from chirptext import texttaglib as ttl
 from coolisf import GrammarHub
-from coolisf.model import Document, Sentence
+from coolisf.model import Document, Sentence, Predicate
 from coolisf.lexsem import Lexsem, import_shallow, taggable_eps
+from coolisf.mappings import PredSense
 
 
 # -------------------------------------------------------------------------------
@@ -119,6 +120,12 @@ class TestLexsem(unittest.TestCase):
         getLogger().debug("Sentence: {}".format(s))
         self.assertTrue(s)
         self.assertTrue(len(s))
+
+    def test_modal_verb(self):
+        p = Predicate.from_string('_must_v_modal')
+        self.assertEqual((p.lemma, p.pos, p.sense), ('must', 'v', 'modal'))
+        ss = PredSense.search_pred_string('_must_v_modal')
+        self.assertFalse(len(ss))
 
     def test_neg(self):
         s = self.ghub.parse("Certainly not.", "ERG_ISF", tagger=ttl.Tag.MFS, ignore_cache=True)
