@@ -794,7 +794,7 @@ class DMRS(object):
             if ctx is None:
                 with PredSense.wn.ctx() as ctx:
                     getLogger().warning("Creating a new WSD, this can be optimized further ...")
-                    return self.tag(method=method, wsd=wsd, ctx=ctx)
+                    return self.tag(method=method, wsd=wsd, strict=strict, ctx=ctx)
         eps = self.get_lexical_preds(strict=strict)
         getLogger().debug("eps for WSD: {}".format(eps))
         context = self.get_wsd_context()  # all lemmas from other predicates
