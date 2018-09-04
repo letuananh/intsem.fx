@@ -193,6 +193,7 @@ def compare_ttls(cli, args):
         f1_text = "{:.2f}%".format(f1 * 100)
         if not args.batch:
             rp.print("True positive: {}".format(len(true_positive)))
+            rp.print("False Negative: {}".format(len(false_negative)))
             rp.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
             rp.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
             rp.print("Recall:    {}".format(rc_text))
@@ -235,6 +236,7 @@ def compare_ttls(cli, args):
             # summary
             debugfile.header("[Summary]")
             debugfile.print("True positive: {}".format(len(true_positive)))
+            debugfile.print("False positive: {}".format(len(false_negative)))
             debugfile.print("Gold # senses: {} | Ignored: {} | Total: {}".format(gold_tags_len, gold_ignored, gold_tags_len + gold_ignored))
             debugfile.print("Predicted # senses: {} | Ignored: {} | Total: {}".format(profile_tags_len, profile_ignored, profile_tags_len + profile_ignored))
             debugfile.print("Recall (TP/Gtags)   : {}".format(rc_text))
@@ -525,6 +527,14 @@ def corenlp_to_ttl(cli, args):
     print("{} sentences was written to {}".format(len(raw_sents), args.output))
 
 
+def check_ttl_stats(cli, args):
+    gold = read_ttl(args.path, ttl_format=args.ttl_format)
+    tag_count = 0
+    for sent in gold:
+        tag_count += len([t for t in sent.tags if t.tagtype in ('WN', 'EXTRA', 'OMW')])
+    print("Sense count: {}".format(tag_count))
+
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -562,6 +572,11 @@ def main():
     task = app.add_task('bake', func=concept_to_tags)
     task.add_argument('path', help='Path to TTL document')
     task.add_argument('-o', '--output', help='New TTL path')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
+    task = app.add_task('stats', func=check_ttl_stats)
+    task.add_argument('path', help='Path to TTL document')
+    task.add_argument('-o', '--output', help='Output log file')
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('totxt', func=ttl_to_txt)
