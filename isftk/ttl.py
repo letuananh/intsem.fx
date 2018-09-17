@@ -527,6 +527,12 @@ def corenlp_to_ttl(cli, args):
     print("{} sentences was written to {}".format(len(raw_sents), args.output))
 
 
+def semeval_to_ttl(cli, args):
+    print("Semeval file: {}".format(args.input))
+    print("TTL file: {}".format(args.output))
+    print("TTL format: {}".format(args.ttl_format))
+
+
 def check_ttl_stats(cli, args):
     gold = read_ttl(args.path, ttl_format=args.ttl_format)
     tag_count = 0
@@ -607,11 +613,18 @@ def main():
     task.add_argument('--tokens', help='Path to token file')
 
     task = app.add_task('corenlp', func=corenlp_to_ttl)
-    task.add_argument('input', help='Path to TTL/TSV document')
+    task.add_argument('input', help='Path to core NLP file')
     task.add_argument('output', help='Path to TTL/JSON output document')
     task.add_argument('--raw', help='Raw file')
     task.add_argument('--seed', default=1, type=int)
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
+    task = app.add_task('semeval', func=semeval_to_ttl)
+    task.add_argument('input', help='Path to semeval file')
+    task.add_argument('output', help='Path to TTL/JSON output document')
+    task.add_argument('--raw', help='Raw file')
+    task.add_argument('--seed', default=1, type=int)
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     # run app
     app.run()
