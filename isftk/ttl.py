@@ -36,6 +36,7 @@ import logging
 import json
 from collections import defaultdict as dd
 
+from lelesk.util import ptpos_to_wn
 from chirptext import TextReport, Counter, piter
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import chio
@@ -140,7 +141,7 @@ def compare_ttls(cli, args):
     ctx = omw.ctx()
     gold = None
     profile = None
-    ignored_ids = None
+    ignored_ids = []
     if args.ignore:
         ignored_ids = [x.strip() for x in read_file(args.ignore).splitlines()]
         getLogger().debug("Ignored sentence IDs: {}".format(', '.join(ignored_ids)))
@@ -160,6 +161,7 @@ def compare_ttls(cli, args):
     # read profile
     if args.profile:
         profile = read_ttl(args.profile, ttl_format=args.ttl_format)
+        rp.header("Profile sentences: {} | Loc: {}".format(len(profile), args.profile))
         # remove ignored sentences
         if ignored_ids:
             for sid in ignored_ids:
@@ -440,6 +442,69 @@ def ttl_to_txt(cli, args):
     print("Done")
 
 
+def ttl_to_ukb(cli, args):
+    ''' Convert TTL file to UKB file '''
+    doc = read_ttl(args.input, ttl_format=args.ttl_format)
+    print("In doc: {} | Sentences: {}".format(args.input, len(doc)))
+    if args.output:
+        with chio.open(args.output, mode='wt') as outfile:
+            for sent in doc:
+                outfile.write('{}\n'.format(sent.ID))
+                for idx, w in enumerate(sent):
+                    outfile.write("{text}#{p}#w{wid}#1 ".format(text=w.text.lower(), p=ptpos_to_wn(w.pos), wid=idx))
+                outfile.write('\n\n')
+        print("[TTL => UKB] Written {} lines to {}".format(len(doc), args.output))
+    print("Done")
+
+
+def ukb_to_ttl(cli, args):
+    ''' Convert UKB output to TTL '''
+    doc = read_ttl(args.ttl, ttl_format=args.ttl_format)
+    print("Source TTL file: {} | Sentences: {}".format(args.ttl, len(doc)))
+    c = Counter()
+    sids = set()
+    input_sids = {int(s.ID) for s in doc}
+    for line_idx, line in enumerate(chio.read_file(args.input).splitlines()):
+        if line.startswith('!! '):
+            continue
+        parts = line.split()
+        if len(parts) != 5:
+            print("WARNING: Invalid line -> {}: {}".format(line_idx, line))
+            continue
+        sid_text, wid_text, synsetid, unknown, lemma = line.split()
+        sid = int(sid_text)
+        wid = int(wid_text[1:])
+        sent_obj = doc.get(sid, default=None)
+        if sent_obj is None:
+            print("SID #{} could not be found".format(sid))
+        elif wid >= len(sent_obj):
+            print("Invalid wid: line#{} - sent#{} - wid#{}".format(line_idx, sid, wid))
+        else:
+            token = sent_obj[wid]
+            if lemma != token.text.lower():
+                print("Invalid token text: {} <> {}".format(lemma, token.text.lower()))
+            # now can tag ...
+            sent_obj.new_concept(synsetid, lemma, tokens=[wid])
+            c.count("Tokens")
+            sids.add(sid)
+            # print(sent_obj)
+            # print("sid:{} - wid:{} - {} ({}) => token:{}".format(sid, wid, synsetid, lemma, sent_obj[wid].text))        
+    print("SRC sentences: {}".format(len(input_sids)))
+    print("UKB sentences: {}".format(len(sids)))
+    print("Not found: {}".format(input_sids.difference(sids)))
+    c.summarise()
+    print("Now baking to tags ...")
+    bake_doc(doc)
+    # Now output ...
+    if args.output:
+        print("Output to file ...")
+        _writer = get_ttl_writer(args.output, ttl_format=args.ttl_format, id_seed=args.seed)
+        for sent in doc:
+            _writer.write_sent(sent)
+        print("Written {} sentences to {}".format(len(doc), args.output))
+    print("Done")
+
+
 def tsv_to_json(cli, args):
     doc_tsv = read_ttl(args.input)
     _json_writer = ttl.JSONWriter.from_path(args.output)
@@ -625,6 +690,19 @@ def main():
     task.add_argument('--raw', help='Raw file')
     task.add_argument('--seed', default=1, type=int)
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
+    task = app.add_task('to_ukb', func=ttl_to_ukb)
+    task.add_argument('input', help='Path to TTL file')
+    task.add_argument('output', help='Path to UKB output file')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
+    task = app.add_task('ukb', func=ukb_to_ttl)
+    task.add_argument('input', help='Path to UKB output file')
+    task.add_argument('ttl', help='Input TTL file')
+    task.add_argument('-o', '--output', help='Path to TTL output file')
+    task.add_argument('--seed', default=1, type=int)
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
 
     # run app
     app.run()
