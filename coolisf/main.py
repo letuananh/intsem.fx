@@ -44,6 +44,7 @@ References:
 
 import os
 import logging
+import collections
 
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper, Counter, Timer
@@ -379,20 +380,34 @@ def isf_config_logging(args):
         logging.getLogger('coolisf.processors').setLevel(logging.DEBUG)
 
 
+def print_dict(a_dict, rp, indent=0):
+    indent_str = '  ' * (indent + 1)
+    for k, v in a_dict.items():
+        rp.write("{i}- {k}: ".format(i=indent_str, k=k))
+        if isinstance(v, collections.Mapping):
+            rp.print()
+            print_dict(v, rp, indent + 1)
+        else:
+            rp.print(v)
+    
+
 def show_isf_info(cli, args):
-    print("coolisf - Python implementation of the intsem.fx (Integrated Semantic Framework)")
+    rp = TextReport()
+    rp.header("coolisf - Python implementation of the intsem.fx (Integrated Semantic Framework)")
     config = read_config()  # make sure that the configuration file is created
     cfg_mgr = _get_config_manager()
     ghub = GrammarHub()
     config_loc = cfg_mgr.locate_config()
     ace_path = ghub.to_path(config['ace'])
     # report it
-    print("Configuration file: {}".format(config_loc))
-    print("Data folder: {}".format(config['data_root']))
-    print("ACE path: {}".format(ace_path))
-    print(config)
+    rp.print("Configuration file: {}".format(config_loc))
+    rp.print("Data folder: {}".format(config['data_root']))
+    rp.print("ACE path: {}".format(ace_path))
+    if args.detail:
+        print_dict(config, rp)
 
 
+# app instance
 app = CLIApp("CoolISF Main Application", logger=__name__, config_logging=isf_config_logging)
 
 
@@ -463,8 +478,8 @@ def main():
     task.add_argument('--separate', help='One file for each sentence', action='store_true')
 
     # show ISF configuration
-    app.add_task('info', func=show_isf_info)
-
+    task = app.add_task('info', func=show_isf_info)
+    task.add_argument('--detail', help='Show detailed configuration', action='store_true')
     app.run()
 
 
