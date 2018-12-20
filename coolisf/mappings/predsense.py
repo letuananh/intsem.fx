@@ -160,6 +160,14 @@ class PredSense(object):
         return PredSense.search_pred(pred, extend_lemma)
 
     @staticmethod
+    def get_wn_pos(ep, **kwargs):
+        candidates = list(PredSense.search_ep(ep, **kwargs))
+        if candidates:
+            return candidates[0].ID.pos
+        else:
+            return ep.pred.pos if ep.pred.pos and ep.pred.pos in 'nvar' else 'x'
+
+    @staticmethod
     def search_ep(ep, extend_lemma=True, ctx=None):
         candidates = None
         pred_str = str(ep.pred)
