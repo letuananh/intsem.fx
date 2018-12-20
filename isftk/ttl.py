@@ -177,6 +177,10 @@ def compare_ttls(cli, args):
     if gold and profile:
         gold_tags, gold_tags_len, gold_ignored = prepare_tags(gold, args=args, nonsense=args.nonsense)
         profile_tags, profile_tags_len, profile_ignored = prepare_tags(profile, args=args, nonsense=args.nonsense)
+        if gold_tags_len == 0:
+            rp.print("WARNING: There was no tag found in the gold profile. Please make sure that the tags for comparison are *sentence level* tags")
+        if profile_tags_len == 0:
+            rp.print("WARNING: There was no tag found in the evaluating profile. Please make sure that the tags for comparison are *sentence level* tags")
         getLogger().debug("Gold tags: {}".format(gold_tags_len))
         getLogger().debug(list(gold_tags.items())[:5])
         getLogger().debug("Profile tags: {}".format(profile_tags_len))
