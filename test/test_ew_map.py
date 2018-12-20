@@ -127,6 +127,11 @@ class TestMain(unittest.TestCase):
         self.assertEqual({str(x.synsetid) for x in d}, {'02531625-v', '02533109-v', '00786458-v', '02745713-v', '01112584-v', '00920778-v', '00669970-v'})
         pass
 
+    def test_get_pred_pos(self):
+        r = Reading('''[ TOP: h0 INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] RELS: < [ pron<0:1> LBL: h4 ARG0: x3 [ x PERS: 1 NUM: sg IND: + PT: std ] ] [ pronoun_q<0:1> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ] [ _happy_a_with<5:11> LBL: h1 ARG0: e2 ARG1: x3 ARG2: i8 ] > HCONS: < h0 qeq h1 h6 qeq h4 > ]''')
+        actual = r.dmrs().tokenize_pos()
+        self.assertEqual(actual, [('pron', 'x'), ('pronoun', 'x'), ('happy', 'a')])
+
     def test_extend_lemma(self):
         self.assertEqual(PredSense.extend_lemma('night bird'), {'night-bird', 'night bird', 'nightbird'})
         self.assertEqual(PredSense.extend_lemma('above+all'), {'above-all', 'above+all', 'aboveall', 'above all'})
