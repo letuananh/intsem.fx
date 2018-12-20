@@ -894,6 +894,16 @@ class DMRS(object):
             preds.append(p)
         return preds
 
+    def tokenize_pos(self, strict=False):
+        ''' Convert a DMRS to a token list with POS '''
+        token_list = []
+        for ep in self.get_lexical_preds(strict=strict):
+            pos = PredSense.get_wn_pos(ep)
+            token_list.append((ep.pred.lemma, pos))
+        # TODO: lemma or surface form?
+        # ignore some grammatical preds?
+        return token_list
+
     def edit(self):
         return DMRSLayout(self.json(), self)
 
