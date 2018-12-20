@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-ISF Gold Miner
+RuleDB tools
 Latest version can be found at https://github.com/letuananh/intsem.fx
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
@@ -218,8 +218,7 @@ class RuleGenerator(object):
 
 
 def main():
-    ''' ISF Miner
-    '''
+    ''' RuleDB tools '''
     app = CLIApp(desc='RDB tools', logger=__name__)
     RuleGenerator()
     # Positional argument(s)
