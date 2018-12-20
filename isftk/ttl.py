@@ -458,6 +458,8 @@ def ttl_to_ukb(cli, args):
                     outfile.write("{text}#{p}#w{wid}#1 ".format(text=w.text.lower(), p=ptpos_to_wn(w.pos), wid=idx))
                 outfile.write('\n\n')
         print("[TTL => UKB] Written {} lines to {}".format(len(doc), args.output))
+    else:
+        print("output file cannot be empty")
     print("Done")
 
 
