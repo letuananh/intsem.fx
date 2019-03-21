@@ -332,6 +332,46 @@ def find_lesk_candidates(cli, args):
     print("Done")
 
 
+def isf_to_ukb(cli, args):
+    ''' ISF to UKB '''
+    doc = Document.from_file(args.input)
+    output = TextReport(args.output)
+    tokenfile = TextReport(args.output + '.tokens.txt')
+    report = TextReport(args.report)
+    report.print("Output file: {}".format(args.output))
+    processed = 0
+    if not args.ident:
+        report.print("No ident was provided")
+    for idx, sent in enumerate(doc):
+        # sent = doc.by_ident(ident, default=None)
+        if args.topk and idx > args.topk:
+            break
+        if args.ident and sent.ident not in args.ident:
+            continue
+        if sent is None:
+            report.print("Sent #{} is missing".format(sent.ident))
+        elif len(sent) == 0:
+            report.print("Sent #{} is empty (i.e. there is no parse)".format(sent.ident))
+        else:
+            sentid = sent.ID if sent.ID else sent.ident
+            report.print("Processing {}".format(sentid))
+            tokens = sent.readings[0].dmrs().tokenize_pos(strict=args.strict)
+            if not tokens:
+                report.print("Empty DMRS: {} (no pred???)".format(sentid))
+                continue
+            # sentense is OK ...
+            output.print(sentid)
+            for idx, (isf_lemma, pos, cfrom, cto) in enumerate(tokens):
+                # In UKB's lemmas, use _ to represent a space
+                lemma = isf_lemma.replace('+', '_')
+                output.write("{text}#{p}#w{wid}#1 ".format(text=lemma, p=pos, wid=idx))
+                tokenfile.writeline('\t'.join((str(sentid), str(idx), str(cfrom), str(cto))))
+            output.write('\n\n')
+            processed += 1
+    report.print("Processed {} sentence(s)".format(processed))
+    report.print("Done")
+
+
 def order_preds(cli, args):
     doc = Document.from_file(args.gold)
     output = TextReport(args.output)
@@ -391,6 +431,14 @@ def main():
     task = app.add_task('order', func=order_preds)
     task.add_argument('-g', '--gold', help='Gold MRS', default=None)
     task.add_argument('-o', '--output', help='Output file', default=None)
+    task.add_argument('--ident', nargs='*')
+
+    task = app.add_task('to_ukb', func=isf_to_ukb)
+    task.add_argument('input', help='MRS XML file')
+    task.add_argument('output', help='Output file')
+    task.add_argument('--strict', help='Strict mode, use this flag to ignore all grammar predicates without CARGs', action='store_true')
+    task.add_argument('--report', help='Report file', default=None)
+    task.add_argument('-n', '--topk', help='Only process top k sentences', type=int)
     task.add_argument('--ident', nargs='*')
 
     task = app.add_task('leskcan', func=find_lesk_candidates)
