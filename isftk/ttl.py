@@ -451,12 +451,28 @@ def ttl_to_ukb(cli, args):
     doc = read_ttl(args.input, ttl_format=args.ttl_format)
     print("In doc: {} | Sentences: {}".format(args.input, len(doc)))
     if args.output:
-        with chio.open(args.output, mode='wt') as outfile:
-            for sent in doc:
+        with chio.open(args.output, mode='wt') as outfile, chio.open(args.output + '.tokens.txt', mode='wt') as tokenfile:
+            processed_sents = 0
+            for idx, sent in enumerate(doc):
+                if args.topk and idx >= args.topk:
+                    break
+                if args.ident and str(sent.ID) not in args.ident:
+                    continue
                 outfile.write('{}\n'.format(sent.ID))
                 for idx, w in enumerate(sent):
-                    outfile.write("{text}#{p}#w{wid}#1 ".format(text=w.text.lower(), p=ptpos_to_wn(w.pos), wid=idx))
+                    token_pos = ptpos_to_wn(w.pos)
+                    if not args.strict:
+                        mode = 1
+                    elif token_pos in 'nvar':
+                        mode = 1
+                    else:
+                        mode = 0
+                    outfile.write("{text}#{p}#w{wid}#{mode} ".format(text=w.text.lower(), p=token_pos, wid=idx, mode=mode))
+                    tokenfile.write('\t'.join((str(sent.ID), str(idx), str(w.cfrom), str(w.cto))))
+                    tokenfile.write('\n')
                 outfile.write('\n\n')
+                processed_sents += 1
+            print("{} sentences have been processed.".format(processed_sents))
         print("[TTL => UKB] Written {} lines to {}".format(len(doc), args.output))
     else:
         print("output file cannot be empty")
@@ -467,6 +483,13 @@ def ukb_to_ttl(cli, args):
     ''' Convert UKB output to TTL '''
     doc = read_ttl(args.ttl, ttl_format=args.ttl_format)
     print("Source TTL file: {} | Sentences: {}".format(args.ttl, len(doc)))
+    token_map = {}
+    if args.tokens:
+        # token file is provided
+        tokens = [list(int(x) for x in line) for line in chio.read_tsv(args.tokens)]
+        for sid, wid, cfrom, cto in tokens:
+            token_map[(sid, wid)] = (cfrom, cto)
+        print("Found tokens: {}".format(len(token_map)))
     c = Counter()
     sids = set()
     input_sids = {int(s.ID) for s in doc}
@@ -483,24 +506,30 @@ def ukb_to_ttl(cli, args):
         sent_obj = doc.get(sid, default=None)
         if sent_obj is None:
             print("SID #{} could not be found".format(sid))
-        elif wid >= len(sent_obj):
+        elif not token_map and wid >= len(sent_obj):
             print("Invalid wid: line#{} - sent#{} - wid#{}".format(line_idx, sid, wid))
         else:
-            token = sent_obj[wid]
-            if lemma != token.text.lower():
-                print("Invalid token text: {} <> {}".format(lemma, token.text.lower()))
             # now can tag ...
-            sent_obj.new_concept(synsetid, lemma, tokens=[wid])
+            if not token_map:
+                token = sent_obj[wid]
+                # double check token text
+                if lemma != token.text.lower():
+                    print("Invalid token text: {} <> {}".format(lemma, token.text.lower()))
+                sent_obj.new_concept(synsetid, lemma, tokens=[wid])
+            else:
+                # create sentence-level tag instead
+                cfrom, cto = token_map[(sid, wid)]
+                sent_obj.new_tag(synsetid, cfrom, cto, tagtype='WN')
             c.count("Tokens")
             sids.add(sid)
-            # print(sent_obj)
-            # print("sid:{} - wid:{} - {} ({}) => token:{}".format(sid, wid, synsetid, lemma, sent_obj[wid].text))        
-    print("SRC sentences: {}".format(len(input_sids)))
     print("UKB sentences: {}".format(len(sids)))
     print("Not found: {}".format(input_sids.difference(sids)))
     c.summarise()
-    print("Now baking to tags ...")
-    bake_doc(doc)
+    if not args.tokens:
+        print("Now baking to tags ...")
+        bake_doc(doc)
+    else:
+        print("WARNING: Because token file was provided, no auto-baking will be done")
     # Now output ...
     if args.output:
         print("Output to file ...")
@@ -700,15 +729,18 @@ def main():
     task = app.add_task('to_ukb', func=ttl_to_ukb)
     task.add_argument('input', help='Path to TTL file')
     task.add_argument('output', help='Path to UKB output file')
+    task.add_argument('-n', '--topk', help='Only process top k items', type=int)
+    task.add_argument('--ident', nargs='*')
+    task.add_argument('--strict', action='store_true')
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('ukb', func=ukb_to_ttl)
     task.add_argument('input', help='Path to UKB output file')
     task.add_argument('ttl', help='Input TTL file')
+    task.add_argument('--tokens', help='Path to token file')
     task.add_argument('-o', '--output', help='Path to TTL output file')
     task.add_argument('--seed', default=1, type=int)
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
-
 
     # run app
     app.run()
