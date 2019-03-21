@@ -888,8 +888,10 @@ class DMRS(object):
             if not pred_str.endswith('_rel'):
                 pred_str += '_rel'
             if pred_str in ('named_rel', 'unknown_rel'):
+                # ALWAYS ignore named_rel
                 continue
             if strict and p.pred.type not in (Pred.REALPRED, Pred.STRINGPRED) and not self.is_known_gpred(pred_str):
+                # [WIP] if can get CARG, count on it!
                 continue
             preds.append(p)
         return preds
@@ -899,7 +901,7 @@ class DMRS(object):
         token_list = []
         for ep in self.get_lexical_preds(strict=strict):
             pos = PredSense.get_wn_pos(ep)
-            token_list.append((ep.pred.lemma, pos))
+            token_list.append((get_ep_lemma(ep), pos, ep.cfrom, ep.cto))
         # TODO: lemma or surface form?
         # ignore some grammatical preds?
         return token_list
