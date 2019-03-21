@@ -130,7 +130,8 @@ class TestMain(unittest.TestCase):
     def test_get_pred_pos(self):
         r = Reading('''[ TOP: h0 INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] RELS: < [ pron<0:1> LBL: h4 ARG0: x3 [ x PERS: 1 NUM: sg IND: + PT: std ] ] [ pronoun_q<0:1> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ] [ _happy_a_with<5:11> LBL: h1 ARG0: e2 ARG1: x3 ARG2: i8 ] > HCONS: < h0 qeq h1 h6 qeq h4 > ]''')
         actual = r.dmrs().tokenize_pos()
-        self.assertEqual(actual, [('pron', 'x'), ('pronoun', 'x'), ('happy', 'a')])
+        expected = [('pron', 'x', 0, 1), ('pronoun', 'x', 0, 1), ('happy', 'a', 5, 11)]
+        self.assertEqual(actual, expected)
 
     def test_extend_lemma(self):
         self.assertEqual(PredSense.extend_lemma('night bird'), {'night-bird', 'night bird', 'nightbird'})
