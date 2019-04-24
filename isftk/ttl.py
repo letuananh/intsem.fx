@@ -36,9 +36,12 @@ import logging
 import json
 from collections import defaultdict as dd
 
+from lxml import etree
+
 from lelesk.util import ptpos_to_wn
 from chirptext import TextReport, Counter, piter
 from chirptext.cli import CLIApp, setup_logging
+from chirptext.leutile import StringTool
 from chirptext import chio
 from chirptext.chio import CSV
 from chirptext import texttaglib as ttl
@@ -46,7 +49,6 @@ from yawlib import SynsetID
 from yawlib.helpers import get_omw, get_wn
 
 from coolisf.common import read_file, overlap
-
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -143,7 +145,7 @@ def compare_ttls(cli, args):
     profile = None
     ignored_ids = []
     if args.ignore:
-        ignored_ids = [x.strip() for x in read_file(args.ignore).splitlines()]
+        ignored_ids = [x.strip() for x in read_file(args.ignore).splitlines() if x.strip()]
         getLogger().debug("Ignored sentence IDs: {}".format(', '.join(ignored_ids)))
     if args.gold_profile:
         gold = read_ttl(args.gold_profile, ttl_format=args.ttl_format)
@@ -161,7 +163,8 @@ def compare_ttls(cli, args):
     # read profile
     if args.profile:
         profile = read_ttl(args.profile, ttl_format=args.ttl_format)
-        rp.header("Profile sentences: {} | Loc: {}".format(len(profile), args.profile))
+        if not args.batch:
+            rp.header("Profile sentences: {} | Loc: {}".format(len(profile), args.profile))
         # remove ignored sentences
         if ignored_ids:
             for sid in ignored_ids:
@@ -283,14 +286,17 @@ def remove_msw_ttl(cli, args):
     print("# tags: {}".format(orig_tag_count))
     print("# concepts: {}".format(orig_concept_count))
     manual = dd(lambda: dd(dict))
+    nonsenses = set()  # just ignore any tag with these sense IDs
     if args.manual:
         entries = CSV.read_tsv(args.manual)
         for sid, wid, tag, keep, lemma in entries:
-            sid, wid = int(sid), int(wid)
+            sid, wid, keep = int(sid), int(wid), int(keep)
+            if (sid, wid, keep, lemma) == (-1, -1, -1, 'U'):
+                nonsenses.add(tag)
             if not lemma:
-                manual[sid][wid][tag] = int(keep)
+                manual[sid][wid][tag] = keep
             else:
-                manual[sid][wid][(tag, lemma)] = int(keep)
+                manual[sid][wid][(tag, lemma)] = keep
     wn = get_wn()
     ctx = wn.ctx()
     nope_synsets = set()
@@ -307,7 +313,7 @@ def remove_msw_ttl(cli, args):
         if args.wn30:
             remove_tags = set()
             for tag in sent.tags:
-                if tag.tagtype == 'OMW':
+                if tag.tagtype == 'OMW' or tag.label in nonsenses:
                     remove_tags.add(tag)
             for tag in remove_tags:
                 sent.tags.remove(tag)
@@ -350,6 +356,8 @@ def remove_msw_ttl(cli, args):
                             remove.add(c)
                     elif len(c.tokens) == 1 or len(c.tokens) < max_len:
                         remove.add(c)
+                    elif c.tag in nonsenses:
+                        remove.add(c)
                     else:
                         max_len = len(c.tokens)
                         keep.append(c)
@@ -387,6 +395,10 @@ def remove_msw_ttl(cli, args):
         for s in sents:
             concept_count += len(s.concepts)
             tag_count += len(s.tags)
+        # baking ...
+        if args.bake:
+            print("Baking doc ...")
+            bake_doc(new_doc)
         print("[New] # tags: {}".format(tag_count))
         print("[New] # concepts: {}".format(concept_count))
         rp.print("Writing fixed TTL to {}".format(new_doc.sent_path))
@@ -394,7 +406,7 @@ def remove_msw_ttl(cli, args):
 
 
 def strip_ttl(cli, args):
-    doc = read_ttl(args.path)
+    doc = read_ttl(args.path, ttl_format=args.ttl_format)
     print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
     if args.noconcept:
         for sent in doc:
@@ -406,12 +418,13 @@ def strip_ttl(cli, args):
             sent.tags.clear()
     if args.output:
         print("Writing output to: {}".format(args.output))
-        doc_path = os.path.dirname(args.output)
-        doc_name = os.path.basename(args.output)
-        new_doc = ttl.Document(doc_name, doc_path)
-        for s in doc:
-            new_doc.add_sent(s)
-        new_doc.write_ttl()
+        # doc_path = os.path.dirname(args.output)
+        # doc_name = os.path.basename(args.output)
+        # new_doc = ttl.Document(doc_name, doc_path)
+        # for s in doc:
+        #     new_doc.add_sent(s)
+        # new_doc.write_ttl()
+        ttl.write(args.output, doc, mode=args.ttl_format)
     print("Done")
 
 
@@ -437,7 +450,7 @@ def concept_to_tags(cli, args):
 
 
 def ttl_to_txt(cli, args):
-    doc = read_ttl(args.path)
+    doc = read_ttl(args.path, ttl_format=args.ttl_format)
     print("In doc: {} | Sentences: {}".format(args.path, len(doc)))
     lines = [s.text for s in doc]
     if args.output:
@@ -460,14 +473,19 @@ def ttl_to_ukb(cli, args):
                     continue
                 outfile.write('{}\n'.format(sent.ID))
                 for idx, w in enumerate(sent):
-                    token_pos = ptpos_to_wn(w.pos)
+                    if w.pos and w.pos.lower() in 'xnvar':
+                        token_pos = w.pos.lower()
+                    else:
+                        token_pos = ptpos_to_wn(w.pos)
                     if not args.strict:
                         mode = 1
                     elif token_pos in 'nvar':
                         mode = 1
                     else:
                         mode = 0
-                    outfile.write("{text}#{p}#w{wid}#{mode} ".format(text=w.text.lower(), p=token_pos, wid=idx, mode=mode))
+                    word_text = w.lemma.lower() if w.lemma else w.text.lower()
+                    word_text = word_text.replace(' ', '_')
+                    outfile.write("{text}#{p}#w{wid}#{mode} ".format(text=word_text, p=token_pos, wid=idx, mode=mode))
                     tokenfile.write('\t'.join((str(sent.ID), str(idx), str(w.cfrom), str(w.cto))))
                     tokenfile.write('\n')
                 outfile.write('\n\n')
@@ -510,11 +528,16 @@ def ukb_to_ttl(cli, args):
             print("Invalid wid: line#{} - sent#{} - wid#{}".format(line_idx, sid, wid))
         else:
             # now can tag ...
+            # remove current concepts if needed
+            # if args.removetags:
+            #     cids = list(c.cidx for c in sent_obj.concepts)
+            #     for cid in cids:
+            #         sent_obj.pop_concept(cid)
             if not token_map:
                 token = sent_obj[wid]
                 # double check token text
-                if lemma != token.text.lower():
-                    print("Invalid token text: {} <> {}".format(lemma, token.text.lower()))
+                if lemma != token.text.lower() and lemma != token.lemma.lower():
+                    print("Invalid token text: {} <> {}/{}".format(lemma, token.text.lower(), token.lemma.lower()))
                 sent_obj.new_concept(synsetid, lemma, tokens=[wid])
             else:
                 # create sentence-level tag instead
@@ -525,11 +548,18 @@ def ukb_to_ttl(cli, args):
     print("UKB sentences: {}".format(len(sids)))
     print("Not found: {}".format(input_sids.difference(sids)))
     c.summarise()
+    # removetags if needed
+    if args.removetags:
+        for sent_obj in doc:
+            sent_obj.tags.clear()
+    print("Sent #1 tags: {}".format(len(doc[0].tags)))
+    # baking
     if not args.tokens:
         print("Now baking to tags ...")
         bake_doc(doc)
     else:
         print("WARNING: Because token file was provided, no auto-baking will be done")
+    print("Sent #1 tags after baking: {}".format(len(doc[0].tags)))
     # Now output ...
     if args.output:
         print("Output to file ...")
@@ -541,11 +571,12 @@ def ukb_to_ttl(cli, args):
 
 
 def tsv_to_json(cli, args):
-    doc_tsv = read_ttl(args.input)
+    doc_tsv = read_ttl(args.input, ttl_format=args.ttl_format)
     _json_writer = ttl.JSONWriter.from_path(args.output)
-    for sent in doc_tsv:
+    for idx, sent in enumerate(doc_tsv):
+        sent.ID = args.seed + idx
         if args.textonly:
-            _json_writer.write_sent(ttl.Sentence(sent.text))
+            _json_writer.write_sent(ttl.Sentence(sent.text, ID=sent.ID))
         else:
             _json_writer.write_sent(sent)
     print("Create JSON file: {}".format(args.output))
@@ -629,8 +660,74 @@ def corenlp_to_ttl(cli, args):
 
 def semeval_to_ttl(cli, args):
     print("Semeval file: {}".format(args.input))
+    print("Semeval key file: {}".format(args.keys))
     print("TTL file: {}".format(args.output))
     print("TTL format: {}".format(args.ttl_format))
+    # Read document data
+    tree = etree.iterparse(args.input)
+    doc = ttl.Document()
+    sent_id_map = {}
+    for event, element in tree:
+        if event == 'end' and element.tag == 'sentence':
+            # do some processing here
+            sent_ident = element.get('id')
+            tokens = []
+            tids = []
+            # docID & sentID
+            docID = sent_ident[1:4]
+            sent_id = sent_ident[6:9]
+            wfs = []
+            for wf in element:
+                wident, lemma, pos, text = wf.get('id'), wf.get('lemma'), wf.get('pos'), wf.text
+                wfs.append((wident, lemma, pos, text))
+                wid = wident[11:]
+                tokens.append(text)
+                tids.append('{}/{}'.format(wid, lemma))
+            sent_text = StringTool.detokenize(tokens)
+            print("Doc: {} - Sent: {} - {}".format(docID, sent_id, sent_text))
+            sent_obj = doc.new_sent(text=sent_text)
+            sent_obj.new_tag(label=sent_ident, tagtype='origid')
+            sent_id_map[sent_ident] = sent_obj
+            sent_obj.tokens = tokens  # add original token in
+            for (sent_token, (wident, lemma, pos, text)) in zip(sent_obj, wfs):
+                sent_token.new_tag(label=wident, tagtype='origid')
+                if pos:
+                    sent_token.pos = pos
+                if lemma:
+                    sent_token.lemma = lemma
+            element.clear()
+    # Read tag data
+    if args.keys:
+        keys = chio.read_tsv(args.keys)
+        wn = get_wn()
+        not_found = 0
+        mwe_count = 0
+        # TODO Add option to split a semeval file into several documents
+        for line in keys:
+            from_token = line[0]
+            from_token_idx = int(from_token[-3:]) - 1
+            sent_id = from_token[:9]
+            to_token = line[1]
+            to_token_idx = int(to_token[-3:]) - 1
+            if from_token != to_token:
+                mwe_count += 1
+                print("MWE: {}".format(line))
+            bbss = line[2]
+            wn_keys = [x[3:] for x in line[3:] if x.startswith('wn:')]
+            found_ss = None
+            for wn_key in wn_keys:
+                ss = wn.get_by_key(wn_key)
+                if ss is not None:
+                    # print("{} => {}".format(" ".join(wn_keys), ss))
+                    sent_id_map[sent_id].new_concept(tag=str(ss.ID), tokens=range(from_token_idx, to_token_idx + 1))
+                    found_ss = ss
+                    break
+            if found_ss is None:
+                getLogger().warning("Not found: {}".format(line))
+                not_found += 1
+        print("Total: {} - Not found: {} - MWE: {}".format(len(keys), not_found, mwe_count))
+    ttl.write(args.output, doc, mode=args.ttl_format)
+    print("Output file: {}".format(args.output))
 
 
 def check_ttl_stats(cli, args):
@@ -667,6 +764,7 @@ def main():
     task.add_argument('--wn30', help='Only keep PWN3.0 synsets', action='store_true')
     task.add_argument('-n', '--topk', help='Only process top k items')
     task.add_argument('-o', '--output', help='New TTL path')
+    task.add_argument('--bake', action='store_true')
     task.add_argument('--debug', help='Debug file')
 
     task = app.add_task('strip', func=strip_ttl)
@@ -674,6 +772,7 @@ def main():
     task.add_argument('--noconcept', help='Remove concepts', action='store_true')
     task.add_argument('--notag', help='Remove tags', action='store_true')
     task.add_argument('-o', '--output', help='New TTL path')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_TSV, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('bake', func=concept_to_tags)
     task.add_argument('path', help='Path to TTL document')
@@ -688,11 +787,14 @@ def main():
     task = app.add_task('totxt', func=ttl_to_txt)
     task.add_argument('path', help='Path to TTL document')
     task.add_argument('-o', '--output', help='Output text file')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('tojson', func=tsv_to_json)
     task.add_argument('input', help='Path to TTL/TSV document')
     task.add_argument('output', help='Path to TTL/JSON output document')
+    task.add_argument('--seed', default=1, type=int)
     task.add_argument('--textonly', action='store_true')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('fixid', func=fix_ttl_id)
     task.add_argument('input', help='Path to TTL/TSV document')
@@ -723,6 +825,7 @@ def main():
     task.add_argument('input', help='Path to semeval file')
     task.add_argument('output', help='Path to TTL/JSON output document')
     task.add_argument('--raw', help='Raw file')
+    task.add_argument('--keys', help='Key file')
     task.add_argument('--seed', default=1, type=int)
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
@@ -740,6 +843,7 @@ def main():
     task.add_argument('--tokens', help='Path to token file')
     task.add_argument('-o', '--output', help='Path to TTL output file')
     task.add_argument('--seed', default=1, type=int)
+    task.add_argument('--removetags', help='Remove all sentence-tags from input TTL file', action='store_true')
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     # run app
