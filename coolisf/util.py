@@ -59,7 +59,7 @@ def getLogger():
 # Functions
 # ----------------------------------------------------------------------
 
-def read_ace_output(ace_output_file):
+def read_ace_output(ace_output_file, top1dmrs=False):
     ''' Read output file from ACE batch mode
     Sample command: ace -g grammar.dat infile.txt > outfile.txt
     Read more: http://moin.delph-in.net/AceOptions
@@ -79,10 +79,19 @@ def read_ace_output(ace_output_file):
                 # item = [line, mrs_line]
                 s = Sentence(line[5:], ID=current_sid)
                 doc.add(s)
-                while mrs_line.strip():
-                    s.add(mrs_line)
-                    mrs_line = input_mrs.readline()
-                input_mrs.readline()
+                if not top1dmrs:
+                    while mrs_line.strip():
+                        s.add(mrs_line)
+                        mrs_line = input_mrs.readline()
+                    input_mrs.readline()
+                else:
+                    # all lines = a single DMRS
+                    dmrs_text = ''
+                    while mrs_line.strip():
+                        dmrs_text += mrs_line
+                        mrs_line = input_mrs.readline()
+                    input_mrs.readline()
+                    s.add(dmrs_text)
                 c.count('sent')
                 c.count('total')
             elif line.startswith('SKIP'):
