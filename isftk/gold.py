@@ -71,12 +71,16 @@ def patch_gold_sid(sents, seed=10000):
         s.ident = idx + seed
 
 
+def read_ttl(ttl_path, ttl_format=ttl.MODE_TSV):
+    return ttl.read(ttl_path, ttl_format)
+
+
 def fix_gold(cli, args):
     ''' Generate SQLite script to patch typo in IMI's data '''
     sents = read_gold_mrs()
     patch_gold_sid(sents)
     print("Gold sentences: {}".format(len(sents)))
-    doc = ttl.Document('gold', path='data').read()
+    doc = read_ttl(args.input, ttl_format=args.ttl_format)
     print("TTL sentences: {}".format(len(doc)))
     patches = []
     for s in sents:
@@ -125,10 +129,10 @@ def patch_sids(cli, args):
     # rp = TextReport(args.output) if args.output else TextReport()
     if args.gold:
         print("Gold MRS file: {}".format(args.gold))
+        sent_ids = []
         if args.idfile:
             print("ID file: {}".format(args.idfile))
             idlines = chio.read_file(args.idfile).splitlines()
-            sent_ids = []
             for line in idlines:
                 idx, text = line.split('\t', maxsplit=1)
                 sent_ids.append((idx, text))
@@ -398,7 +402,11 @@ def main():
     app = CLIApp(desc='ISF Gold mining Toolkit', logger=__name__)
     # add tasks
     task = app.add_task('fix', func=fix_gold)
+    task.add_argument('input', help='Path to TTL file')
     task.add_argument('-o', '--output', help='Output file', default=None)
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+    # task.add_argument('--seed', default=1, type=int)
+
 
     task = app.add_task('mapbm', func=map_all)
     task.add_argument('-g', '--gold', help='Gold MRS', default=None)
