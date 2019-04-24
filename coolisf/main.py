@@ -48,6 +48,7 @@ import collections
 
 from chirptext.cli import CLIApp, setup_logging
 from chirptext import header, confirm, TextReport, FileHelper, Counter, Timer
+from chirptext.leutile import is_number
 from chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
@@ -78,6 +79,9 @@ WSD_CHOICES = [ttl.Tag.LELESK, ttl.Tag.MFS]
 setup_logging('logging.json', 'logs')
 
 
+def getLogger():
+    return logging.getLogger(__name__)
+
 ########################################################################
 
 
@@ -98,7 +102,7 @@ def to_visko(cli, args):
     # which file to export
     if args.file is not None:
         # export MRS file
-        sents = read_ace_output(args.file)  # e.g. data/wndefs.nokey.mrs.txt
+        sents = read_ace_output(args.file, top1dmrs=args.top1dmrs)  # e.g. data/wndefs.nokey.mrs.txt
         if args.topk:
             sents = sents[:int(args.topk)]
     else:
@@ -108,7 +112,7 @@ def to_visko(cli, args):
         else:
             print("Aborted")
             return
-    export_to_visko(sents, export_path, separate=args.separate)
+    export_to_visko(sents, export_path, separate=args.separate, halt_on_error=not args.forgive)
 
 
 def parse_isf(cli, args):
@@ -164,7 +168,13 @@ def retag_doc(cli, args):
             if args.ident and sent.ident not in args.ident:
                 continue
             print("Tagging sentence #{}/{}".format(idx + 1, len(doc)))
-            sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
+            try:
+                sent.tag_xml(method=args.wsd, wsd=wsd, ctx=ctx)
+            except Exception as e:
+                if args.forgive:
+                    getLogger().warning("Could not process sentence {}".format(sent.ID))
+                else:
+                    raise e
         ctx.close()
         wsd.disconnect()
     if args.ttl:
@@ -192,11 +202,11 @@ def extract_tsdb(cli, args):
                 doc = read_tsdb_ttl(args.path, ttl_path=args.ttl, name=args.name, title=args.title)
             else:
                 doc = read_tsdb(args.path)
-            if args.ident:
+            if args.ident or args.ids:
                 print("Idents: {}".format(args.ident))
                 doc_new = Document(name=doc.name, title=doc.title)
                 for sent in doc:
-                    if sent.ident in args.ident:
+                    if (sent.ident in args.ident) or (sent.ID in args.ids):
                         doc_new.add(sent)
                 doc = doc_new
         elif os.path.isfile(args.path):
@@ -216,7 +226,10 @@ def extract_tsdb(cli, args):
             total = len(doc)
             for idx, sent in enumerate(doc):
                 print("Processing {} of {} sentences".format(idx + 1, total))
-                transformer.apply(sent)
+                try:
+                    transformer.apply(sent)
+                except:
+                    getLogger().warning("Cannot transform sentene {}".format(sent.ID))
                 if args.topk and int(args.topk) < idx:
                     break
         timer.stop("ISF transformation")
@@ -323,27 +336,27 @@ def export_ttl(cli, args):
     doc = Document.from_file(args.path)
     print("Found MRS {} sentences".format(len(doc)))
     if args.output:
-        out_path = os.path.dirname(args.output)
         out_name = os.path.basename(args.output)
         if out_name.endswith('.ttl.json'):
             out_name = out_name[:-9]
+        if out_name.endswith('.ttl.json.gz'):
+            out_name = out_name[:-12]
     else:
-        out_path = 'data'
         out_name = 'ttl_output'
-    doc_ttl = ttl.Document(out_name, out_path)
     print("TTL mode: {}".format(args.ttl_format))
     if args.ttl_format == ttl.MODE_JSON:
-        _writer = ttl.JSONWriter.from_doc(doc_ttl)
+        _writer = ttl.JSONWriter.from_path(args.output)
     else:
-        _writer = ttl.TxtWriter.from_doc(doc_ttl)
+        _writer = ttl.TxtWriter.from_path(args.output)
     empty_sents = []
     written_count = 0
     tag_count = 0
     print("Exporting ISF document to TTL - Empty sentences will be removed automatically")
-    for sent in doc:
-        tsent = ttl.Sentence(text=sent.text, ID=sent.ident)
+    for idx, sent in enumerate(doc):
+        sent_id = sent.ident if sent.ident else sent.ID if is_number(sent.ID) else idx
+        tsent = ttl.Sentence(text=sent.text, ID=sent_id)
         if not len(sent):
-            empty_sents.append(sent.ident)
+            empty_sents.append(sent_id)
             continue
         dmrs = sent[0].dmrs()  # only support the first reading for now
         tags = dmrs.find_tags()
@@ -448,6 +461,7 @@ def main():
     task.add_argument('--title', help='Document title')
     task.add_argument('--isf', help="Perform ISF transformation", action="store_true")
     task.add_argument('--ident', nargs='*')
+    task.add_argument('--ids', nargs='*')
 
     # re-tag a document
     task = make_task('tag', func=retag_doc)
@@ -459,6 +473,7 @@ def main():
     task.add_argument('--on_error', help='What to do when error occurred', choices=['remove', 'ignore', 'raise'], default='raise')
     task.add_argument('--mode', help='SensePred predicate choosing mode', choices=Lexsem.MODES)
     task.add_argument('--ident', nargs='*')
+    task.add_argument('--forgive', help='Do not halt on error', action='store_true')
 
     # ISF to TTL
     task = make_task('ttl', func=export_ttl)
@@ -476,6 +491,8 @@ def main():
     task.add_argument('-k', '--topk', help='Only extract top K sentences')
     task.add_argument('-b', '--bibloc', help='Path to Biblioteche folder (corpus collection root)')
     task.add_argument('--separate', help='One file for each sentence', action='store_true')
+    task.add_argument('--top1dmrs', help='When ACE\'s option -1Tf is used', action='store_true')
+    task.add_argument('--forgive', help='Do not halt on error', action='store_true')
 
     # show ISF configuration
     task = app.add_task('info', func=show_isf_info)
