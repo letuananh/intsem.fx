@@ -184,7 +184,7 @@ class Document(object):
         else:
             raise LookupError("Sentence ident#{} could not be found".format(ident))
 
-    def to_xml_node(self, corpus_node=None, with_raw=True, with_shallow=True, with_dmrs=True):
+    def to_xml_node(self, corpus_node=None, with_raw=True, with_shallow=True, with_dmrs=True, strict=True):
         doc_node = etree.Element('document')
         if corpus_node is not None:
             corpus_node.append(doc_node)
@@ -192,11 +192,18 @@ class Document(object):
         doc_node.set('name', self.name if self.name else '')
         doc_node.set('title', self.title if self.title else '')
         for sent in self.sentences:
-            sent.to_xml_node(doc_node=doc_node, with_raw=with_raw, with_shallow=with_shallow, with_dmrs=with_dmrs)
+            try:
+                sent.to_xml_node(doc_node=doc_node, with_raw=with_raw, with_shallow=with_shallow, with_dmrs=with_dmrs)
+            except Exception as e:
+                if strict:
+                    raise e
+                else:
+                    logger = getLogger()
+                    logger.warning("Sentence {} was corrupted: {}".format(sent.ID, sent.text))
         return doc_node
 
-    def to_xml_str(self, corpus_node=None, pretty_print=True, with_raw=True, with_shallow=True, with_dmrs=True):
-        xml_node = self.to_xml_node(corpus_node, with_raw, with_shallow, with_dmrs)
+    def to_xml_str(self, corpus_node=None, pretty_print=True, with_raw=True, with_shallow=True, with_dmrs=True, strict=True):
+        xml_node = self.to_xml_node(corpus_node, with_raw, with_shallow, with_dmrs, strict=strict)
         return etree.tostring(xml_node, pretty_print=pretty_print, encoding="utf-8").decode("utf-8")
 
     @staticmethod
@@ -404,7 +411,7 @@ class Sentence(object):
                 mrs_node = etree.SubElement(intp_node, 'mrs')
                 mrs_node.text = etree.CDATA(reading.mrs().tostring(pretty_print=pretty_print))
             # store DMRS
-            if with_dmrs:
+            if with_dmrs and reading.dmrs():
                 intp_node.append(reading.dmrs().xml())
         return sent_node
 
@@ -890,7 +897,7 @@ class DMRS(object):
             if pred_str in ('named_rel', 'unknown_rel'):
                 # ALWAYS ignore named_rel
                 continue
-            if strict and p.pred.type not in (Pred.REALPRED, Pred.STRINGPRED) and not self.is_known_gpred(pred_str):
+            if strict and p.pred.type not in (Pred.REALPRED, Pred.STRINGPRED) and not self.is_known_gpred(pred_str) and not p.carg:
                 # [WIP] if can get CARG, count on it!
                 continue
             preds.append(p)
