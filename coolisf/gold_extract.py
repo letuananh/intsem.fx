@@ -69,9 +69,9 @@ if cfg and 'data_root' in cfg:
     DATA_DIR = FileHelper.abspath(cfg['data_root'])
 else:
     DATA_DIR = FileHelper.abspath('./data')
-GOLD_PATH = os.path.join(DATA_DIR, 'gold')
-GOLD_TTL_PATH = os.path.join(DATA_DIR, 'gold')
-OUTPUT_ISF = os.path.join(DATA_DIR, 'speckled_tsdb_imi.xml.gz')
+GOLD_PATH = os.path.join(DATA_DIR, 'gold', 'gold_erg')
+GOLD_TTL_PATH = os.path.join(DATA_DIR, 'gold', 'gold_imi')
+OUTPUT_ISF = os.path.join(DATA_DIR, 'gold', 'speckled_tsdb_imi.xml.gz')
 
 
 def getLogger():
@@ -268,7 +268,7 @@ def filter_wrong_senses(doc):
             sent.pop_concept(c.cidx)
 
 
-def export_to_visko(sents, doc_path, pretty_print=True, separate=True):
+def export_to_visko(sents, doc_path, pretty_print=True, separate=True, halt_on_error=True):
     ''' Export sentences to XML files '''
     print("Exporting %s sentences to Visko" % (len(sents),))
     print("Visko doc path: {}".format(doc_path))
@@ -278,8 +278,11 @@ def export_to_visko(sents, doc_path, pretty_print=True, separate=True):
         for sent in sents:
             sentpath = os.path.join(doc_path, str(sent.ident) + '.xml.gz')
             with gzip.open(sentpath, 'w') as f:
-                f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
+                try:
+                    f.write(etree.tostring(sent.to_xml_node(), encoding='utf-8', pretty_print=pretty_print))
+                except:
+                    print("ERROR")
     else:
         # write to file
-        chio.write_file(doc_path, sents.to_xml_str(pretty_print=pretty_print))
+        chio.write_file(doc_path, sents.to_xml_str(pretty_print=pretty_print, strict=halt_on_error))
     print("Done!")
