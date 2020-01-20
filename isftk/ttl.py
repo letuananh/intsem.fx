@@ -459,6 +459,29 @@ def ttl_to_txt(cli, args):
     print("Done")
 
 
+def ttl_to_tokens(cli, args):
+    ''' Convert TTL file to tokenized text '''
+    doc = read_ttl(args.input, ttl_format=args.ttl_format)
+    print("In doc: {} | Sentences: {}".format(args.input, len(doc)))
+    if args.output:
+        with chio.open(args.output, mode='wt') as outfile:
+            processed_sents = 0
+            for idx, sent in enumerate(doc):
+                if args.topk and idx >= args.topk:
+                    break
+                if args.ident and str(sent.ID) not in args.ident:
+                    continue
+                # outfile.write('{}\n'.format(sent.ID))
+                outfile.write(" ".join(w.text for w in sent))
+                outfile.write("\n")
+                processed_sents += 1
+            print("{} sentences have been processed.".format(processed_sents))
+        print("[TTL => tokens] Written {} lines to {}".format(len(doc), args.output))
+    else:
+        print("output file cannot be empty")
+    print("Done")
+
+
 def ttl_to_ukb(cli, args):
     ''' Convert TTL file to UKB file '''
     doc = read_ttl(args.input, ttl_format=args.ttl_format)
@@ -835,6 +858,13 @@ def main():
     task.add_argument('-n', '--topk', help='Only process top k items', type=int)
     task.add_argument('--ident', nargs='*')
     task.add_argument('--strict', action='store_true')
+    task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
+
+    task = app.add_task('to_tokens', func=ttl_to_tokens)
+    task.add_argument('input', help='Path to TTL file')
+    task.add_argument('output', help='Path to token output file')
+    task.add_argument('-n', '--topk', help='Only process top k items', type=int)
+    task.add_argument('--ident', nargs='*')
     task.add_argument('--ttl_format', help='TTL format', default=ttl.MODE_JSON, choices=[ttl.MODE_JSON, ttl.MODE_TSV])
 
     task = app.add_task('ukb', func=ukb_to_ttl)
