@@ -3,15 +3,12 @@
 '''
 Python implementation of Integrated Semantic Framework
 
-`coolisf` is read `kul-eye-es-ef` officially (sometimes kul-is-f)
+`coolisf` is read `kul-eye-es-ef` officially
 
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-References:
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
 '''
 
+# Latest version can be found at https://github.com/letuananh/intsem.fx
+#
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,21 +29,15 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2015, intsem.fx"
-__credits__ = []
-__license__ = "MIT License"
-__version__ = "0.2.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-__description__ = "Integrated Semantic Framework - Python implementation"
-__url__ = "https://github.com/letuananh/intsem.fx"
-
 ########################################################################
+
+from .__version__ import __author__, __email__, __copyright__, __maintainer__
+from .__version__ import __credits__, __license__, __description__, __url__
+from .__version__ import __version_major__, __version_long__, __version__, __status__
 
 from .lexsem import Lexsem, tag_gold
 from .ghub import GrammarHub
 from .config import read_config
 
-__all__ = ['GrammarHub', 'Lexsem', 'tag_gold', 'read_config']
+__all__ = ['GrammarHub', 'Lexsem', 'tag_gold', 'read_config',
+           "__version__", "__author__", "__description__", "__copyright__"]
