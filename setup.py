@@ -9,40 +9,11 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 @license: MIT
 '''
 
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
 ########################################################################
 
 import io
 import os
-from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-
-from coolisf import __author__, __email__
-from coolisf import __version__, __license__
-from coolisf import __url__, __description__
-# from coolisf import __credits__, __maintainer__
-# from coolisf import __copyright__, __status__
-
-########################################################################
+from setuptools import setup
 
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -58,18 +29,20 @@ def read(*filenames, **kwargs):
     return sep.join(buf)
 
 
-long_description = read('README.md', 'CHANGES.md')
+long_description = read('README.md')
+pkg_info = {}
+exec(read('coolisf/__version__.py'), pkg_info)
 
 setup(
     name='coolisf',
-    version=__version__,
-    url=__url__,
-    license=__license__,
-    author=__author__,
+    version=pkg_info["__version__"],
+    url=pkg_info["__url__"],
+    license=pkg_info["__license__"],
+    author=pkg_info["__author__"],
     tests_require=[],
     install_requires=[],
-    author_email=__email__,
-    description=__description__,
+    author_email=pkg_info["__email__"],
+    description=pkg_info["__description__"],
     long_description=long_description,
     packages=['coolisf',
               'coolisf/dao',
@@ -80,11 +53,15 @@ setup(
     platforms='any',
     test_suite='test',
     classifiers=['Programming Language :: Python',
-                 'Development Status :: 0.1 - Alpha',
+                 'Development Status :: ' + pkg_info["__status__"],
                  'Natural Language :: English',
+                 'Natural Language :: Japanese',
+                 'Natural Language :: Indonesian',
+                 'Natural Language :: Chinese (Simplified)',
+                 'Natural Language :: Chinese (Traditional)',
                  'Environment :: Console Application',
                  'Intended Audience :: Developers',
-                 'License :: OSI Approved :: MIT License',
+                 'License :: OSI Approved :: ' + pkg_info["__license__"],
                  'Operating System :: OS Independent',
                  'Topic :: Software Development :: Libraries :: Python Modules']
 )

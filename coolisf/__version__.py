@@ -16,4 +16,4 @@ __maintainer__ = "Le Tuan Anh"
 __version_major__ = "0.2.3"  # follow PEP-0440
 __version__ = "{}beta".format(__version_major__)
 __version_long__ = "{} - Beta".format(__version_major__)
-__status__ = "Prototype"
+__status__ = "4 - Beta"
