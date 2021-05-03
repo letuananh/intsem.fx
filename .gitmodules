@@ -1,6 +1,3 @@
-[submodule "modules/chirptext"]
-	path = modules/chirptext
-	url = https://github.com/letuananh/chirptext
 [submodule "modules/lelesk"]
 	path = modules/lelesk
 	url = https://github.com/letuananh/lelesk
