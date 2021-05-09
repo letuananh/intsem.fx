@@ -38,6 +38,13 @@ setup(
     name='coolisf',
     version=pkg_info["__version__"],
     url=pkg_info["__url__"],
+    project_urls={
+        "Bug Tracker": "https://github.com/letuananh/intsem.fx/issues",
+        "Source Code": "https://github.com/letuananh/intsem.fx"
+    },
+    keywords=["linguistics", "analysis", "semantics", "meaning", "nlp",
+              "HPSG", "ERG", "MRS", "DMRS", "grammar",
+              "Sign-based Construction Grammar", "wordnet", "wsd", "word-sense disambiguation"],
     license=pkg_info["__license__"],
     author=pkg_info["__author__"],
     tests_require=[],
