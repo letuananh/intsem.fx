@@ -35,7 +35,7 @@ import logging
 
 from delphin.mrs.components import Pred
 
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import texttaglib as ttl
 from yawlib import SynsetID
 
 

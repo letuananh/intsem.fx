@@ -37,7 +37,7 @@ from coolisf.model import Sentence
 from .base import Processor
 
 try:
-    from chirptext.deko import wakati
+    from texttaglib.chirptext.deko import wakati
     from coolisf.shallow import JapaneseAnalyser
 except:
     logging.warning('chirptext.deko cannot be imported. JNLP mode is disabled')

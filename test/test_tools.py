@@ -45,7 +45,7 @@ References:
 import unittest
 import logging
 
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import texttaglib as ttl
 from coolisf import read_config
 from coolisf import GrammarHub
 from coolisf.common import overlap, tags_to_concepts

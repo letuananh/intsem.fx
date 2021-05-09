@@ -38,12 +38,12 @@ import logging
 from collections import defaultdict
 import csv
 
-from chirptext.leutile import Counter
-from chirptext.leutile import FileHelper
-from chirptext.leutile import TextReport
-from chirptext.leutile import FileHub
-from chirptext.leutile import Timer
-from chirptext.leutile import header
+from texttaglib.chirptext.leutile import Counter
+from texttaglib.chirptext.leutile import FileHelper
+from texttaglib.chirptext.leutile import TextReport
+from texttaglib.chirptext.leutile import FileHub
+from texttaglib.chirptext.leutile import Timer
+from texttaglib.chirptext.leutile import header
 
 from yawlib import YLConfig
 from yawlib import WordnetSQL as WNSQL

@@ -34,7 +34,7 @@ import os
 import logging
 from collections import defaultdict as dd
 
-from chirptext import FileHelper
+from texttaglib.chirptext import FileHelper
 
 from coolisf.dao.ruledb import LexRuleDB
 from coolisf.config import read_config

@@ -40,7 +40,7 @@ References:
 import unittest
 import logging
 
-from chirptext import header
+from texttaglib.chirptext import header
 from yawlib import YLConfig
 from yawlib.omwsql import OMWSQL
 

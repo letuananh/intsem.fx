@@ -40,8 +40,8 @@ References:
 import unittest
 import logging
 
-from chirptext import header
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import header
+from texttaglib.chirptext import texttaglib as ttl
 
 from coolisf import GrammarHub
 from coolisf.util import is_valid_name, sent2json

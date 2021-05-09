@@ -51,9 +51,9 @@ from delphin.mrs import Dmrs
 from delphin.mrs.components import Pred
 from delphin.mrs.components import normalize_pred_string
 
-from chirptext.anhxa import update_obj
-from chirptext.leutile import StringTool, header
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext.anhxa import update_obj
+from texttaglib.chirptext.leutile import StringTool, header
+from texttaglib.chirptext import texttaglib as ttl
 from yawlib import Synset
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources

@@ -39,7 +39,7 @@ import os
 import gzip
 import logging
 
-from chirptext import FileHelper
+from texttaglib.chirptext import FileHelper
 from lelesk.util import ptpos_to_wn
 
 

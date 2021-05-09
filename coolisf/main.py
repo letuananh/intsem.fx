@@ -46,10 +46,10 @@ import os
 import logging
 import collections
 
-from chirptext.cli import CLIApp, setup_logging
-from chirptext import header, confirm, TextReport, FileHelper, Counter, Timer
-from chirptext.leutile import is_number
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext.cli import CLIApp, setup_logging
+from texttaglib.chirptext import header, confirm, TextReport, FileHelper, Counter, Timer
+from texttaglib.chirptext.leutile import is_number
+from texttaglib.chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 

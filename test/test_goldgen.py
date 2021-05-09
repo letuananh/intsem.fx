@@ -44,8 +44,8 @@ from collections import defaultdict as dd
 from lxml import etree
 from delphin.mrs.components import Pred
 
-from chirptext import header, Counter, TextReport
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import header, Counter, TextReport
+from texttaglib.chirptext import texttaglib as ttl
 from coolisf import tag_gold, Lexsem
 from coolisf.lexsem import import_shallow
 from coolisf.gold_extract import build_root_node
