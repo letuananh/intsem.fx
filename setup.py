@@ -63,7 +63,7 @@ setup(
                  'Natural Language :: Indonesian',
                  'Natural Language :: Chinese (Simplified)',
                  'Natural Language :: Chinese (Traditional)',
-                 'Environment :: Console Application',
+                 'Environment :: Console',
                  'Intended Audience :: Developers',
                  'License :: OSI Approved :: ' + pkg_info["__license__"],
                  'Operating System :: OS Independent',
