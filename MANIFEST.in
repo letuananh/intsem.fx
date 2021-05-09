@@ -1,3 +1,5 @@
 include README.md
 include LICENSE
 include requirements*.txt
+include coolisf/dao/scripts/*.sql
+include coolisf/data/*.gz
