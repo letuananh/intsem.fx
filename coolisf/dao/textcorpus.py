@@ -31,8 +31,8 @@ Raw Text Corpus manager
 import os
 import json
 
-from chirptext import FileHelper
-from chirptext.chio import CSV
+from texttaglib.chirptext import FileHelper
+from texttaglib.chirptext.chio import CSV
 
 
 # ----------------------------------------------------------------------

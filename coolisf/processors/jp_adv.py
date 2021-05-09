@@ -33,13 +33,13 @@ Latest version can be found at https://github.com/letuananh/intsem.fx
 
 import logging
 
-from chirptext import TextReport
+from texttaglib.chirptext import TextReport
 
 from coolisf.model import Sentence
 from .base import Processor
 try:
 
-    from chirptext.deko import wakati
+    from texttaglib.chirptext.deko import wakati
     from coolisf.shallow import JapaneseAnalyser
     from jamdict import Jamdict
     from jamdict.tools import dump_result

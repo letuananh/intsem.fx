@@ -40,7 +40,7 @@ References:
 import unittest
 import coolisf
 import logging
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import texttaglib as ttl
 from coolisf.model import Reading
 from coolisf import GrammarHub
 from coolisf.processors import ProcessorManager

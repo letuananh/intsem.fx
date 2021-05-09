@@ -39,7 +39,7 @@ import os
 import re
 import logging
 
-from chirptext import Counter, FileHelper
+from texttaglib.chirptext import Counter, FileHelper
 
 from coolisf.model import Sentence, Document
 

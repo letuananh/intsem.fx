@@ -35,10 +35,10 @@ import logging
 
 import nltk
 from nltk.stem import WordNetLemmatizer
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import texttaglib as ttl
 try:
-    from chirptext.deko import txt2mecab
-    from chirptext.deko import tokenize as deko_tokenize
+    from texttaglib.chirptext.deko import txt2mecab
+    from texttaglib.chirptext.deko import tokenize as deko_tokenize
 except:
     logging.warning("Deko cannot be imported. JapaneseAnalyser will not function properly")
 

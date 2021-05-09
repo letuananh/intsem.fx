@@ -1,77 +1,80 @@
-Integrated Semantic Framework (intsem.fx)
-=========
+# Integrated Semantic Framework (intsem.fx)
 
-# Prerequisite
+A Python 3 implementation of the [Integrated Semantic Framework](https://osf.io/9udjk/) that provides computational deep semantic analysis by combining structural semantics from construction grammars and lexical semantics from ontologies in a single representation.
 
-* Python >= 3.5
-* Required packages (see requirements.txt)
-* English Resource Grammar (rev >= 26135)
-* NLTK data
-* LeLESK data (see https://github.com/letuananh/lelesk)
+# Install
 
-# Installation
+`coolisf` only works on Linux distributions at the moment (built and tested on Fedora and Ubuntu Linux). 
 
-* Download and install ACE >= 0.9.26 from: http://sweaglesw.org/linguistics/ace/
-* Download ERG trunk from SVN `svn checkout http://svn.delph-in.net/erg/trunk`
-* Build erg.dat `ace -g ace/config.tdl -G erg.dat`
-* Download the latest release from: https://github.com/letuananh/intsem.fx/releases, unzip it to a folder and run the `isf` command
-* Download NLTK data
+- Install `coolisf` package from [PyPI](https://pypi.org/project/coolisf/) using pip
+
 ```
-import nltk
-nltk.download("book")
+pip install coolisf
 ```
 
+- Create coolisf data folder at `/home/user/local/isf/data`
+- Download ace-0.9.26 binary from https://osf.io/x52fy/ to `/home/user/bin/ace`. Make sure that you can run ace by
 
-Tips:
-`pip` is recommended for installing required packages
-```
-python -m pip install -r requirements.txt
+```bash
+[isf]$ ~/bin/ace -V
+ACE version 0.9.26
+compiled at 18:48:50 on Sep 14 2017
 ```
 
+- Install [lelesk](https://pypi.org/project/lelesk/) and yawlib with data
+- Download coolisf lexical rules database from https://osf.io/qn4wz/ and extract it to `/home/user/local/isf/data/lexrules.db`
+- Download grammar files (erg.dat, jacy.dat, virgo.dat, etc.) and copy them to `/home/user/local/isf/data/grammars/`
+
+The final data folder should look something like this
+
+```
+/home/user/local/isf/data
+├── grammars
+│   ├── erg.dat
+│   └── jacy.dat
+├── lexrules.db
+```
 
 # Using ISF
 
-```
-cd ~/workspace/intsem.fx
-./isf parse data/sample.txt data/sample.out
+To parse a sentence, use coolisf `text` command
+
+```bash
+python -m coolisf text "I drink green tea." -f dmrs
+
+:`I drink green tea.` (len=5)
+------------------------------------------------------------
+dmrs {
+  10000 [pron<0:1> x ind=+ num=sg pers=1 pt=std];
+  10001 [pronoun_q<0:1> x ind=+ num=sg pers=1 pt=std];
+  10002 [_drink_v_1_rel<2:7> e mood=indicative perf=- prog=- sf=prop tense=pres];
+  10003 [udef_q<8:18> x num=sg pers=3];
+  10004 [_green+tea_n_1_rel<8:18> x num=sg pers=3];
+  0:/H -> 10002;
+  10001:RSTR/H -> 10000;
+  10002:ARG1/NEQ -> 10000;
+  10002:ARG2/NEQ -> 10004;
+  10003:RSTR/H -> 10004;
+}
+# 10002 -> 01170052-v[drink/lelesk]
+# 10004 -> 07935152-n[green tea/lelesk]
+...
 ```
 
-# Development
-
-WARNING: These are meant for developers who want to contribute to the codebase. If all you need is to run the ISF to process your data, please see the Installation section above instead.
-
-2 - Check out the code of intsem.fx to ~/workspace with:
+For batch processing, create a text file with each sentence on a separate line.
+For example here is the content of the file `sample.txt`
 
 ```
-git clone --recursive https://github.com/letuananh/intsem.fx.git
+I drink green tea.
+Sherlock Holmes has three guard dogs.
+A soul is not a living thing.
+Do you have any green tea chest?
 ```
 
-3 - Check out ERG to your workspace folder and compile the grammar
+After that, run the following command and the output will be written to the file `demo_out.xml`
 
-This is complicated, read more here: http://moin.delph-in.net/TuanAnhLe/GramEng4Dummies
-
-Basically, I need the grammar file (erg.dat) to be located at ~/workspace/cldata/erg.dat
-
-4 - Configure the application
-```
-cd ~/workspace/intsem.fx
-./config.sh
-```
-To use ISF, please try
-```
-cd ~/workspace/intsem.fx
-./isf --help
+```bash
+python -m coolisf parse demo.txt -o demo_out.xml
 ```
 
-Notes:
-
-Use virtualenv to install required packages
-```
-python3 -m venv ~/isf_py3
-. ~/isf_py3/bin/activate
-```
-
-Install these packages if you are using Fedora Linux:
-```
-sudo dnf install -y redhat-rpm-config gcc-c++
-```
+If you encounter any issue, please submit an issue at: https://github.com/letuananh/intsem.fx/issues

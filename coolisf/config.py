@@ -42,7 +42,7 @@ References:
 import os
 import logging
 
-from chirptext import FileHelper, AppConfig
+from texttaglib.chirptext import FileHelper, AppConfig
 from coolisf.common import write_file
 from coolisf.data import read_config_template
 

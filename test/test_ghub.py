@@ -40,7 +40,7 @@ References:
 import unittest
 import logging
 
-from chirptext import header
+from texttaglib.chirptext import header
 import chirptext.texttaglib as ttl
 from coolisf import GrammarHub
 from coolisf.model import Document

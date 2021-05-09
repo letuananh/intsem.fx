@@ -45,7 +45,7 @@ References:
 import unittest
 import logging
 
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import texttaglib as ttl
 from coolisf import GrammarHub
 from coolisf.model import Document, Sentence, Predicate
 from coolisf.lexsem import Lexsem, import_shallow, taggable_eps

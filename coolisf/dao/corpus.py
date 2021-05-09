@@ -35,8 +35,8 @@ import os
 import os.path
 import logging
 
-from puchikarui import Schema, with_ctx
-from chirptext import texttaglib as ttl
+from texttaglib.puchikarui import Schema, with_ctx
+from texttaglib.chirptext import ttl
 
 from coolisf.util import is_valid_name
 from coolisf.model import Corpus, Document, Sentence, Reading

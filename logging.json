@@ -46,7 +46,8 @@
         ,"coolisf.morph": {"level": "INFO"}
         ,"coolisf.mappings.predsense": {"level": "INFO"}
         ,"puchikarui": { "leveL": "INFO"}
-        ,"lelesk": { "level": "INFO" }
+        ,"lelesk": { "level": "WARNING" }
+        ,"yawlib.glosswordnet": { "level": "WARNING" }
         ,"delphin.interfaces.ace": { "disabled": "yes", "propagate": "no" }
     },
 

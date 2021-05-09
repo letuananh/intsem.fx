@@ -42,7 +42,7 @@ References:
 import logging
 from delphin.interfaces import ace
 
-from chirptext import FileHelper
+from texttaglib.chirptext import FileHelper
 
 from coolisf.config import read_config
 from coolisf.dao.cache import AceCache, ISFCache
