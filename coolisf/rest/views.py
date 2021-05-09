@@ -14,7 +14,7 @@ import logging
 import django
 from django.http import HttpResponse, Http404
 
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import ttl
 import coolisf
 from coolisf import GrammarHub
 from coolisf.model import Reading
