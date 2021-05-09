@@ -41,9 +41,7 @@ git submodule init && git submodule update
 # prerequisite packages
 pip install -r requirements.txt -qq
 
-link_folder `readlink -f ./modules/lelesk/lelesk` lelesk
 link_folder `readlink -f ./modules/demophin` demophin
-link_folder `readlink -f ./modules/yawlib/yawlib` yawlib
 
 link_file `readlink -f ${WORKSPACE_FOLDER}/cldata/erg.dat` data/erg.dat
 link_file `readlink -f ${WORKSPACE_FOLDER}/cldata/jacy.dat` data/jacy.dat
