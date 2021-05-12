@@ -45,8 +45,8 @@ import unittest
 import logging
 from collections import defaultdict as dd
 
-from chirptext import FileHelper, header, TextReport
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import FileHelper, header, TextReport
+from texttaglib.chirptext import ttl
 from lelesk import LeLeskWSD, LeskCache
 
 from yawlib import YLConfig, WordnetSQL as WSQL

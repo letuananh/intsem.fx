@@ -40,7 +40,7 @@ import os
 import logging
 import unittest
 
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import ttl
 from coolisf.util import sent2json
 from coolisf import GrammarHub
 from coolisf.dao import CorpusDAOSQLite

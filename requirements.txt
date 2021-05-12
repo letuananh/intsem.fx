@@ -1,8 +1,8 @@
-lxml>=3.7.2
-bs4
 pydelphin==0.6.0
-nltk==3.2.1
-fuzzywuzzy>=0.15.1
-python-Levenshtein
-chirptext < 0.2
-puchikarui < 0.2
+nltk==3.6.2
+texttaglib>=0.1.1a1, < 0.2
+yawlib>=0.1a3, < 0.2
+lelesk>=0.1a1, < 0.2
+
+lxml
+beautifulsoup4

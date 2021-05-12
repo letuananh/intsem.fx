@@ -36,7 +36,7 @@ import os.path
 import logging
 import json
 
-from puchikarui import Schema, with_ctx
+from texttaglib.puchikarui import Schema, with_ctx
 
 from coolisf.model import Sentence
 

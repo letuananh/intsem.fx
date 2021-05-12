@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/bash
 
 echo "Test script"
 # Alternative: test a specific file

@@ -23,7 +23,7 @@ References:
 # Homepage: https://github.com/letuananh/intsem.fx
 
 import os
-from chirptext.cli import setup_logging
+from texttaglib.chirptext.cli import setup_logging
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')

@@ -32,7 +32,7 @@ import os
 import os.path
 import logging
 
-from puchikarui import with_ctx
+from texttaglib.puchikarui import with_ctx
 
 from coolisf.dao import CorpusDAOSQLite
 from coolisf.model import LexUnit, RuleInfo, PredInfo, RulePred, Reading

@@ -1,56 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
-YAWOL-Django - Yet Another Wordnet Online (REST server) for Django
-Latest version can be found at https://github.com/letuananh/yawlib
+"""
+coolisf REST API for Django site
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-'''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, yawlib"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import json
 import logging
 import django
 from django.http import HttpResponse, Http404
 
-from chirptext import texttaglib as ttl
+from texttaglib.chirptext import ttl
 import coolisf
 from coolisf import GrammarHub
 from coolisf.model import Reading
@@ -59,8 +23,6 @@ from coolisf.model import Reading
 # CONFIGURATION
 # ---------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 RESULTS = (1, 5, 10, 20, 30, 40, 50, 100, 500)
 TAGGERS = {ttl.Tag.LELESK: "LeLesk", ttl.Tag.MFS: "MFS", ttl.Tag.DEFAULT: "None"}
 ghub = GrammarHub()
@@ -131,16 +93,15 @@ def parse(request):
         raise Http404('Unknown grammar')
 
     # Parse sentence
-    logger.info("Parsing sentence: ... " + sentence_text)
+    logging.getLogger(__name__).info("Parsing sentence: ... " + sentence_text)
     sent = ghub.parse_json(sentence_text, grammar, parse_count, tagger)
-    logger.debug("Shallow: {}".format(sent['shallow']))
-    logger.debug("Parses: {}".format(len(sent)))
-    logger.info("Done parsing")
+    logging.getLogger(__name__).debug("Shallow: {}".format(sent['shallow']))
+    logging.getLogger(__name__).debug("Parses: {}".format(len(sent)))
+    logging.getLogger(__name__).info("Done parsing")
     return sent
 
 
 @jsonp
 def version(request):
     return {'product': 'djangoisf',
-            'version': __version__,
             'server': 'coolisf-{}/Django-{}'.format(coolisf.__version__, django.get_version())}
