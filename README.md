@@ -77,37 +77,16 @@ dmrs {
 ...
 ```
 
+Fore more information, please refer to the documentation for coolisf at https://coolisf.readthedocs.io
+
 # Install
 
-`coolisf` only works on Linux distributions at the moment (built and tested on Fedora and Ubuntu Linux). 
+The `coolisf` package itself is available on [PyPI](https://pypi.org/project/coolisf/) can can be installed using pip
 
-- Install `coolisf` package from [PyPI](https://pypi.org/project/coolisf/) using pip
-
-```
+```bash
 pip install coolisf
 ```
 
-- Create coolisf data folder at `/home/user/local/isf/data`
-- Download ace-0.9.26 binary from https://osf.io/x52fy/ to `/home/user/bin/ace`. Make sure that you can run ace by
-
-```bash
-[isf]$ ~/bin/ace -V
-ACE version 0.9.26
-compiled at 18:48:50 on Sep 14 2017
-```
-
-- Install [lelesk](https://pypi.org/project/lelesk/) and yawlib with data
-- Download coolisf lexical rules database from https://osf.io/qn4wz/ and extract it to `/home/user/local/isf/data/lexrules.db`
-- Download grammar files (erg.dat, jacy.dat, virgo.dat, etc.) and copy them to `/home/user/local/isf/data/grammars/`
-
-The final data folder should look something like this
-
-```
-/home/user/local/isf/data
-├── grammars
-│   ├── erg.dat
-│   └── jacy.dat
-├── lexrules.db
-```
+However, to acquire all required components and data can be tricky. Please find version specific prerequisites and installation instructions on coolisf's [official Github release page](https://github.com/letuananh/intsem.fx/releases).
 
 If you encounter any problems or difficulties, please submit a ticket for support at: https://github.com/letuananh/intsem.fx/issues
