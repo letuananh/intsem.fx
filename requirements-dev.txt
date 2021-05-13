@@ -1,2 +1,0 @@
-fuzzywuzzy>=0.15.1
-python-Levenshtein
