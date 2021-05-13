@@ -1,41 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Script for testing parsers
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import unittest
 import logging
@@ -54,7 +26,7 @@ def getLogger():
 
 class TestDMRSParser(unittest.TestCase):
 
-    dstr = '''dmrs {
+    dstr = """dmrs {
   10000 [def_explicit_q<0:2> x pers=3 num=sg ind=+];
   10001 [poss<0:2> e sf=prop mood=indicative perf=- tense=untensed prog=-];
   10002 [pronoun_q<0:2> x pt=std num=sg pers=1];
@@ -71,8 +43,8 @@ class TestDMRSParser(unittest.TestCase):
   10005:ARG1/NEQ -> 10004;
   10005:ARG2/NEQ -> 10007;
   10006:RSTR/H -> 10007;
-}'''
-    dstr2 = '''dmrs {
+}"""
+    dstr2 = """dmrs {
 10000 [def_explicit_q<0:2> ];
 10001 [poss<0:2> e SF=prop TENSE=untensed MOOD=indicative PROG=- PERF=-];
 10002 [pronoun_q<0:2> ];
@@ -95,7 +67,7 @@ class TestDMRSParser(unittest.TestCase):
 10007:ARG2/NEQ -> 10009;
 10007:ARG1/EQ -> 10010;
 10008:RSTR/H -> 10009
-} '''
+} """
     dstrs = (dstr, dstr2)
 
     def test_parse_node(self):
@@ -113,7 +85,7 @@ class TestDMRSParser(unittest.TestCase):
         self.assertEqual(preds, expected)
 
     def test_dmrs_from_string(self):
-        mrs = '''[ TOP: h0 RELS: < [ _rain_v_1_rel<3:9> LBL: h1 ARG0: e2 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: pres ] ] > HCONS: < h0 qeq h1 > ]'''
+        mrs = """[ TOP: h0 RELS: < [ _rain_v_1_rel<3:9> LBL: h1 ARG0: e2 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: pres ] ] > HCONS: < h0 qeq h1 > ]"""
         s = Sentence("It rains.")
         s.add(mrs)
         # now clone the added MRS via DMRS string

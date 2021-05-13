@@ -1,40 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Test Corpus DAO
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import logging
@@ -85,7 +58,7 @@ class TestDAOBase(unittest.TestCase):
         logging.debug("Cleaning up")
 
     def ensure_corpus(self, db, ctx):
-        ''' Ensure that testcorpus exists'''
+        """ Ensure that testcorpus exists"""
         corpus = db.get_corpus(self.corpus_name, ctx=ctx)
         if corpus is None:
             db.create_corpus(self.corpus_name, ctx=ctx)
@@ -93,7 +66,7 @@ class TestDAOBase(unittest.TestCase):
         return corpus
 
     def ensure_doc(self, db, ctx):
-        ''' Ensure that testcorpus exists'''
+        """ Ensure that testcorpus exists"""
         corpus = self.ensure_corpus(db, ctx)
         doc = db.get_doc(self.doc_name, ctx=ctx)
         if doc is None:
@@ -108,7 +81,7 @@ class TestDAOBase(unittest.TestCase):
             return db.get_sent(sents[0].ID, ctx=ctx)
         else:
             sent = Sentence("I love you.")
-            sent.add('''[ TOP: h0
+            sent.add("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ pron<0:1> LBL: h4 ARG0: x3 [ x PERS: 1 NUM: sg IND: + PT: std ] ]
           [ pronoun_q<0:1> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
@@ -116,15 +89,15 @@ class TestDAOBase(unittest.TestCase):
           [ unknown<7:11> LBL: h9 ARG: x11 [ x PERS: 2 IND: + PT: std ] ARG0: e10 [ e SF: prop ] ]
           [ pron<7:11> LBL: h12 ARG0: x11 ]
           [ pronoun_q<7:11> LBL: h13 ARG0: x11 RSTR: h14 BODY: h15 ] >
-  HCONS: < h0 qeq h1 h6 qeq h4 h8 qeq h9 h14 qeq h12 > ]''')
-            sent.add('''[ TOP: h0
+  HCONS: < h0 qeq h1 h6 qeq h4 h8 qeq h9 h14 qeq h12 > ]""")
+            sent.add("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ pron<0:1> LBL: h4 ARG0: x3 [ x PERS: 1 NUM: sg IND: + PT: std ] ]
           [ pronoun_q<0:1> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
           [ _love_v_1<2:6> LBL: h1 ARG0: e2 ARG1: x3 ARG2: x8 [ x PERS: 2 IND: + PT: std ] ]
           [ pron<7:11> LBL: h9 ARG0: x8 ]
           [ pronoun_q<7:11> LBL: h10 ARG0: x8 RSTR: h11 BODY: h12 ] >
-  HCONS: < h0 qeq h1 h6 qeq h4 h11 qeq h9 > ]''')
+  HCONS: < h0 qeq h1 h6 qeq h4 h11 qeq h9 > ]""")
             doc.add(sent)
             dmrs = sent[0].dmrs()
             dmrs.tag_node(10002, '01775164-v', 'love', ttl.Tag.OTHER)
@@ -269,11 +242,11 @@ class TestCorpusManagement(TestDAOBase):
                 self.db.save_doc(doc, ctx=ctx)
             docs = ctx.doc.select()
             # add sentences to default
-            doc_unk.new("It rains.").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
-            doc_unk.new("It rained.").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:10> LBL: h1 ARG0: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
-            doc_unk.new("Some dog barks.").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:15> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
-            doc_unk.new("Some dog barked.").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:16> LBL: h3 ARG0: e5 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
-            doc_unk.new("Some dog has been barking.").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<18:26> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: + PERF: + ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+            doc_unk.new("It rains.").add("""[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]""")
+            doc_unk.new("It rained.").add("""[ TOP: h0 RELS: < [ _rain_v_1<3:10> LBL: h1 ARG0: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]""")
+            doc_unk.new("Some dog barks.").add("""[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:15> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]""")
+            doc_unk.new("Some dog barked.").add("""[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:16> LBL: h3 ARG0: e5 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]""")
+            doc_unk.new("Some dog has been barking.").add("""[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<18:26> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: + PERF: + ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]""")
             for sent in doc_unk:
                 self.db.save_sent(sent, ctx=ctx)
             unk_sents = self.db.get_sents(docID=doc_unk.ID, ctx=ctx)

@@ -1,44 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Script for testing coolisf library
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-    --
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import unittest
@@ -86,7 +55,7 @@ class TestData(object):
         self.partial_named = self.get_partial_named()
 
     def get_sent(self):
-        m = '''[ TOP: h0
+        m = """[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ pron<0:2> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg GEND: n PT: std ] ]
           [ pronoun_q<0:2> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
@@ -97,7 +66,7 @@ class TestData(object):
           [ udef_q<13:18> LBL: h16 ARG0: x15 RSTR: h17 BODY: h18 ]
           [ _guard_n_1<13:18> LBL: h19 ARG0: x15 ]
           [ _dog_n_1<19:23> LBL: h12 ARG0: x8 ] >
-  HCONS: < h0 qeq h1 h6 qeq h4 h10 qeq h12 h17 qeq h19 > ]'''
+  HCONS: < h0 qeq h1 h6 qeq h4 h10 qeq h12 h17 qeq h19 > ]"""
         sent = Sentence('It is a blue guard dog.')
         sent.add(m)
         return sent
@@ -106,29 +75,29 @@ class TestData(object):
         return self.get_guard_dog()
 
     def get_guard_dog(self):
-        m = '''[ TOP: h0 RELS: < [ compound<0:9> LBL: h1 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ARG1: x6 [ x IND: + NUM: sg PERS: 3 ] ARG2: x5 [ x IND: + PT: notpro ] ]
+        m = """[ TOP: h0 RELS: < [ compound<0:9> LBL: h1 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ARG1: x6 [ x IND: + NUM: sg PERS: 3 ] ARG2: x5 [ x IND: + PT: notpro ] ]
           [ udef_q<0:5> LBL: h2 ARG0: x5 RSTR: h7 ]
           [ _guard_n_1<0:5> LBL: h3 ARG0: x5 ]
           [ _dog_n_1<6:9> LBL: h1 ARG0: x6 ] >
-  HCONS: < h0 qeq h1 h7 qeq h3 > ]'''
+  HCONS: < h0 qeq h1 h7 qeq h3 > ]"""
         sent = Sentence("guard dog")
         sent.add(m)
         return sent
 
     def get_green_tea(self):
-        m = '''[ TOP: h0
+        m = """[ TOP: h0
   INDEX: e2 [ e SF: prop-or-ques ]
   RELS: < [ unknown<0:9> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg ] ARG0: e2 ]
           [ udef_q<0:9> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ]
           [ _green_a_2<0:5> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x4 ]
           [ _tea_n_1<6:9> LBL: h8 ARG0: x4 ] >
-  HCONS: < h0 qeq h1 h6 qeq h8 > ]'''
+  HCONS: < h0 qeq h1 h6 qeq h8 > ]"""
         sent = Sentence("green tea")
         sent.add(m)
         return sent
 
     def get_named(self):
-        m = '''[ TOP: h0
+        m = """[ TOP: h0
   INDEX: e2 [ e SF: prop-or-ques ]
   RELS: < [ unknown<0:20> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg IND: + ] ARG0: e2 ]
           [ proper_q<0:20> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ]
@@ -139,13 +108,13 @@ class TestData(object):
           [ named<0:7> LBL: h20 ARG0: x16 CARG: "Francis" ]
           [ named<8:15> LBL: h14 ARG0: x10 CARG: "Charles" ]
           [ named<16:20> LBL: h8 ARG0: x4 CARG: "Bond" ] >
-  HCONS: < h0 qeq h1 h6 qeq h8 h12 qeq h14 h18 qeq h20 > ]'''
+  HCONS: < h0 qeq h1 h6 qeq h8 h12 qeq h14 h18 qeq h20 > ]"""
         sent = Sentence("Francis Charles Bond")
         sent.add(m)
         return sent
 
     def get_partial_named(self):
-        m = '''[ TOP: h0
+        m = """[ TOP: h0
   INDEX: e2 [ e SF: prop-or-ques ]
   RELS: < [ unknown<0:28> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg IND: + ] ARG0: e2 ]
           [ _the_q<0:3> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ]
@@ -153,7 +122,7 @@ class TestData(object):
           [ _of_p<18:20> LBL: h8 ARG0: e10 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x4 ARG2: x11 [ x PERS: 3 NUM: sg IND: + ] ]
           [ proper_q<21:28> LBL: h12 ARG0: x11 RSTR: h13 BODY: h14 ]
           [ named<21:28> LBL: h15 ARG0: x11 CARG: "America" ] >
-  HCONS: < h0 qeq h1 h6 qeq h8 h13 qeq h15 > ]'''
+  HCONS: < h0 qeq h1 h6 qeq h8 h13 qeq h15 > ]"""
         sent = Sentence("the United_States of America")
         sent.add(m)
         return sent
@@ -228,7 +197,7 @@ class TestTransformer(unittest.TestCase):
         head.pred.lemma = "guard+dog"
         ded.delete(comp, 10001, 10002)
         ded.save()
-        expected = '''<dmrs cfrom="-1" cto="-1"><node cfrom="0" cto="9" nodeid="10003"><realpred lemma="guard+dog" pos="n" sense="1"/><sortinfo cvarsort="x" ind="+" num="sg" pers="3"/></node><link from="0" to="10003"><rargname/><post>H</post></link></dmrs>'''
+        expected = """<dmrs cfrom="-1" cto="-1"><node cfrom="0" cto="9" nodeid="10003"><realpred lemma="guard+dog" pos="n" sense="1"/><sortinfo cvarsort="x" ind="+" num="sg" pers="3"/></node><link from="0" to="10003"><rargname/><post>H</post></link></dmrs>"""
         actual = sent[0].dmrs().xml_str()
         self.assertEqual(actual, expected)
         expected = '[ TOP: h0 RELS: < [ _guard+dog_n_1<0:9> LBL: h1 ARG0: x2 [ x NUM: sg PERS: 3 IND: + ] ] > HCONS: < h0 qeq h1 > ]'
@@ -262,7 +231,7 @@ class TestTransformer(unittest.TestCase):
         self.assertEqual(head.carg, "Francis Charles Bond")
 
     def test_transforming(self):
-        ''' Use a rule to transform a sub DMRS into a pred '''
+        """ Use a rule to transform a sub DMRS into a pred """
         se = self.data.get_sent().edit(0)
         comp = self.data.get_comp_rule()
         for m in comp.match(se):
@@ -271,7 +240,7 @@ class TestTransformer(unittest.TestCase):
 
     def test_green_tea(self):
         sent = Sentence("I like green tea.")
-        sent.add('''[ TOP: h0 RELS: < [ pron<0:1> LBL: h1 ARG0: x6 [ x IND: + NUM: sg PERS: 1 PT: std ] ] [ pronoun_q<0:1> LBL: h2 ARG0: x6 RSTR: h10 ] [ _like_v_1<2:6> LBL: h3 ARG0: e7 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: pres ] ARG1: x6 ARG2: x9 [ x NUM: sg PERS: 3 ] ] [ udef_q<7:17> LBL: h4 ARG0: x9 RSTR: h11 ] [ _green_a_2<7:12> LBL: h5 ARG0: e8 [ e MOOD: indicative PERF: - PROG: bool SF: prop TENSE: untensed ] ARG1: x9 ] [ _tea_n_1<13:17> LBL: h5 ARG0: x9 ] > HCONS: < h0 qeq h3 h10 qeq h1 h11 qeq h5 > ]''')
+        sent.add("""[ TOP: h0 RELS: < [ pron<0:1> LBL: h1 ARG0: x6 [ x IND: + NUM: sg PERS: 1 PT: std ] ] [ pronoun_q<0:1> LBL: h2 ARG0: x6 RSTR: h10 ] [ _like_v_1<2:6> LBL: h3 ARG0: e7 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: pres ] ARG1: x6 ARG2: x9 [ x NUM: sg PERS: 3 ] ] [ udef_q<7:17> LBL: h4 ARG0: x9 RSTR: h11 ] [ _green_a_2<7:12> LBL: h5 ARG0: e8 [ e MOOD: indicative PERF: - PROG: bool SF: prop TENSE: untensed ] ARG1: x9 ] [ _tea_n_1<13:17> LBL: h5 ARG0: x9 ] > HCONS: < h0 qeq h3 h10 qeq h1 h11 qeq h5 > ]""")
         trans = Transformer(ruledb_path=None)
         trans.apply(sent)
         preds = set(sent[0].dmrs().preds())
@@ -280,7 +249,7 @@ class TestTransformer(unittest.TestCase):
         # with a compound
 
     def test_all(self):
-        parse = Reading('''[ TOP: h0
+        parse = Reading("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ proper_q<0:20> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg IND: + ] RSTR: h5 BODY: h6 ]
           [ compound<0:20> LBL: h7 ARG0: e8 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x3 ARG2: x9 [ x PERS: 3 NUM: sg IND: + PT: notpro ] ]
@@ -296,7 +265,7 @@ class TestTransformer(unittest.TestCase):
           [ udef_q<27:32> LBL: h30 ARG0: x29 RSTR: h31 BODY: h32 ]
           [ _guard_n_1<27:32> LBL: h33 ARG0: x29 ]
           [ _dog_n_1<33:38> LBL: h27 ARG0: x23 ] >
-  HCONS: < h0 qeq h1 h5 qeq h7 h11 qeq h13 h18 qeq h20 h25 qeq h27 h31 qeq h33 > ]''')
+  HCONS: < h0 qeq h1 h5 qeq h7 h11 qeq h13 h18 qeq h20 h25 qeq h27 h31 qeq h33 > ]""")
         optimus = Transformer(ruledb_path=None)
         optimus.apply(parse)
         preds = set(parse.dmrs().preds())
@@ -313,7 +282,7 @@ class TestTransformer(unittest.TestCase):
         return {frozenset(n.predstr for n in v) for k, v in adj_list.items() if len(v) > 1}
 
     def test_adjacent(self):
-        ''' Generate a list of predicates that are adjacent '''
+        """ Generate a list of predicates that are adjacent """
         p = self.ERG.parse('green tea').edit(0)
         adj_list = p.adjacent_nodes()
         expected = {frozenset({'_green_a_2', '_tea_n_1'})}
@@ -400,11 +369,11 @@ class TestTransformer(unittest.TestCase):
         optimus.apply(d)
 
     def test_subgraph(self):
-        g1 = '''[ TOP: h0
+        g1 = """[ TOP: h0
   RELS: < [ unknown<0:12> LBL: h1 ARG: x5 [ x NUM: pl PERS: 3 IND: + ] ARG0: e4 [ e SF: prop-or-ques ] ]
           [ udef_q<0:4> LBL: h2 ARG0: x5 RSTR: h6 ]
           [ _five+finger_n_1<0:12> LBL: h3 ARG0: x5 ] >
-  HCONS: < h0 qeq h1 h6 qeq h3 > ]'''
+  HCONS: < h0 qeq h1 h6 qeq h3 > ]"""
 
     def test_optimus_rule_db(self):
         optimus = Transformer()
@@ -417,7 +386,7 @@ class TestTransformer(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_transform_darklantern(self):
-        r = Reading('''[ TOP: h0
+        r = Reading("""[ TOP: h0
   RELS: < [ person<0:7> LBL: h1 ARG0: x8 [ x NUM: sg PERS: 3 ] ]
           [ _some_q<0:7> LBL: h2 ARG0: x8 RSTR: h15 ]
           [ _in_p_loc<8:10> LBL: h1 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x8 ARG2: x11 [ x NUM: sg PERS: 3 IND: + ] ]
@@ -428,7 +397,7 @@ class TestTransformer(unittest.TestCase):
           [ _a_q<33:34> LBL: h6 ARG0: x14 RSTR: h17 ]
           [ _dark_a_1<35:40> LBL: h7 ARG0: e13 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x14 ]
           [ _lantern_n_1<40:48> LBL: h7 ARG0: x14 ] >
-  HCONS: < h0 qeq h5 h15 qeq h1 h16 qeq h4 h17 qeq h7 > ]''')
+  HCONS: < h0 qeq h5 h15 qeq h1 h16 qeq h4 h17 qeq h7 > ]""")
         getLogger().debug("Adjacent: {}".format(r.dmrs().layout.adjacent_nodes()))
         optimus = Transformer()
         # test matching preds
@@ -440,7 +409,7 @@ class TestTransformer(unittest.TestCase):
         getLogger().debug("Final: {}".format(r.dmrs().layout.nodes))
 
     def test_long_sentence(self):
-        r = Reading('''[ TOP: h0
+        r = Reading("""[ TOP: h0
   RELS: < [ part_of<3:6> LBL: h1 ARG0: x25 [ x NUM: pl PERS: 3 ] ARG1: x27 [ x NUM: pl PERS: 3 IND: + ] ]
           [ _all_q<3:6> LBL: h2 ARG0: x25 RSTR: h49 ]
           [ _these_q_dem<7:12> LBL: h3 ARG0: x27 RSTR: h50 ]
@@ -476,7 +445,7 @@ class TestTransformer(unittest.TestCase):
           [ proper_q<179:191> LBL: h23 ARG0: x48 RSTR: h61 ]
           [ named<179:191> LBL: h24 ARG0: x48 CARG: "Stoke Moran" ] >
   HCONS: < h0 qeq h5 h49 qeq h1 h50 qeq h4 h51 qeq h8 h52 qeq h6 h53 qeq h9 h54 qeq h10 h55 qeq h12 h56 qeq h14 h57 qeq h15 h58 qeq h18 h59 qeq h20 h60 qeq h22 h61 qeq h24 > ]
-''')
+""")
         optimus = Transformer()
         rules = optimus.find_rules(r.dmrs().layout.nodes, limit=100)
         with TextReport.null() as outfile:
@@ -521,10 +490,10 @@ class TestMain(unittest.TestCase):
 
     def test_models(self):
         raw_text = 'It rains.'
-        raw_mrs = '''[ TOP: h0
+        raw_mrs = """[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
-  HCONS: < h0 qeq h1 > ]'''
+  HCONS: < h0 qeq h1 > ]"""
         sent = Sentence(raw_text, 1)
         sent.add(raw_mrs)
         self.assertEqual(sent.text, raw_text)
@@ -684,7 +653,7 @@ class TestMain(unittest.TestCase):
         self.assertIn('雨 が 降る', texts)
 
     def test_mrs_xml(self):
-        mrs = '''[ TOP: h0
+        mrs = """[ TOP: h0
   RELS: < [ def_explicit_q_rel<0:3> LBL: h1 ARG0: x12 [ x NUM: sg IND: + PERS: 3 ] RSTR: h17 ]
           [ poss_rel<0:3> LBL: h2 ARG0: e10 [ e MOOD: indicative PERF: - SF: prop PROG: - TENSE: untensed ] ARG1: x12 ARG2: x11 [ x NUM: sg PT: std PERS: 1 ] ]
           [ pronoun_q_rel<0:3> LBL: h3 ARG0: x11 RSTR: h18 ]
@@ -697,7 +666,7 @@ class TestMain(unittest.TestCase):
           [ named_rel<12:20> LBL: h9 ARG0: x15 CARG: "Sherlock" ]
           [ named_rel<21:28> LBL: h7 ARG0: x16 CARG: "Holmes" ] >
   HCONS: < h0 qeq h5 h17 qeq h2 h18 qeq h4 h19 qeq h7 h20 qeq h9 > ]
-'''
+"""
         sent = Sentence()
         sent.add(mrs)
         sent.add(dmrs_xml=sent[0].dmrs().xml_str())
