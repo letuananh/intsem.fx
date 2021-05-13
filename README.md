@@ -110,4 +110,4 @@ The final data folder should look something like this
 ├── lexrules.db
 ```
 
-If you encounter any issue, please submit an issue at: https://github.com/letuananh/intsem.fx/issues
+If you encounter any problems or difficulties, please submit a ticket for support at: https://github.com/letuananh/intsem.fx/issues
