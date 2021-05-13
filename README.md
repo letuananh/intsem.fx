@@ -32,7 +32,7 @@ dmrs {
 ```
 
 For batch processing, create a text file with each sentence on a separate line.
-For example here is the content of the file `sample.txt`
+For example here is the content of the file `demo.txt`
 
 ```
 I drink green tea.
