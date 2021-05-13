@@ -1,39 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Utility functions
+"""
 
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-References:
-    ACE:
-        http://moin.delph-in.net/AceOptions
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import re
@@ -60,10 +33,10 @@ def getLogger():
 # ----------------------------------------------------------------------
 
 def read_ace_output(ace_output_file, top1dmrs=False):
-    ''' Read output file from ACE batch mode
+    """ Read output file from ACE batch mode
     Sample command: ace -g grammar.dat infile.txt > outfile.txt
     Read more: http://moin.delph-in.net/AceOptions
-    '''
+    """
     getLogger().info("Reading parsed MRS from %s..." % (ace_output_file,))
     c = Counter()
     items = []

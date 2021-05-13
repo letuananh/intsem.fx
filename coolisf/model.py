@@ -1,35 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 ISF data models
+"""
 
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import copy
 import json
@@ -76,9 +53,9 @@ def getLogger():
 # ----------------------------------------------------------------------
 
 class Corpus(object):
-    '''
+    """
     A corpus wrapper
-    '''
+    """
     def __init__(self, name='', title='', ID=None):
         self.ID = ID
         self.name = name
@@ -87,7 +64,7 @@ class Corpus(object):
         pass
 
     def new(self, name):
-        ''' Create a new document and add it to this corpus '''
+        """ Create a new document and add it to this corpus """
         doc = Document(name=name)
         doc.corpusID = self.ID
         self.documents.append(doc)
@@ -125,7 +102,7 @@ class Document(object):
         pass
 
     def add(self, sent):
-        ''' Add a sentence '''
+        """ Add a sentence """
         sent.docID = self.ID
         sent.doc = self
         if sent.ID:
@@ -208,7 +185,7 @@ class Document(object):
 
     @staticmethod
     def from_xml_node(doc_node, idents=None):
-        ''' Read sentences from an XML node object '''
+        """ Read sentences from an XML node object """
         logger = getLogger()
         doc = Document(name=get_attr(doc_node, 'name', ''), title=get_attr(doc_node, 'title', ''))
         doc.ident = get_attr(doc_node, 'ident', None)
@@ -298,7 +275,7 @@ class Sentence(object):
 
     @shallow.setter
     def shallow(self, tagged_sent):
-        ''' Import a TTL sentence as human annotations '''
+        """ Import a TTL sentence as human annotations """
         self._shallow = tagged_sent
         # add words
         word_map = {}
@@ -332,7 +309,7 @@ class Sentence(object):
         return self.flag == Sentence.WARNING
 
     def add(self, mrs_str=None, dmrs_xml=None, dmrs_str=None):
-        ''' Add a new reading to this sentence '''
+        """ Add a new reading to this sentence """
         r = Reading(mrs_str, dmrs_xml, self)
         if dmrs_str is not None:
             j = parse_dmrs_str(dmrs_str)
@@ -343,11 +320,11 @@ class Sentence(object):
         return r
 
     def __getitem__(self, key):
-        ''' Get a reading by index '''
+        """ Get a reading by index """
         return self.readings[key]
 
     def __len__(self):
-        ''' Total readings '''
+        """ Total readings """
         return len(self.readings)
 
     def __iter__(self):
@@ -541,8 +518,8 @@ class MRS(object):
         return self._raw
 
     def obj(self):
-        ''' Get pydelphin MRS object
-        '''
+        """ Get pydelphin MRS object
+        """
         if self._obj is None:
             self._obj = simplemrs.loads_one(self._raw)
         return self._obj
@@ -554,7 +531,7 @@ class MRS(object):
         return Mrs.to_dict(self.obj(), properties=True)
 
     def json_str(self):
-        '''MRS data in JSON format'''
+        """MRS data in JSON format"""
         return json.dumps(self.json(), ensure_ascii=False)
 
     def to_dmrs(self, with_raw=False):
@@ -568,7 +545,7 @@ class MRS(object):
         return DMRS(etree.tostring(dmrs_node).decode('utf-8'), reading=self.reading)
 
     def tostring(self, pretty_print=True):
-        '''prettified MRS string'''
+        """prettified MRS string"""
         return simplemrs.dumps_one(self.obj(), pretty_print=pretty_print)
 
     def __str__(self):
@@ -648,7 +625,7 @@ class DMRS(object):
             return self.reading.sent.text[int(node.cfrom):int(node.cto)]
 
     def preds(self):
-        ''' Get all pred strings '''
+        """ Get all pred strings """
         return [normalize_pred_string(x.pred.string) for x in self.obj().eps()]
 
     def clear(self):
@@ -718,15 +695,15 @@ class DMRS(object):
         return j
 
     def json_str(self):
-        '''DMRS data in JSON format'''
+        """DMRS data in JSON format"""
         try:
             return json.dumps(self.json(), ensure_ascii=False)
         except:
             return None
 
     def obj(self):
-        ''' Get pydelphin DMRS object
-        '''
+        """ Get pydelphin DMRS object
+        """
         if self._obj is None:
             xml_str = '<dmrs-list>{}</dmrs-list>'.format(self.xml_str())
             mrses = []
@@ -748,7 +725,7 @@ class DMRS(object):
         return MRS(mrs_str, reading=self.reading)
 
     def tostring(self, pretty_print=True):
-        '''prettified DMRS string'''
+        """prettified DMRS string"""
         return simpledmrs.dumps_one(self.obj(), pretty_print=pretty_print)
 
     def __str__(self):
@@ -759,7 +736,7 @@ class DMRS(object):
     # -------------------------------
 
     def find_tags(self):
-        ''' Find all available sense tags that are stored in XML'''
+        """ Find all available sense tags that are stored in XML"""
         root = self.xml()
         if root is not None:
             tags = dd(list)
@@ -791,9 +768,9 @@ class DMRS(object):
         return self.tags
 
     def tag(self, method=ttl.Tag.MFS, wsd=None, strict=False, ctx=None):
-        ''' Sense tag this DMRS using a WSD method (by default is most-frequent sense)
+        """ Sense tag this DMRS using a WSD method (by default is most-frequent sense)
         and then return a map from nodeid to a list of tuples in this format (Synset, sensetype=str)
-        '''
+        """
         if method not in (ttl.Tag.LELESK, ttl.Tag.MFS):
             return {}  # no tag
         if wsd is None:
@@ -832,8 +809,8 @@ class DMRS(object):
         return self.tags
 
     def tag_xml(self, method=ttl.Tag.MFS, update_back=False, **kwargs):
-        ''' Generate an XML object with available tags
-        (perform provided sense-tagging method if required) '''
+        """ Generate an XML object with available tags
+        (perform provided sense-tagging method if required) """
         # Sense-tagging only if required
         if method is None or method in self.tagged:
             # 1 method will only be performed once
@@ -882,7 +859,7 @@ class DMRS(object):
             self.tags[nodeid].append(sensetag)
 
     def get_wsd_context(self):
-        ''' All lemmas from predicates '''
+        """ All lemmas from predicates """
         return (get_ep_lemma(p) for p in self.get_lexical_preds())
 
     def is_known_gpred(self, pred):
@@ -904,7 +881,7 @@ class DMRS(object):
         return preds
 
     def tokenize_pos(self, strict=False):
-        ''' Convert a DMRS to a token list with POS '''
+        """ Convert a DMRS to a token list with POS """
         token_list = []
         for ep in self.get_lexical_preds(strict=strict):
             pos = PredSense.get_wn_pos(ep)
@@ -1180,7 +1157,7 @@ class Node(object):
         return self.predstr == 'udef_q'
 
     def to_string(self):
-        ''' node to parsable string format '''
+        """ node to parsable string format """
         if self.gpred:
             pred = self.gpred
         else:
@@ -1342,7 +1319,7 @@ class DMRSLayout(object):
 
     @property
     def to_string(self):
-        ''' To parsable string format (human friendly)'''
+        """ To parsable string format (human friendly)"""
         nodes = [n.to_string() for n in self.nodes if str(n.nodeid) != '0']
         links = [l.to_string() for l in self.links]
         return "dmrs {{\n{nl}\n}} ".format(ident=self.ident, cfrom=self.cfrom, to=self.cto, surface=self.surface, nl=';\n'.join(nodes + links))
@@ -1415,13 +1392,13 @@ class DMRSLayout(object):
         return self
 
     def delete_sub(self, sub):
-        ''' Delete a subgraph except its head'''
+        """ Delete a subgraph except its head"""
         sub_head = self[sub.top.nodeid]
         sub_nodes = [n for n in sub.nodes if sub_head and n.nodeid != sub_head.nodeid]
         self.delete(*sub_nodes)
 
     def adjacent_nodes(self):
-        ''' Generate a set of preds that are adjacent '''
+        """ Generate a set of preds that are adjacent """
         adj_list = dd(list)
         for n in self.nodes:
             # ignore RSTR
@@ -1518,8 +1495,8 @@ class DMRSLayout(object):
 
     @staticmethod
     def from_xml(dmrs_tag):
-        ''' Get DMRS from XML node
-        '''
+        """ Get DMRS from XML node
+        """
         dmrs = DMRSLayout()
         dmrs.ident = get_attr(dmrs_tag.attrib, 'ident', '')
         dmrs.cfrom = get_attr(dmrs_tag.attrib, 'cfrom', '')

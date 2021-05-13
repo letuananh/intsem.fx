@@ -1,41 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Script for testing coolisf models
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import unittest
 import logging
@@ -80,13 +52,13 @@ class TestSentenceModel(unittest.TestCase):
         header("Test model")
         doc = Document("test")
         s = doc.new("It rains.")
-        s.add('''[ TOP: h0
+        s.add("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
-  HCONS: < h0 qeq h1 > ]''')
+  HCONS: < h0 qeq h1 > ]""")
         # test full work flow:
         #   mrs_str > dmrs() > xml > layout > dmrs > mrs > mrs_str
-        expected = '''[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]'''
+        expected = """[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]"""
         actual = DMRSLayout.from_xml(s[0].edit().to_dmrs().xml()).to_dmrs().to_mrs().tostring(False)
         self.assertEqual(actual, expected)
         # Test different formats
@@ -97,10 +69,10 @@ class TestSentenceModel(unittest.TestCase):
 
     def test_convert(self):
         print("Test convert DMRSLayout to and from XML")
-        dmrs = Reading('''[ TOP: h0
+        dmrs = Reading("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
-  HCONS: < h0 qeq h1 > ]''').dmrs()
+  HCONS: < h0 qeq h1 > ]""").dmrs()
         layout = DMRSLayout.from_xml(dmrs.xml())
         self.assertEqual(dmrs.layout.to_json(), layout.to_json())
 
@@ -125,28 +97,28 @@ class TestSentenceModel(unittest.TestCase):
         self.assertTrue(sent.to_xml_str())
 
     def test_to_latex(self):
-        dmrs = Reading('''[ TOP: h0
+        dmrs = Reading("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
-  HCONS: < h0 qeq h1 > ]''').dmrs()
+  HCONS: < h0 qeq h1 > ]""").dmrs()
         print(dmrs.latex())
 
     def test_sent2json(self):
         sent = Sentence('It rains.')
-        sent.add('''[ TOP: h0
+        sent.add("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
-  HCONS: < h0 qeq h1 > ]''')
+  HCONS: < h0 qeq h1 > ]""")
         j = sent2json(sent)
         print(j)
 
     def test_xml_encoding(self):
         print("Test XML to and from Sentence")
         sent = Sentence('It rains.')
-        sent.add('''[ TOP: h0
+        sent.add("""[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 ] >
-  HCONS: < h0 qeq h1 > ]''').dmrs()
+  HCONS: < h0 qeq h1 > ]""").dmrs()
         sent.tag_xml(method=ttl.Tag.MFS)
         full_xml = sent.to_xml_str()
         compact_xml = sent.to_xml_str(pretty_print=False, with_dmrs=False)
@@ -167,11 +139,11 @@ class TestDMRSModel(unittest.TestCase):
 
     def test_doc_xml(self):
         doc = Document("test")
-        doc.new("It rains.", ident="1000").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
-        doc.new("It rained.", ident="1010").add('''[ TOP: h0 RELS: < [ _rain_v_1<3:10> LBL: h1 ARG0: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]''')
-        doc.new("Some dog barks.", ident="1020").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:15> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
-        doc.new("Some dog barked.", ident="1030").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:16> LBL: h3 ARG0: e5 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
-        doc.new("Some dog has been barking.", ident="1040").add('''[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<18:26> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: + PERF: + ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]''')
+        doc.new("It rains.", ident="1000").add("""[ TOP: h0 RELS: < [ _rain_v_1<3:9> LBL: h1 ARG0: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]""")
+        doc.new("It rained.", ident="1010").add("""[ TOP: h0 RELS: < [ _rain_v_1<3:10> LBL: h1 ARG0: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ] > HCONS: < h0 qeq h1 > ]""")
+        doc.new("Some dog barks.", ident="1020").add("""[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:15> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]""")
+        doc.new("Some dog barked.", ident="1030").add("""[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<9:16> LBL: h3 ARG0: e5 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]""")
+        doc.new("Some dog has been barking.", ident="1040").add("""[ TOP: h0 RELS: < [ _some_q_indiv<0:4> LBL: h1 ARG0: x4 [ x NUM: sg PERS: 3 IND: + ] RSTR: h6 ] [ _dog_n_1<5:8> LBL: h2 ARG0: x4 ] [ _bark_v_1<18:26> LBL: h3 ARG0: e5 [ e SF: prop TENSE: pres MOOD: indicative PROG: + PERF: + ] ARG1: x4 ] > HCONS: < h0 qeq h3 h6 qeq h2 > ]""")
         idents = [s.ident for s in doc]
         dstr = doc.to_xml_str(pretty_print=False, with_dmrs=False)
         # convert XML string into a new document object
@@ -183,7 +155,7 @@ class TestDMRSModel(unittest.TestCase):
         self.assertEqual(idents, idents2)
 
     def test_wsd(self):
-        r = Reading('''[ TOP: h0 INDEX: e2 [ e SF: prop-or-ques ] RELS: < [ unknown_rel<0:34> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg ] ARG0: e2 ] [ _the_q_rel<0:3> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ] [ "_adventure_n_1_rel"<4:13> LBL: h8 ARG0: x4 ] [ _of_p_rel<14:16> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x4 ARG2: x10 [ x PERS: 3 NUM: sg ] ] [ _the_q_rel<17:20> LBL: h11 ARG0: x10 RSTR: h12 BODY: h13 ] [ "_speckled/JJ_u_unknown_rel"<21:29> LBL: h14 ARG0: e15 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x10 ] [ "_band_n_1_rel"<30:34> LBL: h14 ARG0: x10 ] > HCONS: < h0 qeq h1 h6 qeq h8 h12 qeq h14 > ]''')
+        r = Reading("""[ TOP: h0 INDEX: e2 [ e SF: prop-or-ques ] RELS: < [ unknown_rel<0:34> LBL: h1 ARG: x4 [ x PERS: 3 NUM: sg ] ARG0: e2 ] [ _the_q_rel<0:3> LBL: h5 ARG0: x4 RSTR: h6 BODY: h7 ] [ "_adventure_n_1_rel"<4:13> LBL: h8 ARG0: x4 ] [ _of_p_rel<14:16> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG1: x4 ARG2: x10 [ x PERS: 3 NUM: sg ] ] [ _the_q_rel<17:20> LBL: h11 ARG0: x10 RSTR: h12 BODY: h13 ] [ "_speckled/JJ_u_unknown_rel"<21:29> LBL: h14 ARG0: e15 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x10 ] [ "_band_n_1_rel"<30:34> LBL: h14 ARG0: x10 ] > HCONS: < h0 qeq h1 h6 qeq h8 h12 qeq h14 > ]""")
         context = list(r.dmrs().get_wsd_context())
         expected = ['the', 'adventure', 'of', 'the', 'speckled', 'band']
         self.assertEqual(expected, context)
@@ -191,7 +163,7 @@ class TestDMRSModel(unittest.TestCase):
 
 class TestDMRSLayout(unittest.TestCase):
 
-    sent = '''[ TOP: h0
+    sent = """[ TOP: h0
   INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
   RELS: < [ pron<0:2> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg GEND: n PT: std ] ]
           [ pronoun_q<0:2> LBL: h5 ARG0: x3 RSTR: h6 BODY: h7 ]
@@ -202,8 +174,8 @@ class TestDMRSLayout(unittest.TestCase):
           [ udef_q<13:18> LBL: h16 ARG0: x15 RSTR: h17 BODY: h18 ]
           [ _guard_n_1<13:18> LBL: h19 ARG0: x15 ]
           [ _dog_n_1<19:23> LBL: h12 ARG0: x8 ] >
-  HCONS: < h0 qeq h1 h6 qeq h4 h10 qeq h12 h17 qeq h19 > ]'''
-    guard_dog = '''[ TOP: h0 RELS: < [ compound<0:9> LBL: h1 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ARG1: x6 [ x IND: + NUM: sg PERS: 3 ] ARG2: x5 [ x IND: + PT: notpro ] ] [ udef_q<0:5> LBL: h2 ARG0: x5 RSTR: h7 ] [ _guard_n_1<0:5> LBL: h3 ARG0: x5 ] [ _dog_n_1<6:9> LBL: h1 ARG0: x6 ] > HCONS: < h0 qeq h1 h7 qeq h3 > ]'''
+  HCONS: < h0 qeq h1 h6 qeq h4 h10 qeq h12 h17 qeq h19 > ]"""
+    guard_dog = """[ TOP: h0 RELS: < [ compound<0:9> LBL: h1 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ARG1: x6 [ x IND: + NUM: sg PERS: 3 ] ARG2: x5 [ x IND: + PT: notpro ] ] [ udef_q<0:5> LBL: h2 ARG0: x5 RSTR: h7 ] [ _guard_n_1<0:5> LBL: h3 ARG0: x5 ] [ _dog_n_1<6:9> LBL: h1 ARG0: x6 ] > HCONS: < h0 qeq h1 h7 qeq h3 > ]"""
 
     def test_predicate(self):
         p = 'unknown'
@@ -246,7 +218,7 @@ class TestDMRSLayout(unittest.TestCase):
         self.assertEqual(preds, ['_guard_n_1_rel', '_dog_n_1_rel'])
 
     def test_edit_partial_dmrs(self):
-        r = Reading('''[ TOP: h0 RELS: < [ unknown<0:3> LBL: h1 ARG0: e2 [ e SF: prop-or-ques ] ] [ _yet_a_rel<0:3> LBL: h1 ARG0: e3 [ e MOOD: indicative SF: prop TENSE: untensed ] ARG1: e2 ] > HCONS: < h0 qeq h1 > ]''')
+        r = Reading("""[ TOP: h0 RELS: < [ unknown<0:3> LBL: h1 ARG0: e2 [ e SF: prop-or-ques ] ] [ _yet_a_rel<0:3> LBL: h1 ARG0: e3 [ e MOOD: indicative SF: prop TENSE: untensed ] ARG1: e2 ] > HCONS: < h0 qeq h1 > ]""")
         l = r.dmrs().layout
         l.delete(l.head())
         self.assertEqual(l.to_dmrs().preds(), ['_yet_a_rel'])
@@ -263,7 +235,7 @@ class TestDMRSLayout(unittest.TestCase):
         self.assertEqual(se.top.predstr, "_dog_n_1")
 
     def test_shift_head(self):
-        l = Reading('''[ TOP: h0 RELS: < [ unknown<0:6> LBL: h1 ARG0: e3 [ e SF: prop-or-ques ] ] [ _bare_a_1_rel<0:6> LBL: h2 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ] > HCONS: < h0 qeq h1 > ]''').dmrs().layout
+        l = Reading("""[ TOP: h0 RELS: < [ unknown<0:6> LBL: h1 ARG0: e3 [ e SF: prop-or-ques ] ] [ _bare_a_1_rel<0:6> LBL: h2 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ] > HCONS: < h0 qeq h1 > ]""").dmrs().layout
         l.delete(l.head())  # delete unknown_rel
         self.assertIsNone(l.head())  # head should be empty now
         l.add_link(Link(0, 10001, '', 'H'))  # top point to _bare_a_1
@@ -276,11 +248,11 @@ class TestDMRSLayout(unittest.TestCase):
         g = sed.top.to_graph()
         self.assertEqual(g, Triplet(name='_dog_n_1', in_links=frozenset({('ARG1/EQ', Triplet(name='compound', in_links=frozenset(), out_links=frozenset({('ARG2/NEQ', Triplet(name='_guard_n_1', in_links=frozenset({('RSTR/H', Triplet(name='udef_q', in_links=frozenset(), out_links=frozenset()))}), out_links=frozenset()))})))}), out_links=None))
         # make+a+face graph
-        d = Reading('''[ TOP: h0
+        d = Reading("""[ TOP: h0
   RELS: < [ _make_v_1<0:4> LBL: h1 ARG0: e4 [ e SF: prop TENSE: untensed MOOD: indicative PROG: - PERF: - ] ARG2: x5 [ x NUM: sg PERS: 3 IND: + ] ]
           [ _a_q<5:6> LBL: h2 ARG0: x5 RSTR: h6 ]
           [ _face_n_1<7:11> LBL: h3 ARG0: x5 ] >
-  HCONS: < h0 qeq h1 h6 qeq h3 > ]''').dmrs().layout
+  HCONS: < h0 qeq h1 h6 qeq h3 > ]""").dmrs().layout
         h = d.head()
         g = h.to_graph(scan_outlinks=True)
         self.assertEqual(g, Triplet(name='_make_v_1', in_links=frozenset(), out_links=frozenset({('ARG2/NEQ', Triplet(name='_face_n_1', in_links=frozenset({('RSTR/H', Triplet(name='_a_q', in_links=frozenset(), out_links=frozenset()))}), out_links=frozenset()))})))

@@ -1,46 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Script for testing lexem module
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-    --
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import unittest
 import logging
@@ -56,7 +23,7 @@ from coolisf.mappings import PredSense
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-TEST_MRS = '''[ TOP: h0
+TEST_MRS = """[ TOP: h0
   RELS: < [ pron_rel<0:1> LBL: h1 ARG0: x20 [ x IND: + NUM: sg PERS: 1 PT: std ] ]
           [ pronoun_q_rel<0:1> LBL: h2 ARG0: x20 RSTR: h37 ]
           [ _send_v_1_rel<2:6> LBL: h3 ARG0: e21 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: past ] ARG1: x20 ARG2: x23 [ x IND: + NUM: pl PERS: 3 ] ARG3: h38 ]
@@ -81,7 +48,7 @@ TEST_MRS = '''[ TOP: h0
           [ udef_q_rel<78:84> LBL: h17 ARG0: x35 RSTR: h47 ]
           [ _people_n_of_rel<78:84> LBL: h18 ARG0: x35 ]
           [ _participate_v_in_rel<88:100> LBL: h19 ARG0: e36 [ e MOOD: indicative PERF: - PROG: - SF: prop-or-ques TENSE: untensed ] ARG1: x35 ] >
-  HCONS: < h0 qeq h15 h37 qeq h1 h38 qeq h6 h39 qeq h5 h40 qeq h8 h41 qeq h10 h42 qeq h12 h43 qeq h13 h44 qeq h3 h45 qeq h16 h46 qeq h19 h47 qeq h18 > ]'''
+  HCONS: < h0 qeq h15 h37 qeq h1 h38 qeq h6 h39 qeq h5 h40 qeq h8 h41 qeq h10 h42 qeq h12 h43 qeq h13 h44 qeq h3 h45 qeq h16 h46 qeq h19 h47 qeq h18 > ]"""
 
 
 def getLogger():

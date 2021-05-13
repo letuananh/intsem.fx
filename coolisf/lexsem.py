@@ -1,35 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Lexical semantic manipulator
+"""
 
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import logging
 
@@ -43,7 +20,7 @@ from yawlib import SynsetID
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 
-SPECIAL_CHARS = '''?!"'$-_&|.,;:“” '''
+SPECIAL_CHARS = """?!"'$-_&|.,;:“” """
 # TODO: Move this to chirptext
 PREPS = ['aboard', 'about', 'above', 'across', 'after', 'against', 'along', 'amid', 'among', 'anti', 'around', 'as', 'at', 'before', 'behind', 'below', 'beneath', 'beside', 'besides', 'between', 'beyond', 'but', 'by', 'concerning', 'considering', 'despite', 'down', 'during', 'except', 'excepting', 'excluding', 'following', 'for', 'from', 'in', 'inside', 'into', 'like', 'minus', 'near', 'of', 'off', 'on', 'onto', 'opposite', 'outside', 'over', 'past', 'per', 'plus', 'regarding', 'round', 'save', 'since', 'than', 'through', 'to', 'toward', 'towards', 'under', 'underneath', 'unlike', 'until', 'up', 'upon', 'versus', 'via', 'with', 'within', 'without', 'that']
 PREPS_PLUS = PREPS + ['a']
@@ -67,7 +44,7 @@ class Lexsem(object):
 
 
 def fix_tokenization(ep, sent_text=None):
-    ''' adjust cfrom, cto when a predicate is wrapped with special characters '''
+    """ adjust cfrom, cto when a predicate is wrapped with special characters """
     cfrom = ep.cfrom
     cto = ep.cto
     surface = sent_text[cfrom:cto] if sent_text is not None else ''
@@ -81,7 +58,7 @@ def fix_tokenization(ep, sent_text=None):
 
 
 def match(concept, ep, sent_text, mode=Lexsem.NAIVE, fix_token=True):
-    ''' Match concept (idv/MWE) with preds '''
+    """ Match concept (idv/MWE) with preds """
     if fix_token:
         cfrom, cto, surface = fix_tokenization(ep, sent_text)
     else:
@@ -187,9 +164,9 @@ def taggable_eps(eps, mode=Lexsem.ROBUST):
 
 
 def filter_small_senses(tagged):
-    ''' When a word is tagged with a MWE sense and an individual sense, ignore the individual one
+    """ When a word is tagged with a MWE sense and an individual sense, ignore the individual one
     tagged is an instance of ttl.Sentence
-    '''
+    """
     to_be_removed = set()
     msw = tagged.msw()
     wcl = tagged.tcmap()
@@ -228,11 +205,11 @@ def sort_eps(eps):
 
 
 def tag_gold(dmrs, tagged_sent, sent_text, mode=Lexsem.ROBUST, no_small_sense=True, fix_token=True, no_nonsense=False):
-    ''' Use a ttl.Sentence to tag a DMRS
+    """ Use a ttl.Sentence to tag a DMRS
     Results (matched, not_matched) in which
         matched => (concept, ep.nodeid, ep.pred)
         not_matched => a list of concepts
-    '''
+    """
     # filter small senses (< MWE) out
     ignored = []
     if no_small_sense:

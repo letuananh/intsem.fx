@@ -5,42 +5,11 @@
 Integrated Semantic Framework (coolisf) main application
 
 `coolisf` is read `kul-eye-es-ef` officially (sometimes kul-is-f)
-
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-References:
-    Python documentation:
-        https://docs.python.org/
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
 '''
 
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import logging
@@ -53,6 +22,7 @@ from texttaglib.chirptext import texttaglib as ttl
 from lelesk import LeLeskWSD
 from lelesk import LeskCache  # WSDResources
 
+from coolisf import __version__
 from coolisf.lexsem import Lexsem
 from coolisf.config import read_config, _get_config_manager
 from coolisf.common import write_file
@@ -68,8 +38,6 @@ from coolisf.model import Document
 from coolisf.dao.textcorpus import RawCollection
 from coolisf.mappings import PredSense
 
-
-########################################################################
 
 OUTPUT_DMRS = 'dmrs'
 OUTPUT_MRS = 'mrs'
@@ -406,7 +374,7 @@ def print_dict(a_dict, rp, indent=0):
 
 def show_isf_info(cli, args):
     rp = TextReport()
-    rp.header("coolisf - Python implementation of the intsem.fx (Integrated Semantic Framework)")
+    rp.header(f"coolisf - Python implementation of the Integrated Semantic Framework - Version {__version__}")
     config = read_config()  # make sure that the configuration file is created
     cfg_mgr = _get_config_manager()
     ghub = GrammarHub()
@@ -421,7 +389,7 @@ def show_isf_info(cli, args):
 
 
 # app instance
-app = CLIApp("CoolISF Main Application", logger=__name__, config_logging=isf_config_logging)
+app = CLIApp(f"coolisf - Integrated Semantic Framework - Version {__version__}", logger=__name__, config_logging=isf_config_logging)
 
 
 def make_task(name, func):

@@ -1,39 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Common functions
+"""
 
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-References:
-    ACE:
-        http://moin.delph-in.net/AceOptions
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import gzip
@@ -67,7 +40,7 @@ def read_file(file_path, mode='rt'):
 
 
 def write_file(content, path=None):
-    ''' Write content to a file, or to console if no path is provided '''
+    """ Write content to a file, or to console if no path is provided """
     if isinstance(content, str):
         mode = 'wt'
     else:
@@ -91,7 +64,7 @@ def overlap(cfrom1, cto1, cfrom2, cto2):
 
 
 def tags_to_concepts(sent):
-    ''' Take concepts from sentence-level tags and create token-level concepts '''
+    """ Take concepts from sentence-level tags and create token-level concepts """
     for tag in sent.tags:
         tokens = [tk for tk in sent.tokens if overlap(tag.cfrom, tag.cto, tk.cfrom, tk.cto)]
         if tokens:
@@ -100,7 +73,7 @@ def tags_to_concepts(sent):
 
 
 def get_ep_lemma(ep):
-    ''' Get lemma from a pyDelphin elementary predicate '''
+    """ Get lemma from a pyDelphin elementary predicate """
     # if ep.pred == 'named':
     if ep.carg:
         return ep.carg
