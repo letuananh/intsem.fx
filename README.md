@@ -1,11 +1,11 @@
-# Integrated Semantic Framework (intsem.fx)
+# Integrated Semantic Framework
 
 A Python 3 implementation of the [Integrated Semantic Framework](https://osf.io/9udjk/) that provides computational deep semantic analysis by combining structural semantics from construction grammars and lexical semantics from ontologies in a single representation.
 
 `coolisf` is only a back-end semantic parsing module that runs on command-line interaface or in Python programs.
 If you want a friendly graphical user interface, please use [visualkopasu](https://github.com/letuananh/visualkopasu/).
 
-# A quick glance
+## A quick glance
 
 To parse a sentence, use coolisf `text` command
 
@@ -41,13 +41,13 @@ A soul is not a living thing.
 Do you have any green tea chest?
 ```
 
-After that, run the following command and the output will be written to the file `demo_out.xml`
+After that, run the following `parse` command to analyse the text and write the output to `demo_out.xml`
 
 ```bash
 python -m coolisf parse demo.txt -o demo_out.xml
 ```
 
-In Python code
+Here is an example of using coolisf in a Python code
 
 ```python
 from coolisf import GrammarHub
@@ -79,7 +79,7 @@ dmrs {
 
 Fore more information, please refer to the documentation for coolisf at https://coolisf.readthedocs.io
 
-# Install
+## Install
 
 The `coolisf` package itself is available on [PyPI](https://pypi.org/project/coolisf/) can can be installed using pip
 
