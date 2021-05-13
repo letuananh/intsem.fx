@@ -81,12 +81,12 @@ Fore more information, please refer to the documentation for coolisf at https://
 
 ## Install
 
-The `coolisf` package itself is available on [PyPI](https://pypi.org/project/coolisf/) can can be installed using pip
+The `coolisf` package itself is available on [PyPI](https://pypi.org/project/coolisf/) and it can be installed using pip
 
 ```bash
 pip install coolisf
 ```
 
-However, to acquire all required components and data can be tricky. Please find version specific prerequisites and installation instructions on coolisf's [official Github release page](https://github.com/letuananh/intsem.fx/releases).
+However, it can be tricky to acquire all the required components and data. Please find version specific prerequisites and installation instructions on coolisf's [official Github release page](https://github.com/letuananh/intsem.fx/releases).
 
 If you encounter any problems or difficulties, please submit a ticket for support at: https://github.com/letuananh/intsem.fx/issues
