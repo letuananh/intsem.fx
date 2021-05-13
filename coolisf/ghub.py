@@ -1,43 +1,15 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Grammar helpers
+"""
 
-Latest version can be found at https://github.com/letuananh/intsem.fx
-
-References:
-    ACE:
-        http://moin.delph-in.net/AceOptions
-    Python documentation:
-        https://docs.python.org/
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
+# See also:
+# Ace: http://moin.delph-in.net/AceOptions
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import logging
 from delphin.interfaces import ace
@@ -93,7 +65,7 @@ class GrammarHub:
 
     @property
     def available(self):
-        ''' Available grammars and their friendly names '''
+        """ Available grammars and their friendly names """
         return {k: g['name'] for k, g in self.cfg['grammars'].items()}
 
     def __getattr__(self, name):
@@ -152,7 +124,7 @@ class GrammarHub:
         return sent2json(sent, txt, pc, tagger, grm)
 
     def parse(self, txt, grm, pc=None, tagger=None, ignore_cache=False, wsd=None, ctx=None):
-        ''' Parse a sentence using ISF '''
+        """ Parse a sentence using ISF """
         # validation
         if not txt:
             raise ValueError('Sentence cannot be empty')
@@ -183,7 +155,7 @@ class Grammar:
         self.posts = posts  # post-processors
 
     def generate(self, parse_obj):
-        ''' Generate text from coolisf.model.Parse object '''
+        """ Generate text from coolisf.model.Parse object """
         with ace.AceGenerator(self.gram_file, executable=self.ace_bin) as generator:
             response = generator.interact(str(parse_obj.mrs()))
             sents = []

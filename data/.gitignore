@@ -6,8 +6,6 @@ fix_gold.sql
 silver_*
 bm.txt
 bib.mrs.txt.skipped.txt
-lexdb.rev
-lexicon.tdl
 lexrules*
 chunks*
 *.dat

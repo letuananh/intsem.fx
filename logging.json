@@ -38,14 +38,14 @@
     },
 
     "loggers": {
-        "__main__": {"level": "INFO"}
-        ,"coolisf.gold_extract": {"level": "INFO"}
-        ,"isftk": {"level": "INFO"}
-        ,"coolisf.model": {"level": "INFO"}
-        ,"coolisf.lexsem": {"level": "INFO"}
-        ,"coolisf.morph": {"level": "INFO"}
-        ,"coolisf.mappings.predsense": {"level": "INFO"}
-        ,"puchikarui": { "leveL": "INFO"}
+        "__main__": {"level": "WARNING"}
+        ,"coolisf.gold_extract": {"level": "WARNING"}
+        ,"isftk": {"level": "WARNING"}
+        ,"coolisf.model": {"level": "WARNING"}
+        ,"coolisf.lexsem": {"level": "WARNING"}
+        ,"coolisf.morph": {"level": "WARNING"}
+        ,"coolisf.mappings.predsense": {"level": "WARNING"}
+        ,"puchikarui": { "leveL": "WARNING"}
         ,"lelesk": { "level": "WARNING" }
         ,"yawlib.glosswordnet": { "level": "WARNING" }
         ,"delphin.interfaces.ace": { "disabled": "yes", "propagate": "no" }

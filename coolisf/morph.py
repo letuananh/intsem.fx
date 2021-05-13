@@ -1,34 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 DMRS transforming utility
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import logging
@@ -88,7 +66,7 @@ class Integral(object):
 
     @staticmethod
     def merge_compound(comp_node, update_text=False):
-        ''' Compound -> single pred '''
+        """ Compound -> single pred """
         arg1 = comp_node['ARG1']
         arg2 = comp_node['ARG2']
         if arg1.cto == comp_node.cto and arg2.cfrom == comp_node.cfrom and arg2.cto + 1 == arg1.cfrom:
@@ -182,7 +160,7 @@ class Compound(object):
         return dmrs
 
     def transform(self, dmrs, sub):
-        ''' subgraph -> pred '''
+        """ subgraph -> pred """
         head = dmrs[sub.top.nodeid]
         # update lemma
         head.pred.lemma = self.lemma
@@ -291,27 +269,27 @@ class Transformer(object):
 
     def get_guard_dog(self):
         # [TODO] rules should not be hardcoded
-        s = Reading('''[ TOP: h0 RELS: < [ compound<0:9> LBL: h1 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ARG1: x6 [ x IND: + NUM: sg PERS: 3 ] ARG2: x5 [ x IND: + PT: notpro ] ]
+        s = Reading("""[ TOP: h0 RELS: < [ compound<0:9> LBL: h1 ARG0: e4 [ e MOOD: indicative PERF: - PROG: - SF: prop TENSE: untensed ] ARG1: x6 [ x IND: + NUM: sg PERS: 3 ] ARG2: x5 [ x IND: + PT: notpro ] ]
           [ udef_q<0:5> LBL: h2 ARG0: x5 RSTR: h7 ]
           [ _guard_n_1<0:5> LBL: h3 ARG0: x5 ]
           [ _dog_n_1<6:9> LBL: h1 ARG0: x6 ] >
-  HCONS: < h0 qeq h1 h7 qeq h3 > ]''').edit()
+  HCONS: < h0 qeq h1 h7 qeq h3 > ]""").edit()
         return Compound(s, "guard+dog", adjacent=True)
 
     def get_green_tea(self):
-        s = Reading('''[ TOP: h0
+        s = Reading("""[ TOP: h0
   INDEX: e2 [ e SF: prop-or-ques ]
   RELS: < [ _green_a_2<0:5> LBL: h8 ARG0: e9 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x4 ]
           [ _tea_n_1<6:9> LBL: h8 ARG0: x4 ] >
-  HCONS: < h0 qeq h8 > ]''').edit()
+  HCONS: < h0 qeq h8 > ]""").edit()
         return Compound(s, "green+tea", adjacent=True)
 
     def get_big_bad_wolf(self):
-        s = Reading('''[ TOP: h0
+        s = Reading("""[ TOP: h0
   RELS: < [ _big_a_1<0:3> LBL: h1 ARG0: e2 [ e MOOD: indicative PERF: - PROG: bool SF: prop TENSE: untensed ] ARG1: x4 [ x IND: + NUM: sg PERS: 3 ] ]
           [ _bad_a_at<4:7> LBL: h1 ARG0: e3 [ e SF: prop ] ARG1: x4 ]
           [ _wolf_n_1<8:12> LBL: h1 ARG0: x4 ] >
-  HCONS: < h0 qeq h1 > ]''').edit()
+  HCONS: < h0 qeq h1 > ]""").edit()
         return Compound(s, "big+bad+wolf", adjacent=True)
 
     def process(self, target):

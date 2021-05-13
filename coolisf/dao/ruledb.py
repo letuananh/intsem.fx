@@ -1,32 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Rule DB for Optimus Engine
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
+"""
 
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import os.path
@@ -165,7 +145,7 @@ class LexRuleDB(CorpusDAOSQLite):
 
     @with_ctx
     def find_ruleinfo_by_head(self, head, carg=None, flag=None, ctx=None, restricted=True):
-        ''' Find rules related to a predicate '''
+        """ Find rules related to a predicate """
         query = ['head = ?']
         params = [head]
         if restricted:
@@ -177,14 +157,14 @@ class LexRuleDB(CorpusDAOSQLite):
 
     @with_ctx
     def find_ruleinfo(self, nodes, restricted=True, limit=None, ctx=None):
-        ''' Find applicable rules for given DMRS nodes '''
-        template = '''
+        """ Find applicable rules for given DMRS nodes """
+        template = """
 head IN ({head}) {res}
 AND (ID IN (SELECT ruleid FROM rulepred WHERE {incl})
      {incl_carg})
 {excl_carg}
 AND ID NOT IN (SELECT ruleid FROM rulepred WHERE {excl})
-'''
+"""
         params_heads = ['udef_q', 'unknown']
         # ruleinfo's flag == 2 (coolisf.model.RuleInfo.COMPOUND)
         # lexunit.flag > 3

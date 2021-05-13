@@ -35,6 +35,10 @@ from .__version__ import __author__, __email__, __copyright__, __maintainer__
 from .__version__ import __credits__, __license__, __description__, __url__
 from .__version__ import __version_major__, __version_long__, __version__, __status__
 
+# disable future warning in pydelphin 0.6.0
+import warnings
+warnings.simplefilter(action = "ignore", category = FutureWarning)
+
 from .lexsem import Lexsem, tag_gold
 from .ghub import GrammarHub
 from .config import read_config

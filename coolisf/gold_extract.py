@@ -1,42 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Generate gold profile
-Latest version can be found at https://github.com/letuananh/intsem.fx
+"""
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
-'''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
+# This code is a part of coolisf library: https://github.com/letuananh/intsem.fx
+# :copyright: (c) 2014 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import datetime
@@ -81,7 +51,7 @@ def getLogger():
 # -----------------------------------------------------------------------
 
 def match_sents(isf_doc, ttl_doc):
-    ''' Match TSDB profile sentences with TTL sentences '''
+    """ Match TSDB profile sentences with TTL sentences """
     if len(isf_doc) != len(ttl_doc):
         getLogger().info("ISF doc size: {}".format(len(isf_doc)))
         getLogger().info("TTL doc size: {}".format(len(ttl_doc)))
@@ -106,7 +76,7 @@ def match_sents(isf_doc, ttl_doc):
 
 
 def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggold=True, on_error='raise', ctx=None, **kwargs):
-    ''' Tag an ISF document using a TTL '''
+    """ Tag an ISF document using a TTL """
     isf_doc = match_sents(isf_doc, ttl_doc)
     if isf_doc is None:
         raise Exception("isf_doc and ttl_doc could not be matched")
@@ -147,9 +117,9 @@ def tag_doc(isf_doc, ttl_doc, use_ttl_sid=True, wsd_method=None, wsd=None, taggo
 
 
 def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, *args, **kwargs):
-    ''' Combine TSDB profile and TTL profile to create ISF document (shallow + deep)
+    """ Combine TSDB profile and TTL profile to create ISF document (shallow + deep)
     This function return an instance of coolisf.model.Document
-    '''
+    """
     tsdb_doc = read_tsdb(tsdb_path, name=name, title=title)
     if ttl_path is None:
         ttl_path = tsdb_path
@@ -161,12 +131,12 @@ def read_tsdb_ttl(tsdb_path, ttl_path=None, name=None, title=None, *args, **kwar
 
 
 def read_gold_mrs():
-    ''' Read gold MRS only (without TTL) '''
+    """ Read gold MRS only (without TTL) """
     return read_tsdb(GOLD_PATH, name="speckled", title="The Adventure of the Speckled Band")
 
 
 def read_gold_sents(perform_wsd=False):
-    ''' Read gold sentences (TSDB+TTL) '''
+    """ Read gold sentences (TSDB+TTL) """
     return read_tsdb_ttl(GOLD_PATH, name="speckled", title="The Adventure of the Speckled Band")
 
 
@@ -269,7 +239,7 @@ def filter_wrong_senses(doc):
 
 
 def export_to_visko(sents, doc_path, pretty_print=True, separate=True, halt_on_error=True):
-    ''' Export sentences to XML files '''
+    """ Export sentences to XML files """
     print("Exporting %s sentences to Visko" % (len(sents),))
     print("Visko doc path: {}".format(doc_path))
     if separate:
