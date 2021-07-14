@@ -12,6 +12,7 @@ Grammar helpers
 # :license: MIT, see LICENSE for more details.
 
 import logging
+import os
 from delphin.interfaces import ace
 
 from texttaglib.chirptext import FileHelper
@@ -39,6 +40,9 @@ class GrammarHub:
         self.read_config()
         self.grammars = {}
         if self.cache_path:
+            temp_folder = os.path.dirname(self.cache_path)
+            if not os.path.exists(temp_folder):
+                os.makedirs(temp_folder)
             self.cache = ISFCache(self.cache_path)
         else:
             self.cache = None
@@ -147,6 +151,9 @@ class Grammar:
         # init cache
         if cache_loc:
             self.cache_loc = FileHelper.abspath(cache_loc)
+            temp_folder = os.path.dirname(self.cache_loc)
+            if not os.path.exists(temp_folder):
+                os.makedirs(temp_folder)
             self.cache = AceCache(self.cache_loc)
             getLogger().debug("Caching enabled for grammar [{g}] at [{l}]".format(g=self.name, l=self.cache_loc))
         else:
